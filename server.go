@@ -21,6 +21,8 @@ func Server() {
 	http.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
 		tmpl.Execute(w, data)
 	})
+	fs := http.FileServer(http.Dir("./resources/public"))
+	http.Handle("/static/", http.StripPrefix("/static", fs))
 	http.HandleFunc("/cse", func(w http.ResponseWriter, r *http.Request) {
 		data.CseAnswer = "The meaning of life is " + strconv.Itoa(cse_hello())
 		tmpl.Execute(w, data)
