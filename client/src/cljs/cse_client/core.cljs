@@ -14,7 +14,8 @@
     (fn []
       [:ul
        [:li [:a {:href (k/path-for [:index])} "Index"]]
-       [:li [:a {:href (k/path-for [:article])} "Article"]]])))
+       [:li [:a {:href (k/path-for [:sub1])} "sub1"]]
+       [:li [:a {:href (k/path-for [:sub2])} "sub2"]]])))
 
 (k/start! {:routes         routes/routes
            :hash-routing?  true

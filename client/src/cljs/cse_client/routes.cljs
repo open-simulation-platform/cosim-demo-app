@@ -1,4 +1,5 @@
 (ns cse-client.routes)
 
 (def routes ["/" {""      :index
-                  "fardi" :article}])
+                  "sub1" {"" :sub1
+                          "/sub2" :sub2}}])
