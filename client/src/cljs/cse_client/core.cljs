@@ -13,16 +13,6 @@
 
 (def default-db {})
 
-(defrecord BidiRouter [routes]
-  api/Router
-  (data->url [_ data]
-    (str "/#" (apply bidi/path-for routes data)))
-  (url->data [_ url]
-    (let [[path+query fragment] (-> url (string/replace #"^/#" "") (string/split #"#" 2))
-          [path query] (string/split path+query #"\?" 2)]
-      (some-> (bidi/match-route routes path)
-              (assoc :query-string query :hash fragment)))))
-
 (defn root-comp []
   (let [route (rf/subscribe [:kee-frame/route])]
     (fn []
@@ -30,7 +20,8 @@
        [:li [:a {:href (k/path-for [:index])} "Index"]]
        [:li [:a {:href (k/path-for [:article])} "Article"]]])))
 
-(k/start! {:router         (->BidiRouter routes/routes)
+(k/start! {:routes         routes/routes
+           :hash-routing?  true
            :debug?         true
            :root-component [root-comp]
            :initial-db     default-db})
