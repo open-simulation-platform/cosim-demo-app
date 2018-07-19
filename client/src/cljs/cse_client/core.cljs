@@ -1,14 +1,12 @@
 (ns cse-client.core
-  (:require [cljsjs.bootstrap]
-            [cse-client.routes :as routes]
-            [re-frame.core :refer [dispatch subscribe dispatch-sync]]
-            [kee-frame.core :as k]
-            [re-frame.core :as rf]
+  (:require [kee-frame.core :as k]
             [ajax.core :as ajax]))
 
 (enable-console-print!)
 
-(def default-db {})
+(def routes ["/" {""     :index
+                  "sub1" {""      :sub1
+                          "/rest" :rest-demo}}])
 
 (k/reg-controller :rest-demo-controller
                   {:params #(when (-> % :handler (= :rest-demo)) true)
@@ -23,15 +21,13 @@
                (js/alert (str "GOT ME SOME REST from \"/rest-test\": " rest-of-it))))
 
 (defn root-comp []
-  (let [route (rf/subscribe [:kee-frame/route])]
-    (fn []
-      [:ul
-       [:li [:a {:href (k/path-for [:index])} "Index"]]
-       [:li [:a {:href (k/path-for [:sub1])} "sub1"]]
-       [:li [:a {:href (k/path-for [:rest-demo])} "This one is real and will load the REST"]]])))
+  [:ul
+   [:li [:a {:href (k/path-for [:index])} "Index"]]
+   [:li [:a {:href (k/path-for [:sub1])} "sub1"]]
+   [:li [:a {:href (k/path-for [:rest-demo])} "This one is real and will load the REST"]]])
 
-(k/start! {:routes         routes/routes
+(k/start! {:routes         routes
            :hash-routing?  true
            :debug?         true
            :root-component [root-comp]
-           :initial-db     default-db})
+           :initial-db     {}})
