@@ -1,3 +1,3 @@
 (ns cse-client.routes)
 
-(def routes [])
+(def routes ["/" :mordi])
