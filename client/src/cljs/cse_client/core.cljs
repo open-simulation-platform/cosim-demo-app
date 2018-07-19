@@ -3,10 +3,6 @@
             [cse-client.routes :as routes]
             [re-frame.core :refer [dispatch subscribe dispatch-sync]]
             [kee-frame.core :as k]
-            [day8.re-frame.http-fx]
-            [bidi.bidi :as bidi]
-            [kee-frame.api :as api]
-            [clojure.string :as string]
             [re-frame.core :as rf]))
 
 (enable-console-print!)
