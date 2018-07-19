@@ -5,7 +5,9 @@
             [kee-frame.core :as k]
             [day8.re-frame.http-fx]
             [bidi.bidi :as bidi]
-            [kee-frame.api :as api]))
+            [kee-frame.api :as api]
+            [clojure.string :as string]
+            [re-frame.core :as rf]))
 
 (enable-console-print!)
 
@@ -14,12 +16,19 @@
 (defrecord BidiRouter [routes]
   api/Router
   (data->url [_ data]
-    (apply bidi/path-for routes data))
+    (str "/#" (apply bidi/path-for routes data)))
   (url->data [_ url]
-    (bidi/match-route routes url)))
+    (let [[path+query fragment] (-> url (string/replace #"^/#" "") (string/split #"#" 2))
+          [path query] (string/split path+query #"\?" 2)]
+      (some-> (bidi/match-route routes path)
+              (assoc :query-string query :hash fragment)))))
 
 (defn root-comp []
-  [:div "MORDI IS HOME"])
+  (let [route (rf/subscribe [:kee-frame/route])]
+    (fn []
+      [:ul
+       [:li [:a {:href (k/path-for [:index])} "Index"]]
+       [:li [:a {:href (k/path-for [:article])} "Article"]]])))
 
 (k/start! {:router         (->BidiRouter routes/routes)
            :debug?         true
