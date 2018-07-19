@@ -2,4 +2,4 @@
 
 (def routes ["/" {""     :index
                   "sub1" {""      :sub1
-                          "/sub2" :sub2}}])
+                          "/rest" :rest-demo}}])
