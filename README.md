@@ -10,3 +10,15 @@ playground for testing go as an alternative for the cse-server
 - csecorec.dll and csecorecpp.dll must be manually copied into cse-server-go root folder
 - go build will compile executable
 
+# Dependencies
+- Install the dep tool https://golang.github.io/dep/
+- Did establish this with a dep file in project, but needs more investigation.
+
+# Interactive web development (client)
+- Install https://leiningen.org/ (and possibly a Java JDK)
+- cd /client
+- lein figwheel
+
+# Interactive web development (server)
+- Install https://github.com/codegangsta/gin
+- Did not get any further on this, but should be the way to go.

@@ -4,6 +4,8 @@ import (
 	"html/template"
 	"net/http"
 	"strconv"
+	"github.com/gorilla/mux"
+	"log"
 )
 
 type PageData struct {
@@ -17,21 +19,19 @@ var data = PageData{
 }
 
 func Server() {
+	router := mux.NewRouter()
 	tmpl := template.Must(template.ParseFiles("layout.html"))
-	http.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
+	router.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
 		tmpl.Execute(w, data)
 	})
-	fs := http.FileServer(http.Dir("./resources/public"))
-	http.Handle("/static/", http.StripPrefix("/static", fs))
-	http.HandleFunc("/cse", func(w http.ResponseWriter, r *http.Request) {
+	router.PathPrefix("/static/").Handler(http.StripPrefix("/static/", http.FileServer(http.Dir("./resources/public"))))
+	router.HandleFunc("/cse", func(w http.ResponseWriter, r *http.Request) {
 		data.CseAnswer = "The meaning of life is " + strconv.Itoa(cse_hello())
 		tmpl.Execute(w, data)
 	})
-	http.HandleFunc("/clear", func(w http.ResponseWriter, r *http.Request) {
+	router.HandleFunc("/clear", func(w http.ResponseWriter, r *http.Request) {
 		data.CseAnswer = ""
 		tmpl.Execute(w, data)
 	})
-	if err := http.ListenAndServe(":8080", nil); err != nil {
-		panic(err)
-	}
+	log.Fatal(http.ListenAndServe(":8000", router))
 }
