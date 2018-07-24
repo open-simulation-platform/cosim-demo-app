@@ -23,14 +23,15 @@
 (defn root-comp []
   [:div
    [:ul
-    [:li [:a {:href (k/path-for [:index])} "Indexy"]]
+    [:li [:a {:href (k/path-for [:index])} "Index"]]
     [:li [:a {:href (k/path-for [:sub1])} "sub1"]]
     [:li [:a {:href (k/path-for [:rest-demo])} "This one is real and will load the REST"]]]
    [:h3 "You navigated to:"]
    [k/switch-route :handler
     :index "This is INDEX!!"
     :sub1 "SUB1 page"
-    :rest-demo "You will now get an alert with downloaded simulator status"]])
+    :rest-demo "You will now get an alert with downloaded simulator status"
+    nil [:div "Loading..."]]])
 
 (k/start! {:routes         routes
            :hash-routing?  true

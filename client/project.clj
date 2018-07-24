@@ -1,6 +1,6 @@
 (defproject cse-client "1.0.0"
   :min-lein-version "2.0.0"
-  :dependencies [[kee-frame "0.2.6"]
+  :dependencies [[kee-frame "0.2.7-SNAPSHOT"]
                  [day8.re-frame/http-fx "0.1.6"]
                  [cljs-ajax "0.7.3"]
                  [reagent "0.8.0"]
