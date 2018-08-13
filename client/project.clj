@@ -18,7 +18,7 @@
   :source-paths ["src/clj" "src/cljc"]
 
   :cljsbuild {:builds [{:id           "app"
-                        :source-paths ["src/cljs" "src/cljc"]
+                        :source-paths ["src/cljs"]
                         :figwheel     true
                         :compiler     {:main                 cse-client.core
                                        :asset-path           "/static/js/compiled/out"
