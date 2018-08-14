@@ -7,6 +7,7 @@ import (
 	"github.com/gorilla/mux"
 	"log"
 	"encoding/json"
+	"github.com/gobuffalo/packr"
 )
 
 type PageData struct {
@@ -31,12 +32,13 @@ func RestTest(w http.ResponseWriter, r *http.Request) {
 
 func Server() {
 	router := mux.NewRouter()
+	box := packr.NewBox("./resources/public")
 	tmpl := template.Must(template.ParseFiles("layout.html"))
 	router.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
 		tmpl.Execute(w, data)
 	})
 	router.HandleFunc("/rest-test", RestTest)
-	router.PathPrefix("/static/").Handler(http.StripPrefix("/static/", http.FileServer(http.Dir("./resources/public"))))
+	router.PathPrefix("/static/").Handler(http.StripPrefix("/static/", http.FileServer(box)))
 	router.HandleFunc("/cse", func(w http.ResponseWriter, r *http.Request) {
 		data.CseAnswer = "The meaning of life is " + strconv.Itoa(cse_hello())
 		tmpl.Execute(w, data)
