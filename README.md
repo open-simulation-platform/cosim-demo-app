@@ -12,7 +12,7 @@ playground for testing go as an alternative for the cse-server
 
 # Dependencies
 - Install the dep tool https://golang.github.io/dep/
-- Did establish this with a dep file in project, but needs more investigation.
+- Type `dep ensure` in your shell to download deps to your disk.
 
 # Interactive web development (client)
 - Install https://leiningen.org/ (and possibly a Java JDK)
@@ -22,3 +22,7 @@ playground for testing go as an alternative for the cse-server
 # Interactive web development (server)
 - Install https://github.com/codegangsta/gin
 - Did not get any further on this, but should be the way to go.
+
+# Building binary distribution
+- In client folder: Run `lein cljsbuild once min`
+- In server root folder: Run `packr build`
