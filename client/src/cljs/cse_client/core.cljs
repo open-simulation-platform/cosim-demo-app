@@ -32,11 +32,11 @@
              (fn [_ _]))
 
 (k/reg-chain :pause
-                   (fn [_ _]
-                     {:http-xhrio {:method          :get
-                                   :uri             "/pause"
-                                   :response-format (ajax/json-response-format {:keywords? true})}})
-                   (fn [_ _]))
+             (fn [_ _]
+               {:http-xhrio {:method          :get
+                             :uri             "/pause"
+                             :response-format (ajax/json-response-format {:keywords? true})}})
+             (fn [_ _]))
 
 (rf/reg-sub :state :state)
 
