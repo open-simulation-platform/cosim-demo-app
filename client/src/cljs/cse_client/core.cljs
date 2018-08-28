@@ -1,6 +1,10 @@
 (ns cse-client.core
   (:require [kee-frame.core :as k]
-            [ajax.core :as ajax]))
+            [ajax.core :as ajax]
+            [re-interval.core :as re-interval]))
+
+(re-interval/register-interval-handlers :poll nil 1000)
+
 
 (enable-console-print!)
 
@@ -8,17 +12,18 @@
                   "sub1" {""      :sub1
                           "/rest" :rest-demo}}])
 
-(k/reg-controller :rest-demo-controller
-                  {:params #(when (-> % :handler (= :rest-demo)) true)
-                   :start  [:load-rest-demo]})
+(k/reg-controller :state-poll-controller
+                  {:params #(when (-> % :handler (= :index)) true)
+                   :start  [:poll/start]
+                   :stop   [:poll/stop]})
 
-(k/reg-chain :load-rest-demo
+(k/reg-chain :poll/tick
              (fn [_ _]
                {:http-xhrio {:method          :get
                              :uri             "/rest-test"
                              :response-format (ajax/json-response-format)}})
-             (fn [_ [_ rest-of-it]]
-               (js/alert (str "GOT ME SOME REST from \"/rest-test\": " rest-of-it))))
+             (fn [{:keys [db]} [_ state]]
+               {:db (assoc db :state state)}))
 
 (defn root-comp []
   [:div
@@ -29,7 +34,7 @@
    [:h3 "You navigated to:"]
    [k/switch-route :handler
     :index "This is INDEX!!"
-    :sub1 "SUB1 page"
+    :sub1 "SUB1 pagey"
     :rest-demo "You will now get an alert with downloaded simulator status"
     nil [:div "Loading..."]]])
 
