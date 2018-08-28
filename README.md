@@ -13,6 +13,7 @@ playground for testing go as an alternative for the cse-server
 # Dependencies
 - Install the dep tool https://golang.github.io/dep/
 - Type `dep ensure` in your shell to download deps to your disk.
+- Install packr:`go get -u github.com/gobuffalo/packr/...`
 
 # Interactive web development (client)
 - Install https://leiningen.org/ (and possibly a Java JDK)
