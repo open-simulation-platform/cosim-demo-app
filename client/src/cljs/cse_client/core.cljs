@@ -24,17 +24,19 @@
              (fn [{:keys [db]} [state]]
                {:db (assoc db :state state)}))
 
-(rf/reg-event-fx :play
-                 (fn [_ _]
-                   {:http-xhrio {:method          :get
-                                 :uri             "/play"
-                                 :response-format (ajax/json-response-format {:keywords? true})}}))
+(k/reg-chain :play
+             (fn [_ _]
+               {:http-xhrio {:method          :get
+                             :uri             "/play"
+                             :response-format (ajax/json-response-format {:keywords? true})}})
+             (fn [_ _]))
 
-(rf/reg-event-fx :pause
-                 (fn [_ _]
-                   {:http-xhrio {:method          :get
-                                 :uri             "/pause"
-                                 :response-format (ajax/json-response-format {:keywords? true})}}))
+(k/reg-chain :pause
+                   (fn [_ _]
+                     {:http-xhrio {:method          :get
+                                   :uri             "/pause"
+                                   :response-format (ajax/json-response-format {:keywords? true})}})
+                   (fn [_ _]))
 
 (rf/reg-sub :state :state)
 
