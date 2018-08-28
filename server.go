@@ -30,6 +30,14 @@ func RestTest(w http.ResponseWriter, r *http.Request) {
 	json.NewEncoder(w).Encode(Simulator{ID: "id-1", Name: "Coral", Status: "Completely broken"})
 }
 
+func Play(w http.ResponseWriter, r *http.Request) {
+	json.NewEncoder(w).Encode(Simulator{ID: "id-1", Name: "Coral", Status: "Completely broken"})
+}
+
+func Pause(w http.ResponseWriter, r *http.Request) {
+	json.NewEncoder(w).Encode(Simulator{ID: "id-1", Name: "Coral", Status: "Completely broken"})
+}
+
 func Server() {
 	router := mux.NewRouter()
 	box := packr.NewBox("./resources/public")
@@ -38,6 +46,9 @@ func Server() {
 		tmpl.Execute(w, data)
 	})
 	router.HandleFunc("/rest-test", RestTest)
+	router.HandleFunc("/play", Play)
+	router.HandleFunc("/pause", Pause)
+
 	router.PathPrefix("/static/").Handler(http.StripPrefix("/static/", http.FileServer(box)))
 	router.HandleFunc("/cse", func(w http.ResponseWriter, r *http.Request) {
 		data.CseAnswer = "The meaning of life is " + strconv.Itoa(cse_hello())
