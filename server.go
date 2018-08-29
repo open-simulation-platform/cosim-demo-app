@@ -21,21 +21,22 @@ var data = PageData{
 }
 
 type Simulator struct {
-	ID     string `json:"id,omitempty"`
-	Name   string `json:"name,omitempty"`
-	Status string `json:"status,omitempty"`
+	ID          string `json:"id,omitempty"`
+	Name        string `json:"name,omitempty"`
+	Status      string `json:"status,omitempty"`
+	SignalValue string `json:"signalValue,omitempty"`
 }
 
 func RestTest(w http.ResponseWriter, r *http.Request) {
-	json.NewEncoder(w).Encode(Simulator{ID: "id-1", Name: "Coral", Status: "Completely broken"})
+	json.NewEncoder(w).Encode(Simulator{ID: "id-1", Name: "Coral", Status: "Completely broken", SignalValue: "1.0"})
 }
 
 func Play(w http.ResponseWriter, r *http.Request) {
-	json.NewEncoder(w).Encode(Simulator{ID: "id-1", Name: "Coral", Status: "Completely broken"})
+	json.NewEncoder(w).Encode(Simulator{ID: "id-1", Name: "Coral", Status: "Completely broken", SignalValue: "1.0"})
 }
 
 func Pause(w http.ResponseWriter, r *http.Request) {
-	json.NewEncoder(w).Encode(Simulator{ID: "id-1", Name: "Coral", Status: "Completely broken"})
+	json.NewEncoder(w).Encode(Simulator{ID: "id-1", Name: "Coral", Status: "Completely broken", SignalValue: "1.0"})
 }
 
 func Server() {
