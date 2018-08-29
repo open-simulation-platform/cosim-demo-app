@@ -12,3 +12,7 @@
 *.out
 
 .idea
+
+# Client build directory and artifact
+target/
+resources/public/js/compiled/app.js
