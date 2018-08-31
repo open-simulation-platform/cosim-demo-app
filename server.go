@@ -3,11 +3,11 @@ package main
 import (
 	"html/template"
 	"net/http"
-	"strconv"
 	"github.com/gorilla/mux"
 	"log"
 	"encoding/json"
 	"github.com/gobuffalo/packr"
+	"fmt"
 )
 
 type PageData struct {
@@ -27,37 +27,31 @@ type Simulator struct {
 	SignalValue string `json:"signalValue,omitempty"`
 }
 
-func RestTest(w http.ResponseWriter, r *http.Request) {
-	json.NewEncoder(w).Encode(Simulator{ID: "id-1", Name: "Coral", Status: "Completely broken", SignalValue: "1.0"})
-}
-
-func Play(w http.ResponseWriter, r *http.Request) {
-	json.NewEncoder(w).Encode(Simulator{ID: "id-1", Name: "Coral", Status: "Completely broken", SignalValue: "1.0"})
-}
-
-func Pause(w http.ResponseWriter, r *http.Request) {
-	json.NewEncoder(w).Encode(Simulator{ID: "id-1", Name: "Coral", Status: "Completely broken", SignalValue: "1.0"})
-}
-
-func Server() {
+func Server(command chan string) {
 	router := mux.NewRouter()
 	box := packr.NewBox("./resources/public")
 	tmpl := template.Must(template.ParseFiles("layout.html"))
+
 	router.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
 		tmpl.Execute(w, data)
 	})
-	router.HandleFunc("/rest-test", RestTest)
-	router.HandleFunc("/play", Play)
-	router.HandleFunc("/pause", Pause)
+
+	router.HandleFunc("/rest-test", func(w http.ResponseWriter, r *http.Request) {
+		sigVal := fmt.Sprintf("%.2f", lastOutValue)
+		json.NewEncoder(w).Encode(Simulator{ID: "id-1", Name: "Clock", Status: "-", SignalValue: sigVal})
+	})
+
+	router.HandleFunc("/play", func(w http.ResponseWriter, r *http.Request) {
+		command <- "play"
+		json.NewEncoder(w).Encode(Simulator{ID: "id-1", Name: "Clock", Status: "-", SignalValue: "1.0"})
+	})
+
+	router.HandleFunc("/pause", func(w http.ResponseWriter, r *http.Request) {
+		command <- "pause"
+		json.NewEncoder(w).Encode(Simulator{ID: "id-1", Name: "Clock", Status: "-"})
+	})
 
 	router.PathPrefix("/static/").Handler(http.StripPrefix("/static/", http.FileServer(box)))
-	router.HandleFunc("/cse", func(w http.ResponseWriter, r *http.Request) {
-		data.CseAnswer = "The meaning of life is " + strconv.Itoa(cse_hello())
-		tmpl.Execute(w, data)
-	})
-	router.HandleFunc("/clear", func(w http.ResponseWriter, r *http.Request) {
-		data.CseAnswer = ""
-		tmpl.Execute(w, data)
-	})
+
 	log.Fatal(http.ListenAndServe(":8000", router))
 }

@@ -43,7 +43,7 @@
 (defn root-comp []
   (let [{:keys [name status signalValue]} @(rf/subscribe [:state])]
     [:div
-     [:h3 "Simulator:"]
+     [:h3 "FMU:"]
      [:ul
       [:li "Name: " name]
       [:li "Status: " status]
