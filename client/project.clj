@@ -7,6 +7,7 @@
                  [re-frame "0.10.5" :exclusions [reagent]]
                  [org.clojure/tools.reader "1.3.0-alpha3"]
                  [cljsjs/bootstrap "3.3.5-0"]
+                 [re-interval "0.0.1"]
                  [org.clojure/clojurescript "1.10.238"]
                  [org.clojure/clojure "1.9.0"]]
   :plugins [[lein-count "1.0.7"]
