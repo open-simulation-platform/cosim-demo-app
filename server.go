@@ -41,6 +41,8 @@ func Server(command chan string) {
 		json.NewEncoder(w).Encode(Simulator{ID: "id-1", Name: "Clock", Status: "-", SignalValue: sigVal})
 	})
 
+	router.PathPrefix("/static/").Handler(http.StripPrefix("/static/", http.FileServer(box)))
+
 	router.HandleFunc("/play", func(w http.ResponseWriter, r *http.Request) {
 		command <- "play"
 		json.NewEncoder(w).Encode(Simulator{ID: "id-1", Name: "Clock", Status: "-", SignalValue: "1.0"})
