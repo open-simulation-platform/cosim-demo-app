@@ -27,7 +27,7 @@ type Simulator struct {
 	SignalValue string `json:"signalValue,omitempty"`
 }
 
-func Server(command chan string) {
+func Server(command chan string, state chan string) {
 	router := mux.NewRouter()
 	box := packr.NewBox("./resources/public")
 	tmpl := template.Must(template.ParseFiles("layout.html"))
@@ -52,7 +52,7 @@ func Server(command chan string) {
 		command <- "pause"
 		json.NewEncoder(w).Encode(Simulator{ID: "id-1", Name: "Clock", Status: "-"})
 	})
-	router.HandleFunc("/ws", WebsocketHandler)
+	router.HandleFunc("/ws", WebsocketHandler(command, state))
 
 	router.PathPrefix("/static/").Handler(http.StripPrefix("/static/", http.FileServer(box)))
 

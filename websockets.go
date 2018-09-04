@@ -8,25 +8,27 @@ import (
 
 var upgrader = websocket.Upgrader{}
 
-func WebsocketHandler(w http.ResponseWriter, r *http.Request) {
-	conn, err := upgrader.Upgrade(w, r, nil)
-	conn.WriteMessage(websocket.TextMessage, []byte("{\"Hello\": \"Mordi\"}"))
-	if err != nil {
-		log.Print("upgrade:", err)
-		return
-	}
-	defer conn.Close()
-	for {
-		mt, message, err := conn.ReadMessage()
+func WebsocketHandler(command chan string, state chan string) func(w http.ResponseWriter, r *http.Request) {
+	return func(w http.ResponseWriter, r *http.Request) {
+		conn, err := upgrader.Upgrade(w, r, nil)
+		conn.WriteMessage(websocket.TextMessage, []byte("{\"Hello\": \"Mordi\"}"))
 		if err != nil {
-			log.Println("read:", err)
-			break
+			log.Print("upgrade:", err)
+			return
 		}
-		log.Printf("recv: %s", message)
-		err = conn.WriteMessage(mt, message)
-		if err != nil {
-			log.Println("write:", err)
-			break
+		defer conn.Close()
+		for {
+			mt, message, err := conn.ReadMessage()
+			if err != nil {
+				log.Println("read:", err)
+				break
+			}
+			log.Printf("recv: %s", message)
+			err = conn.WriteMessage(mt, message)
+			if err != nil {
+				log.Println("write:", err)
+				break
+			}
 		}
 	}
 }
