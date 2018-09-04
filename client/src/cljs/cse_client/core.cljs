@@ -24,9 +24,10 @@
 
 (k/reg-event-fx :start-websockets
                 (fn [_ _]
-                  {::websocket/open {:path     "/ws"
-                                     :dispatch ::socket-message-received
-                                     :format   :json}}))
+                  {::websocket/open {:path         "/ws"
+                                     :dispatch     ::socket-message-received
+                                     :format       :str
+                                     :wrap-message identity}}))
 
 (k/reg-event-db ::socket-message-received
                 (fn [db event]
@@ -40,19 +41,15 @@
              (fn [{:keys [db]} [state]]
                {:db (assoc db :state state)}))
 
-(k/reg-chain :play
-             (fn [_ _]
-               {:http-xhrio {:method          :get
-                             :uri             "/play"
-                             :response-format (ajax/json-response-format {:keywords? true})}})
-             (fn [_ _]))
+
+(k/reg-event-fx :play
+                (fn [{:keys [db]} _]
+                  {:dispatch [::websocket/send "/ws" "play"]}))
+
 
 (k/reg-chain :pause
-             (fn [_ _]
-               {:http-xhrio {:method          :get
-                             :uri             "/pause"
-                             :response-format (ajax/json-response-format {:keywords? true})}})
-             (fn [_ _]))
+             (fn [{:keys [db]} _]
+               {:dispatch [::websocket/send "/ws" "pause"]}))
 
 (rf/reg-sub :state :state)
 
