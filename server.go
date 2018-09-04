@@ -52,6 +52,7 @@ func Server(command chan string) {
 		command <- "pause"
 		json.NewEncoder(w).Encode(Simulator{ID: "id-1", Name: "Clock", Status: "-"})
 	})
+	router.HandleFunc("/ws", WebsocketHandler)
 
 	router.PathPrefix("/static/").Handler(http.StripPrefix("/static/", http.FileServer(box)))
 

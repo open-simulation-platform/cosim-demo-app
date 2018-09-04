@@ -1,5 +1,6 @@
 (ns cse-client.core
   (:require [kee-frame.core :as k]
+            [kee-frame.websocket :as websocket]
             [ajax.core :as ajax]
             [re-interval.core :as re-interval]
             [re-frame.core :as rf]))
@@ -15,6 +16,21 @@
                   {:params #(when (-> % :handler (= :index)) true)
                    :start  [:poll/start]
                    :stop   [:poll/stop]})
+
+(k/reg-controller :websocket-controller
+                  {:params #(when (-> % :handler (= :index)) true)
+                   :start  [:start-websockets]
+                   :stop   [:stop-websockets]})
+
+(k/reg-event-fx :start-websockets
+                (fn [_ _]
+                  {::websocket/open {:path     "/ws"
+                                     :dispatch ::socket-message-received
+                                     :format   :json}}))
+
+(k/reg-event-db ::socket-message-received
+                (fn [db event]
+                  db))
 
 (k/reg-chain :poll/tick
              (fn [_ _]
