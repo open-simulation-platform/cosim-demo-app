@@ -26,7 +26,7 @@
                 (fn [_ _]
                   {::websocket/open {:path         "/ws"
                                      :dispatch     ::socket-message-received
-                                     :format       :str
+                                     :format       :json
                                      :wrap-message identity}}))
 
 (k/reg-event-db ::socket-message-received
@@ -41,15 +41,22 @@
              (fn [{:keys [db]} [state]]
                {:db (assoc db :state state)}))
 
+(defn ws-request [command]
+  (merge
+    (when command
+      {:command command})
+    {:module      "Clock"
+     :modules     false
+     :connections false}))
 
 (k/reg-event-fx :play
                 (fn [{:keys [db]} _]
-                  {:dispatch [::websocket/send "/ws" "play"]}))
+                  {:dispatch [::websocket/send "/ws" (ws-request "play")]}))
 
 
 (k/reg-chain :pause
              (fn [{:keys [db]} _]
-               {:dispatch [::websocket/send "/ws" "pause"]}))
+               {:dispatch [::websocket/send "/ws" (ws-request "pause")]}))
 
 (rf/reg-sub :state :state)
 

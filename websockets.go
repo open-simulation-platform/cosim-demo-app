@@ -9,23 +9,30 @@ import (
 
 var upgrader = websocket.Upgrader{}
 
+type JsonRequest struct {
+	Command     string `json:"command,omitempty"`
+	Module      string `json:"module,omitempty"`
+	Modules     bool   `json:"modules,omitempty"`
+	Connections bool   `json:"connections,omitempty"`
+}
+
 func commandLoop(command chan string, conn *websocket.Conn) {
 	for {
 		fmt.Println("Waiting for a message")
-		_, message, err := conn.ReadMessage()
-		fmt.Printf("Received a message: <%s> <%s>\n", message, err)
+		json := JsonRequest{}
+		err := conn.ReadJSON(&json)
 		if err != nil {
 			log.Println("read:", err)
 			break
 		}
-		command <- string(message)
+		command <- json.Command
 	}
 }
 
 func stateLoop(state chan string, conn *websocket.Conn) {
 	for {
 		fmt.Println("waiting for state")
-		latestState := <- state
+		latestState := <-state
 		fmt.Printf("Received state: %s", state)
 		err := conn.WriteMessage(websocket.TextMessage, []byte(latestState))
 		fmt.Println("Wrote state to socket")
