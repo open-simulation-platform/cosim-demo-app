@@ -16,6 +16,12 @@ type JsonRequest struct {
 	Connections bool   `json:"connections,omitempty"`
 }
 
+type JsonResponse struct {
+	Modules     []string `json:"modules,omitempty"`
+	Status      string   `json:"status,omitempty"`
+	SignalValue float64  `json:"signalValue,omitempty"`
+}
+
 func commandLoop(command chan string, conn *websocket.Conn) {
 	for {
 		fmt.Println("Waiting for a message")
@@ -25,17 +31,22 @@ func commandLoop(command chan string, conn *websocket.Conn) {
 			log.Println("read:", err)
 			break
 		}
-		command <- json.Command
+		if json.Command != "" {
+			command <- json.Command
+		}
+		conn.WriteJSON(
+			JsonResponse{
+				Modules:     []string{"Clock"},
+				SignalValue: lastOutValue,
+				Status:      "running",
+			})
 	}
 }
 
 func stateLoop(state chan string, conn *websocket.Conn) {
 	for {
-		fmt.Println("waiting for state")
 		latestState := <-state
-		fmt.Printf("Received state: %s", state)
 		err := conn.WriteMessage(websocket.TextMessage, []byte(latestState))
-		fmt.Println("Wrote state to socket")
 		if err != nil {
 			log.Println("write:", err)
 			break
