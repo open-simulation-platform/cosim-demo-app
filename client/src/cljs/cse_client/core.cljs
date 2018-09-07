@@ -12,11 +12,6 @@
 
 (def routes ["/" :index])
 
-(k/reg-controller :state-poll-controller
-                  {:params #(when (-> % :handler (= :index)) true)
-                   :start  [:poll/start]
-                   :stop   [:poll/stop]})
-
 (k/reg-controller :websocket-controller
                   {:params #(when (-> % :handler (= :index)) true)
                    :start  [:start-websockets]
@@ -26,20 +21,12 @@
                 (fn [_ _]
                   {::websocket/open {:path         "/ws"
                                      :dispatch     ::socket-message-received
-                                     :format       :json
+                                     :format       :json-kw
                                      :wrap-message identity}}))
 
 (k/reg-event-db ::socket-message-received
-                (fn [db event]
-                  db))
-
-(k/reg-chain :poll/tick
-             (fn [_ _]
-               {:http-xhrio {:method          :get
-                             :uri             "/rest-test"
-                             :response-format (ajax/json-response-format {:keywords? true})}})
-             (fn [{:keys [db]} [state]]
-               {:db (assoc db :state state)}))
+                (fn [db [{message :message}]]
+                  (assoc db :state message)))
 
 (defn ws-request [command]
   (merge
