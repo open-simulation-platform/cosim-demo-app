@@ -1,5 +1,6 @@
 (ns cse-client.core
   (:require [kee-frame.core :as k]
+            [kee-frame.websocket :as websocket]
             [ajax.core :as ajax]
             [re-interval.core :as re-interval]
             [re-frame.core :as rf]))
@@ -11,39 +12,45 @@
 
 (def routes ["/" :index])
 
-(k/reg-controller :state-poll-controller
+(k/reg-controller :websocket-controller
                   {:params #(when (-> % :handler (= :index)) true)
-                   :start  [:poll/start]
-                   :stop   [:poll/stop]})
+                   :start  [:start-websockets]
+                   :stop   [:stop-websockets]})
 
-(k/reg-chain :poll/tick
-             (fn [_ _]
-               {:http-xhrio {:method          :get
-                             :uri             "/rest-test"
-                             :response-format (ajax/json-response-format {:keywords? true})}})
-             (fn [{:keys [db]} [state]]
-               {:db (assoc db :state state)}))
+(k/reg-event-fx :start-websockets
+                (fn [_ _]
+                  {::websocket/open {:path         "/ws"
+                                     :dispatch     ::socket-message-received
+                                     :format       :json-kw
+                                     :wrap-message identity}}))
 
-(k/reg-chain :play
-             (fn [_ _]
-               {:http-xhrio {:method          :get
-                             :uri             "/play"
-                             :response-format (ajax/json-response-format {:keywords? true})}})
-             (fn [_ _]))
+(k/reg-event-db ::socket-message-received
+                (fn [db [{message :message}]]
+                  (assoc db :state message)))
+
+(defn ws-request [command]
+  (merge
+    (when command
+      {:command command})
+    {:module      "Clock"
+     :modules     false
+     :connections false}))
+
+(k/reg-event-fx :play
+                (fn [{:keys [db]} _]
+                  {:dispatch [::websocket/send "/ws" (ws-request "play")]}))
+
 
 (k/reg-chain :pause
-             (fn [_ _]
-               {:http-xhrio {:method          :get
-                             :uri             "/pause"
-                             :response-format (ajax/json-response-format {:keywords? true})}})
-             (fn [_ _]))
+             (fn [{:keys [db]} _]
+               {:dispatch [::websocket/send "/ws" (ws-request "pause")]}))
 
 (rf/reg-sub :state :state)
 
 (defn root-comp []
   (let [{:keys [name status signalValue]} @(rf/subscribe [:state])]
     [:div
-     [:h3 "FMU:"]
+     [:h3 "Simulator:"]
      [:ul
       [:li "Name: " name]
       [:li "Status: " status]

@@ -28,7 +28,7 @@ func executionAddfmu(execution *C.struct_cse_execution_s, fmuPath string) (slave
 		printLastError()
 		C.cse_execution_destroy(execution)
 	}
-	return slaveIndex
+	return
 }
 
 func step(execution *C.struct_cse_execution_s, slaveIndex C.int) (realOutVal C.double) {
