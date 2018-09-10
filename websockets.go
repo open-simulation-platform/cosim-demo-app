@@ -9,19 +9,6 @@ import (
 
 var upgrader = websocket.Upgrader{}
 
-type JsonRequest struct {
-	Command     string `json:"command,omitempty"`
-	Module      string `json:"module,omitempty"`
-	Modules     bool   `json:"modules,omitempty"`
-	Connections bool   `json:"connections,omitempty"`
-}
-
-type JsonResponse struct {
-	Modules     []string `json:"modules,omitempty"`
-	Status      string   `json:"status,omitempty"`
-	SignalValue float64  `json:"signalValue,omitempty"`
-}
-
 func commandLoop(command chan string, conn *websocket.Conn) {
 	for {
 		fmt.Println("Waiting for a message")
@@ -43,10 +30,10 @@ func commandLoop(command chan string, conn *websocket.Conn) {
 	}
 }
 
-func stateLoop(state chan string, conn *websocket.Conn) {
+func stateLoop(state chan JsonResponse, conn *websocket.Conn) {
 	for {
 		latestState := <-state
-		err := conn.WriteMessage(websocket.TextMessage, []byte(latestState))
+		err := conn.WriteJSON(latestState)
 		if err != nil {
 			log.Println("write:", err)
 			break
@@ -54,7 +41,7 @@ func stateLoop(state chan string, conn *websocket.Conn) {
 	}
 }
 
-func WebsocketHandler(command chan string, state chan string) func(w http.ResponseWriter, r *http.Request) {
+func WebsocketHandler(command chan string, state chan JsonResponse) func(w http.ResponseWriter, r *http.Request) {
 	return func(w http.ResponseWriter, r *http.Request) {
 		conn, err := upgrader.Upgrade(w, r, nil)
 		if err != nil {
