@@ -1,51 +1,29 @@
 (ns cse-client.core
   (:require [kee-frame.core :as k]
             [kee-frame.websocket :as websocket]
-            [re-frame.core :as rf]
-            [clojure.string :as string]
-            [kee-frame.api :as api]
-            [reitit.core :as reitit]))
+            [re-frame.core :as rf]))
 
-(def socket-url "ws://localhost:8000/ws")
+
 
 (enable-console-print!)
 
-(def routes
-  [["/" :index]
-   ["/mdoules/:name" :module]])
-
-(defonce router (reitit/router routes))
-
-(defrecord ReititRouter [routes]
-  api/Router
-
-  (data->url [_ [route-name path-params]]
-    (str (:path (reitit/match-by-name routes route-name path-params))
-         (when-some [q (:query-string path-params)] (str "?" q))
-         (when-some [h (:hash path-params)] (str "#" h))))
-
-  (url->data [_ url]
-    (let [[path+query fragment] (-> url (string/replace #"^/#" "") (string/split #"#" 2))
-          [path query] (string/split path+query #"\?" 2)]
-      (some-> (reitit/match-by-path routes path)
-              (assoc :query-string query :hash fragment)))))
-
+(def routes ["/" :index])
 
 (k/reg-controller :websocket-controller
-                  {:params #(when (-> % :data :name (= :index)) true)
+                  {:params #(when (-> % :handler (= :index)) true)
                    :start  [:start-websockets]
                    :stop   [:stop-websockets]})
 
 (k/reg-event-fx :start-websockets
                 (fn [_ _]
-                  {::websocket/open {:path         socket-url
+                  {::websocket/open {:path         "/ws"
                                      :dispatch     ::socket-message-received
                                      :format       :json-kw
                                      :wrap-message identity}}))
 
 (k/reg-event-db ::socket-message-received
                 (fn [db [{message :message}]]
-                  (update db :state merge message)))
+                  (assoc db :state message)))
 
 (defn ws-request [command]
   (merge
@@ -56,38 +34,30 @@
      :connections false}))
 
 (k/reg-event-fx :play
-                (fn [_ _]
-                  {:dispatch [::websocket/send socket-url (ws-request "play")]}))
+                (fn [{:keys [db]} _]
+                  {:dispatch [::websocket/send "/ws" (ws-request "play")]}))
 
 
 (k/reg-event-fx :pause
-                (fn [_ _]
-                  {:dispatch [::websocket/send socket-url (ws-request "pause")]}))
+                (fn [{:keys [db]} _]
+                  {:dispatch [::websocket/send "/ws" (ws-request "pause")]}))
 
 (rf/reg-sub :state :state)
 
 (defn root-comp []
-  (let [{:keys [module modules]} @(rf/subscribe [:state])
-        {:keys [name signals]} module]
+  (let [{:keys [name status signalValue]} @(rf/subscribe [:state])]
     [:div
-     [:h3 "Modules"]
+     [:h3 "Simulator:"]
      [:ul
-      (map (fn [module]
-             [:li {:key module} [:a {:href (k/path-for [:module {:name module}])} module]])
-           modules)]
-     [:h3 "Selected module: " name]
-     [:ul
-      (map (fn [{:keys [name value]}]
-             [:li {:key (str module "_ " name)} "Signal name: " name
-              [:ul
-               [:li "Signal value: " value]]])
-           signals)]
-     [:div.ui.buttons
-      [:button.ui.button {:on-click #(rf/dispatch [:play])} "Play"]
-      [:button.ui.button {:on-click #(rf/dispatch [:pause])} "Pause"]]]))
+      [:li "Name: " name]
+      [:li "Status: " status]
+      [:li "Signal value: " signalValue]]
+     [:p
+      [:button {:on-click #(rf/dispatch [:play])} "Play"]
+      [:button {:on-click #(rf/dispatch [:pause])} "Pause"]]]))
 
-(k/start! {:router         (->ReititRouter router)
+(k/start! {:routes         routes
            :hash-routing?  true
-           :debug?         {:blacklist #{::socket-message-received}}
+           :debug?         true
            :root-component [root-comp]
            :initial-db     {}})
