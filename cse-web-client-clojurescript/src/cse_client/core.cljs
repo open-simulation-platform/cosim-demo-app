@@ -34,12 +34,12 @@
      :connections false}))
 
 (k/reg-event-fx :play
-                (fn [{:keys [db]} _]
+                (fn [_ _]
                   {:dispatch [::websocket/send "/ws" (ws-request "play")]}))
 
 
 (k/reg-event-fx :pause
-                (fn [{:keys [db]} _]
+                (fn [_ _]
                   {:dispatch [::websocket/send "/ws" (ws-request "pause")]}))
 
 (rf/reg-sub :state :state)
