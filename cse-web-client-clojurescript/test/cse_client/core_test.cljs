@@ -3,6 +3,8 @@
     [cljs.test :refer-macros [deftest is testing]]
     [cse-client.core :as core]))
 
-(deftest multiply-test
+(deftest root-component-test
   (is (= :div (first (core/root-comp)))))
 
+(deftest ws-request
+  (is (= "play" (:command (core/ws-request "play")))))
