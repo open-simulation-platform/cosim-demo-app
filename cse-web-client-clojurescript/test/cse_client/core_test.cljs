@@ -4,5 +4,5 @@
     [cse-client.core :as core]))
 
 (deftest multiply-test
-  (is (not= 1 core/routes)))
+  (is (= :div (first (core/root-comp)))))
 
