@@ -3,7 +3,7 @@
             [kee-frame.websocket :as websocket]
             [re-frame.core :as rf]))
 
-
+(def socket-url "ws://localhost:8000/ws")
 
 (enable-console-print!)
 
@@ -16,7 +16,7 @@
 
 (k/reg-event-fx :start-websockets
                 (fn [_ _]
-                  {::websocket/open {:path         "/ws"
+                  {::websocket/open {:path         socket-url
                                      :dispatch     ::socket-message-received
                                      :format       :json-kw
                                      :wrap-message identity}}))
@@ -35,12 +35,12 @@
 
 (k/reg-event-fx :play
                 (fn [_ _]
-                  {:dispatch [::websocket/send "/ws" (ws-request "play")]}))
+                  {:dispatch [::websocket/send socket-url (ws-request "play")]}))
 
 
 (k/reg-event-fx :pause
                 (fn [_ _]
-                  {:dispatch [::websocket/send "/ws" (ws-request "pause")]}))
+                  {:dispatch [::websocket/send socket-url (ws-request "pause")]}))
 
 (rf/reg-sub :state :state)
 

@@ -1,6 +1,6 @@
 (defproject cse-web-client-clojurescript "1.0.0"
   :min-lein-version "2.0.0"
-  :dependencies [[kee-frame "0.2.7"]
+  :dependencies [[kee-frame "0.2.8-SNAPSHOT"]
                  [org.clojure/clojurescript "1.10.312"]
                  [org.clojure/clojure "1.9.0"]
                  [expound "0.7.1"]
