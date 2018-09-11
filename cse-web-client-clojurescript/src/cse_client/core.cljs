@@ -1,11 +1,8 @@
 (ns cse-client.core
   (:require [kee-frame.core :as k]
             [kee-frame.websocket :as websocket]
-            [ajax.core :as ajax]
-            [re-interval.core :as re-interval]
             [re-frame.core :as rf]))
 
-(re-interval/register-interval-handlers :poll nil 1000)
 
 
 (enable-console-print!)
@@ -41,9 +38,9 @@
                   {:dispatch [::websocket/send "/ws" (ws-request "play")]}))
 
 
-(k/reg-chain :pause
-             (fn [{:keys [db]} _]
-               {:dispatch [::websocket/send "/ws" (ws-request "pause")]}))
+(k/reg-event-fx :pause
+                (fn [{:keys [db]} _]
+                  {:dispatch [::websocket/send "/ws" (ws-request "pause")]}))
 
 (rf/reg-sub :state :state)
 
