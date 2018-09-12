@@ -1,6 +1,6 @@
 (defproject cse-web-client-clojurescript "1.0.0"
   :min-lein-version "2.0.0"
-  :dependencies [[kee-frame "0.2.7"]
+  :dependencies [[kee-frame "0.2.8-SNAPSHOT"]
                  [day8.re-frame/http-fx "0.1.6"]
                  [cljs-ajax "0.7.3"]
                  [reagent "0.8.0"]
@@ -14,15 +14,15 @@
             [lein-figwheel "0.5.16"]
             [lein-cljsbuild "1.1.7"]]
 
-  :clean-targets ^{:protect false} [:target-path :compile-path "../resources/public/js/compiled"]
+  :clean-targets ^{:protect false} [:target-path :compile-path "resources/public/js/compiled"]
 
   :cljsbuild {:builds [{:id           "app"
                         :source-paths ["src"]
                         :figwheel     true
                         :compiler     {:main                 cse-client.core
-                                       :asset-path           "/static/js/compiled/out"
-                                       :output-to            "../resources/public/js/compiled/app.js"
-                                       :output-dir           "../resources/public/js/compiled/out"
+                                       :asset-path           "/js/compiled/out"
+                                       :output-to            "resources/public/js/compiled/app.js"
+                                       :output-dir           "resources/public/js/compiled/out"
                                        :source-map-timestamp true
                                        :parallel-build       true
                                        :closure-defines      {cse-client.core/debug                 true
