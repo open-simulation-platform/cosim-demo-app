@@ -3,7 +3,7 @@
             [kee-frame.websocket :as websocket]
             [re-frame.core :as rf]))
 
-(def socket-url "/ws")
+(def socket-url "ws://localhost:8000/ws")
 
 (enable-console-print!)
 
@@ -23,7 +23,7 @@
 
 (k/reg-event-db ::socket-message-received
                 (fn [db [{message :message}]]
-                  (assoc db :state message)))
+                  (update db :state merge message)))
 
 (defn ws-request [command]
   (merge
@@ -45,8 +45,13 @@
 (rf/reg-sub :state :state)
 
 (defn root-comp []
-  (let [{:keys [name status signalValue]} @(rf/subscribe [:state])]
+  (let [{:keys [name status signalValue modules]} @(rf/subscribe [:state])]
     [:div
+     [:h3 "Modules"]
+     [:ul
+      (map (fn [module]
+             [:li {:key module} module])
+           modules)]
      [:h3 "Simulator:"]
      [:ul
       [:li "Name: " name]
