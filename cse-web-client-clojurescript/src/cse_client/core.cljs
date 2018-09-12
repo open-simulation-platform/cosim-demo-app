@@ -3,7 +3,7 @@
             [kee-frame.websocket :as websocket]
             [re-frame.core :as rf]))
 
-(def socket-url "ws://localhost:8000/ws")
+(def socket-url "/ws")
 
 (enable-console-print!)
 
