@@ -2,7 +2,7 @@ pipeline {
     agent none
 
     triggers {
-        upstream(upstreamProjects: 'cse-core/master', threshold: hudson.model.Result.SUCCESS)
+        upstream(upstreamProjects: 'cse-core/PR-32', threshold: hudson.model.Result.SUCCESS)
     }
 
     options { checkoutToSubdirectory('src/cse-server-go') }
