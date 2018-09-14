@@ -49,7 +49,7 @@ pipeline {
                         sh 'echo Building on Windows'
 
                         copyArtifacts(
-                            projectName: 'cse-core/master',
+                            projectName: 'cse-core/PR-32',
                             filter: 'install/debug/**/*',
                             target: 'src')
                         
