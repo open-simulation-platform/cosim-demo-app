@@ -1,7 +1,8 @@
 (ns cse-client.core
   (:require [kee-frame.core :as k]
             [kee-frame.websocket :as websocket]
-            [re-frame.core :as rf]))
+            [re-frame.core :as rf]
+            [soda-ash.core :as sa]))
 
 (def socket-url "ws://localhost:8000/ws")
 
@@ -60,9 +61,9 @@
               [:ul
                [:li "Signal value: " value]]])
            signals)]
-     [:p
-      [:button {:on-click #(rf/dispatch [:play])} "Play"]
-      [:button {:on-click #(rf/dispatch [:pause])} "Pause"]]]))
+     [:div.ui.buttons
+      [:button.ui.button {:on-click #(rf/dispatch [:play])} "Play"]
+      [:button.ui.button {:on-click #(rf/dispatch [:pause])} "Pause"]]]))
 
 (k/start! {:routes         routes
            :hash-routing?  true
