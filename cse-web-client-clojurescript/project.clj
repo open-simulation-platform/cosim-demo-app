@@ -1,13 +1,9 @@
 (defproject cse-web-client-clojurescript "1.0.0"
   :min-lein-version "2.0.0"
   :dependencies [[kee-frame "0.2.8-SNAPSHOT"]
-                 [day8.re-frame/http-fx "0.1.6"]
-                 [cljs-ajax "0.7.3"]
-                 [reagent "0.8.0"]
-                 [re-frame "0.10.5" :exclusions [reagent]]
-                 [org.clojure/tools.reader "1.3.0-alpha3"]
-                 [cljsjs/bootstrap "3.3.5-0"]
-                 [re-interval "0.0.1"]
+                 [reagent "0.8.1"]
+                 [re-frame "0.10.6" :exclusions [reagent]]
+                 [soda-ash "0.82.2"]
                  [org.clojure/clojurescript "1.10.238"]
                  [org.clojure/clojure "1.9.0"]]
   :plugins [[lein-count "1.0.7"]
