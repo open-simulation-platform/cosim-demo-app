@@ -45,24 +45,27 @@
 (rf/reg-sub :state :state)
 
 (defn root-comp []
-  (let [{:keys [name status signalValue modules]} @(rf/subscribe [:state])]
+  (let [{:keys [module modules]} @(rf/subscribe [:state])
+        {:keys [name signals]} module]
     [:div
      [:h3 "Modules"]
      [:ul
       (map (fn [module]
              [:li {:key module} module])
            modules)]
-     [:h3 "Simulator:"]
+     [:h3 "Selected module: " name]
      [:ul
-      [:li "Name: " name]
-      [:li "Status: " status]
-      [:li "Signal value: " signalValue]]
+      (map (fn [{:keys [name value]}]
+             [:li {:key (str module "_ " name)} "Signal name: " name
+              [:ul
+               [:li "Signal value: " value]]])
+           signals)]
      [:p
       [:button {:on-click #(rf/dispatch [:play])} "Play"]
       [:button {:on-click #(rf/dispatch [:pause])} "Pause"]]]))
 
 (k/start! {:routes         routes
            :hash-routing?  true
-           :debug?         true
+           :debug?         {:blacklist #{::socket-message-received}}
            :root-component [root-comp]
            :initial-db     {}})
