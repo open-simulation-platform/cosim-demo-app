@@ -5,8 +5,16 @@ import "time"
 func loop(state chan JsonResponse) {
 	for {
 		state <- JsonResponse{
-			Status:      "running",
-			SignalValue: lastOutValue,
+			Modules: []string{"Clock"},
+			Module: Module{
+				Signals: []Signal{
+					{
+						Name:  "Clock",
+						Value: lastOutValue,
+					},
+				},
+				Name: "Clock",
+			},
 		}
 		time.Sleep(500 * time.Millisecond)
 	}
