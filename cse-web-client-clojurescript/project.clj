@@ -1,6 +1,7 @@
 (defproject cse-web-client-clojurescript "1.0.0"
   :min-lein-version "2.0.0"
   :dependencies [[kee-frame "0.2.8-SNAPSHOT"]
+                 [metosin/reitit "0.2.2"]
                  [reagent "0.8.1"]
                  [re-frame "0.10.6" :exclusions [reagent]]
                  [soda-ash "0.82.2"]
