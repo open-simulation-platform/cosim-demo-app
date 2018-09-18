@@ -2,16 +2,37 @@
   (:require [kee-frame.core :as k]
             [kee-frame.websocket :as websocket]
             [re-frame.core :as rf]
-            [soda-ash.core :as sa]))
+            [clojure.string :as string]
+            [kee-frame.api :as api]
+            [reitit.core :as reitit]))
 
 (def socket-url "ws://localhost:8000/ws")
 
 (enable-console-print!)
 
-(def routes ["/" :index])
+(def routes
+  [["/" :index]
+   ["/mdoules/:name" :module]])
+
+(defonce router (reitit/router routes))
+
+(defrecord ReititRouter [routes]
+  api/Router
+
+  (data->url [_ [route-name path-params]]
+    (str (:path (reitit/match-by-name routes route-name path-params))
+         (when-some [q (:query-string path-params)] (str "?" q))
+         (when-some [h (:hash path-params)] (str "#" h))))
+
+  (url->data [_ url]
+    (let [[path+query fragment] (-> url (string/replace #"^/#" "") (string/split #"#" 2))
+          [path query] (string/split path+query #"\?" 2)]
+      (some-> (reitit/match-by-path routes path)
+              (assoc :query-string query :hash fragment)))))
+
 
 (k/reg-controller :websocket-controller
-                  {:params #(when (-> % :handler (= :index)) true)
+                  {:params #(when (-> % :data :name (= :index)) true)
                    :start  [:start-websockets]
                    :stop   [:stop-websockets]})
 
@@ -52,7 +73,7 @@
      [:h3 "Modules"]
      [:ul
       (map (fn [module]
-             [:li {:key module} module])
+             [:li {:key module} [:a {:href (k/path-for [:module {:name module}])} module]])
            modules)]
      [:h3 "Selected module: " name]
      [:ul
@@ -65,7 +86,7 @@
       [:button.ui.button {:on-click #(rf/dispatch [:play])} "Play"]
       [:button.ui.button {:on-click #(rf/dispatch [:pause])} "Pause"]]]))
 
-(k/start! {:routes         routes
+(k/start! {:router         (->ReititRouter router)
            :hash-routing?  true
            :debug?         {:blacklist #{::socket-message-received}}
            :root-component [root-comp]
