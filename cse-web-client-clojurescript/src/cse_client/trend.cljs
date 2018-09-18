@@ -1,7 +1,8 @@
 (ns cse-client.trend
   (:require [reagent.core :as r]
             [cljsjs.highstock]
-            [re-frame.core :as rf]))
+            [re-frame.core :as rf]
+            [cljs.spec.alpha :as s]))
 
 (def chart-atom (atom nil))
 
@@ -34,6 +35,7 @@
   (map vector (iterate inc 0) s))
 
 (defn update-chart-data [chart-object trend-values]
+  (s/assert ::trend-values trend-values)
   (when-let [chart @chart-object]
     (maybe-update-series chart @trend-values)
     (doseq [[idx {:keys [trend-data]}] (indexed @trend-values)]
@@ -110,3 +112,9 @@
 
 (rf/reg-sub :trend-values :trend-values)
 (rf/reg-sub :trend-millis :trend-millis)
+
+(s/def ::module string?)
+(s/def ::signal string?)
+(s/def ::trend-tuple (s/tuple number? number?))
+(s/def ::trend-data (s/coll-of ::trend-tuple :kind vector?))
+(s/def ::trend-value (s/keys :req-un [::module ::signal ::trend-data]))
