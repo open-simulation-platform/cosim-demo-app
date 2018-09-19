@@ -1,30 +1,25 @@
-(defproject cse-client "1.0.0"
+(defproject cse-web-client-clojurescript "1.0.0"
   :min-lein-version "2.0.0"
-  :dependencies [[kee-frame "0.2.7-SNAPSHOT"]
-                 [day8.re-frame/http-fx "0.1.6"]
-                 [cljs-ajax "0.7.3"]
-                 [reagent "0.8.0"]
-                 [re-frame "0.10.5" :exclusions [reagent]]
-                 [org.clojure/tools.reader "1.3.0-alpha3"]
-                 [cljsjs/bootstrap "3.3.5-0"]
-                 [re-interval "0.0.1"]
+  :dependencies [[kee-frame "0.2.8-SNAPSHOT"]
+                 [metosin/reitit "0.2.2"]
+                 [reagent "0.8.1"]
+                 [re-frame "0.10.6" :exclusions [reagent]]
+                 [soda-ash "0.82.2"]
                  [org.clojure/clojurescript "1.10.238"]
                  [org.clojure/clojure "1.9.0"]]
   :plugins [[lein-count "1.0.7"]
             [lein-figwheel "0.5.16"]
             [lein-cljsbuild "1.1.7"]]
 
-  :clean-targets ^{:protect false} [:target-path :compile-path "../resources/public/js/compiled"]
-
-  :source-paths ["src/clj" "src/cljc"]
+  :clean-targets ^{:protect false} [:target-path :compile-path "resources/public/js/compiled"]
 
   :cljsbuild {:builds [{:id           "app"
-                        :source-paths ["src/cljs"]
+                        :source-paths ["src"]
                         :figwheel     true
                         :compiler     {:main                 cse-client.core
-                                       :asset-path           "/static/js/compiled/out"
-                                       :output-to            "../resources/public/js/compiled/app.js"
-                                       :output-dir           "../resources/public/js/compiled/out"
+                                       :asset-path           "/js/compiled/out"
+                                       :output-to            "resources/public/js/compiled/app.js"
+                                       :output-dir           "resources/public/js/compiled/out"
                                        :source-map-timestamp true
                                        :parallel-build       true
                                        :closure-defines      {cse-client.core/debug                 true
@@ -32,7 +27,7 @@
                                        :preloads             [devtools.preload day8.re-frame-10x.preload]
                                        :external-config      {:devtools/config {:features-to-install [:formatters]}}}}
                        {:id           "min"
-                        :source-paths ["src/cljs" "src/cljc"]
+                        :source-paths ["src"]
                         :compiler     {:output-to      "../resources/public/js/compiled/app.js"
                                        :optimizations  :advanced
                                        :parallel-build true}}]}

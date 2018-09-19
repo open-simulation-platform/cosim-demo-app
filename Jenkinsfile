@@ -21,9 +21,9 @@ pipeline {
                     }
 
             steps {
-                dir('src/cse-server-go/client') {
+                dir('src/cse-server-go/cse-web-client-clojurescript') {
                     sh 'curl -O https://raw.githubusercontent.com/technomancy/leiningen/stable/bin/lein'
-                    sh './lein with-profile client cljsbuild once min'
+                    sh './lein cljsbuild once min'
                 }
             }
         }

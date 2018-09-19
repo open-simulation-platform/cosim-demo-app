@@ -58,7 +58,6 @@ func simulate(execution *C.struct_cse_execution_s, slaveIndex C.int, command cha
 	for {
 		select {
 		case cmd := <-command:
-			fmt.Println(cmd)
 			switch cmd {
 			case "stop":
 				return
