@@ -22,15 +22,19 @@ func loop(state chan JsonResponse) {
 
 func main() {
 	execution := createExecution()
-	slaveIndex := executionAddfmu(execution, "C:/dev/osp/cse-core/test/data/fmi2/Clock.fmu")
+	localSlave := createLocalSlave("C:/dev/cse/cse-core/test/data/fmi2/Clock.fmu")
+	observer := createObserver()
+	executionAddSlave(execution, localSlave)
+	observerAddSlave(observer, localSlave)
+	executionAddObserver(execution, observer)
 
 	// Creating a command channel
 	cmd := make(chan string, 10)
 	state := make(chan JsonResponse, 10)
 
 	// Passing the channel to the go routine
-	go simulate(execution, slaveIndex, cmd)
 	go loop(state)
+	go simulate(execution, observer, cmd)
 
 	//Passing the channel to the server
 	Server(cmd, state)

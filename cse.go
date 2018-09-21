@@ -6,24 +6,48 @@ package main
 import "C"
 import (
 	"fmt"
-	"unsafe"
 	"time"
 )
 
 // UGLY GLOBAL VARIABLE
 var lastOutValue = 0.0
+var lastSamplesValue = []C.double{}
 
 func printLastError() () {
 	fmt.Printf("Error code %d: %s\n", int(C.cse_last_error_code()), C.GoString(C.cse_last_error_message()))
 }
 
-func createExecution() (execution *C.struct_cse_execution_s) {
-	execution = C.cse_execution_create(0.0)
+func createExecution() (execution *C.cse_execution) {
+	execution = C.cse_execution_create(0.0, 0.01)
 	return execution
 }
 
-func executionAddfmu(execution *C.struct_cse_execution_s, fmuPath string) (slaveIndex C.int) {
-	slaveIndex = C.cse_execution_add_slave_from_fmu((*C.struct_cse_execution_s)(execution), C.CString(fmuPath))
+func createLocalSlave(fmuPath string) (slave *C.cse_slave) {
+	slave = C.cse_local_slave_create(C.CString(fmuPath))
+	return
+}
+
+func createObserver() (observer *C.cse_observer) {
+	observer = C.cse_membuffer_observer_create()
+	return
+}
+
+func executionAddObserver(execution *C.cse_execution, observer *C.cse_observer) (observerIndex C.int) {
+	observerIndex = C.cse_execution_add_observer(execution, observer)
+	return
+}
+
+func observerAddSlave(observer *C.cse_observer, slave *C.cse_slave) (slaveIndex C.int) {
+	slaveIndex = C.cse_observer_add_slave(observer, slave)
+	if slaveIndex < 0 {
+		printLastError()
+		//C.cse_observer_destroy(observer)
+	}
+	return
+}
+
+func executionAddSlave(execution *C.cse_execution, slave *C.cse_slave) (slaveIndex C.int) {
+	slaveIndex = C.cse_execution_add_slave(execution, slave)
 	if slaveIndex < 0 {
 		printLastError()
 		C.cse_execution_destroy(execution)
@@ -31,29 +55,42 @@ func executionAddfmu(execution *C.struct_cse_execution_s, fmuPath string) (slave
 	return
 }
 
-func step(execution *C.struct_cse_execution_s, slaveIndex C.int) (realOutVal C.double) {
-	dt := C.double(0.01)
-	stepResult := C.cse_execution_step(execution, dt)
-	if stepResult < 0 {
-		printLastError()
-		C.cse_execution_destroy(execution)
-	}
-	realOutVar := C.int(0)
-	realOutVal = C.double(-1.0)
-	getRealResult := C.cse_execution_slave_get_real(
-		execution,
-		slaveIndex,
-		(*C.uint)(unsafe.Pointer(&realOutVar)),
-		1,
-		(*C.double)(unsafe.Pointer(&realOutVal)))
-	if getRealResult < 0 {
-		printLastError()
-		C.cse_execution_destroy(execution)
-	}
+func executionStart(execution *C.cse_execution) {
+	C.cse_execution_start(execution)
+}
+
+func executionStop(execution *C.cse_execution) {
+	C.cse_execution_stop(execution)
+}
+
+type executionStatus struct {
+	current_time float64
+}
+
+func executionGetStatus(execution *C.cse_execution) (status executionStatus) {
+	cStatus := C.cse_execution_status{}
+	C.cse_execution_get_status(execution, &cStatus)
+	status.current_time = float64(cStatus.current_time)
+	return
+}
+func observerGetReal(observer *C.cse_observer) float64 {
+	realOutVar := C.uint(0)
+	realOutVal := C.double(-1.0)
+	C.cse_observer_slave_get_real(observer, 0, &realOutVar, 1, &realOutVal)
+	return float64(realOutVal)
+}
+
+func observerGetRealSamples(observer *C.cse_observer, fromSample int) []C.double {
+	slaveIndex := C.int(0)
+	variableIndex := C.uint(0)
+	nSamples := C.ulonglong(10)
+	realOutVal := make([]C.double, 10)
+	timeStamps := make([]C.long, 10)
+	C.cse_observer_slave_get_real_samples(observer, slaveIndex, variableIndex, C.long(fromSample), nSamples, &realOutVal[0], &timeStamps[0])
 	return realOutVal
 }
 
-func simulate(execution *C.struct_cse_execution_s, slaveIndex C.int, command chan string) {
+func simulate(execution *C.cse_execution, observer *C.cse_observer, command chan string) {
 	var status = "pause"
 	for {
 		select {
@@ -62,16 +99,21 @@ func simulate(execution *C.struct_cse_execution_s, slaveIndex C.int, command cha
 			case "stop":
 				return
 			case "pause":
+				executionStop(execution)
 				status = "pause"
 			default:
+				executionStart(execution)
 				status = "play"
 			}
 		default:
 			if status == "play" {
-				out := step(execution, slaveIndex)
-				lastOutValue = float64(out)
-				time.Sleep(10 * time.Millisecond)
+				executionStatus := executionGetStatus(execution)
+				fmt.Println("Current time: ", executionStatus.current_time)
+				lastOutValue = observerGetReal(observer)
+				lastSamplesValue = observerGetRealSamples(observer, 0)
+				fmt.Println("Last samples: ", lastSamplesValue)
 			}
+			time.Sleep(100 * time.Millisecond)
 		}
 	}
 }
