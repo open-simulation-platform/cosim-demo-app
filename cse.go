@@ -11,6 +11,7 @@ import (
 
 // UGLY GLOBAL VARIABLE
 var lastOutValue = 0.0
+var lastSamplesValue = []C.double{}
 
 func printLastError() () {
 	fmt.Printf("Error code %d: %s\n", int(C.cse_last_error_code()), C.GoString(C.cse_last_error_message()))
@@ -79,6 +80,16 @@ func observerGetReal(observer *C.cse_observer) float64 {
 	return float64(realOutVal)
 }
 
+func observerGetRealSamples(observer *C.cse_observer, fromSample float64) []C.double {
+	slaveIndex := C.int(0)
+	variableIndex := C.uint(0)
+	nSamples := C.ulonglong(10)
+	realOutVal := make([]C.double, 10)
+	timeStamps := make([]C.double, 10)
+	C.cse_observer_slave_get_real_samples(observer, slaveIndex, variableIndex, C.double(fromSample), nSamples, &realOutVal[0], &timeStamps[0])
+	return timeStamps
+}
+
 func simulate(execution *C.cse_execution, observer *C.cse_observer, command chan string) {
 	var status = "pause"
 	for {
@@ -96,9 +107,11 @@ func simulate(execution *C.cse_execution, observer *C.cse_observer, command chan
 			}
 		default:
 			if status == "play" {
-				status := executionGetStatus(execution)
-				fmt.Println("Current time: ", status.current_time)
+				executionStatus := executionGetStatus(execution)
+				fmt.Println("Current time: ", executionStatus.current_time)
 				lastOutValue = observerGetReal(observer)
+				lastSamplesValue = observerGetRealSamples(observer, 0.0)
+				fmt.Println("Last samples: ", lastSamplesValue)
 			}
 			time.Sleep(100 * time.Millisecond)
 		}
