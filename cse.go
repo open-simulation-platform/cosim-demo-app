@@ -80,14 +80,14 @@ func observerGetReal(observer *C.cse_observer) float64 {
 	return float64(realOutVal)
 }
 
-func observerGetRealSamples(observer *C.cse_observer, fromSample float64) []C.double {
+func observerGetRealSamples(observer *C.cse_observer, fromSample int) []C.double {
 	slaveIndex := C.int(0)
 	variableIndex := C.uint(0)
 	nSamples := C.ulonglong(10)
 	realOutVal := make([]C.double, 10)
-	timeStamps := make([]C.double, 10)
-	C.cse_observer_slave_get_real_samples(observer, slaveIndex, variableIndex, C.double(fromSample), nSamples, &realOutVal[0], &timeStamps[0])
-	return timeStamps
+	timeStamps := make([]C.long, 10)
+	C.cse_observer_slave_get_real_samples(observer, slaveIndex, variableIndex, C.long(fromSample), nSamples, &realOutVal[0], &timeStamps[0])
+	return realOutVal
 }
 
 func simulate(execution *C.cse_execution, observer *C.cse_observer, command chan string) {
@@ -110,7 +110,7 @@ func simulate(execution *C.cse_execution, observer *C.cse_observer, command chan
 				executionStatus := executionGetStatus(execution)
 				fmt.Println("Current time: ", executionStatus.current_time)
 				lastOutValue = observerGetReal(observer)
-				lastSamplesValue = observerGetRealSamples(observer, 0.0)
+				lastSamplesValue = observerGetRealSamples(observer, 0)
 				fmt.Println("Last samples: ", lastSamplesValue)
 			}
 			time.Sleep(100 * time.Millisecond)

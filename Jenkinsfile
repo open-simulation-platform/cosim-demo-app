@@ -2,7 +2,7 @@ pipeline {
     agent none
 
     triggers {
-        upstream(upstreamProjects: 'cse-core/PR-32', threshold: hudson.model.Result.SUCCESS)
+        upstream(upstreamProjects: 'cse-core/master', threshold: hudson.model.Result.SUCCESS)
     }
 
     options { checkoutToSubdirectory('src/cse-server-go') }
@@ -49,7 +49,7 @@ pipeline {
                         sh 'echo Building on Windows'
 
                         copyArtifacts(
-                            projectName: 'cse-core/PR-32',
+                            projectName: 'cse-core/master',
                             filter: 'install/debug/**/*',
                             target: 'src')
                         
