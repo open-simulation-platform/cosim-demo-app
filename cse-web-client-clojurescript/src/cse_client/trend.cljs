@@ -34,16 +34,15 @@
 (defn indexed [s]
   (map vector (iterate inc 0) s))
 
-(defn update-chart-data [chart-object trend-values]
+(defn update-chart-data [chart trend-values]
   (s/assert ::trend-values trend-values)
-  (when-let [chart @chart-object]
-    (maybe-update-series chart @trend-values)
-    (doseq [[idx {:keys [trend-data]}] (indexed @trend-values)]
-      (-> chart
-          .-series
-          (aget idx)
-          (.setData (clj->js trend-data) false)))
-    (.redraw chart false)))
+  (maybe-update-series chart trend-values)
+  (doseq [[idx {:keys [trend-data]}] (indexed trend-values)]
+    (-> chart
+        .-series
+        (aget idx)
+        (.setData (clj->js trend-data) false)))
+  (.redraw chart false))
 
 (def range-configs
   [{:millis (* 1000 10)
@@ -65,22 +64,6 @@
     :type   "minute"
     :text   "20m"}])
 
-(defn range-selector [trend-millis {:keys [text millis]}]
-  ^{:key text}
-  [:button.btn.btn-default {:on-click #(rf/dispatch [:cybersea.controller.trend/update-millis millis]) :class (if (= trend-millis millis) "selected" "")} text])
-
-(defn chart-ui [default-config trend-values trend-millis]
-  (r/create-class
-    {:component-did-mount    #(render-chart-fn default-config)
-     :component-will-unmount #(do (some-> @chart-atom .destroy) (reset! chart-atom nil))
-     :component-did-update   #(update-chart-data chart-atom trend-values)
-     :reagent-render         (fn [_ trend-values]
-                               @trend-values                ;; Dirty hack, so reagent will re-render this component when trend-values changes
-
-                               [:div {:style {:flex "1 1 auto"}}
-                                (doall (map (partial range-selector @trend-millis) range-configs))
-                                [:div#charty]])}))
-
 (defn on-selection [event]
   (if-let [x-axis (some-> event (aget "xAxis") (aget 0))]
     (rf/dispatch [:cybersea.controller.trend/update-zoom {:min (-> x-axis .-min)
@@ -101,14 +84,34 @@
    :title     {:text ""}
    :legend    {:enabled true}})
 
+(defn range-selector [trend-millis {:keys [text millis]}]
+  ^{:key text}
+  [:button.btn.btn-default {:on-click #(rf/dispatch [:cybersea.controller.trend/update-millis millis]) :class (if (= trend-millis millis) "selected" "")} text])
 
+(defn chart-ui-2 []
+  (let [chart (atom nil)
+        update (fn [comp]
+                 (let [{:keys [trend-values]} (r/props comp)]
+                   (update-chart-data @chart trend-values)))]
+    (r/create-class
+      {:component-did-mount    (fn [comp]
+                                 (reset! chart (.chart js/Highcharts "charty" (clj->js default-config)))
+                                 (update comp))
+       :component-will-unmount #(some-> @chart .destroy)
+       :component-did-update   update
+       :reagent-render         (fn [comp]
+                                 [:div {:style {:flex "1 1 auto"}}
+                                  (doall (map (partial range-selector (:trend-millis comp)) range-configs))
+                                  [:div#charty]])})))
 
 (defn trend []
   (let [trend-values (rf/subscribe [:trend-values])
         trend-millis (rf/subscribe [:trend-millis])]
     (fn []
       [:div.main
-       [chart-ui default-config trend-values trend-millis]])))
+       [chart-ui-2 {:config       default-config
+                    :trend-values @trend-values
+                    :trend-millis @trend-millis}]])))
 
 (rf/reg-sub :trend-values :trend-values)
 (rf/reg-sub :trend-millis :trend-millis)

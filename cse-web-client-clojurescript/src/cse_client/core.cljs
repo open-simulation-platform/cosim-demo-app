@@ -102,4 +102,4 @@
            :hash-routing?  true
            :debug?         {:blacklist #{::socket-message-received}}
            :root-component [root-comp]
-           :initial-db     {}})
+           :initial-db     {:trend-values []}})
