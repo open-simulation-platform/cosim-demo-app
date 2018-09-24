@@ -2,7 +2,8 @@
   (:require [reagent.core :as r]
             [cljsjs.highstock]
             [re-frame.core :as rf]
-            [cljs.spec.alpha :as s]))
+            [cljs.spec.alpha :as s]
+            [kee-frame.core :as k]))
 
 (def default-series
   {:animation false
@@ -105,6 +106,7 @@
         trend-millis (rf/subscribe [:trend-millis])]
     (fn []
       [:div.main
+       [:a {:href (k/path-for [:index])} "Back to modules"]
        [trend-inner {:config       default-config
                      :trend-values @trend-values
                      :trend-millis @trend-millis}]])))

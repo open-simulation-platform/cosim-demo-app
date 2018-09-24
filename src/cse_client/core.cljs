@@ -59,7 +59,7 @@
 
 (defn module-listing [signals module-name]
   [:div
-   [:a {:href (k/path-for [:index])} "Back"]
+   [:a {:href (k/path-for [:index])} "Back to modules"]
    [:ul
     (map (fn [signal]
            [:li {:key (str name "_ " (:name signal))} (:name signal) ": " (:value signal)
