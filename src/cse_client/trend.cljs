@@ -2,14 +2,7 @@
   (:require [reagent.core :as r]
             [cljsjs.highstock]
             [re-frame.core :as rf]
-            [cljs.spec.alpha :as s]
-            [expound.alpha :as e]))
-
-(def chart-atom (atom nil))
-
-(defn render-chart-fn [config]
-  (reset! chart-atom (.chart js/Highcharts "charty" (clj->js config)))
-  @chart-atom)
+            [cljs.spec.alpha :as s]))
 
 (def default-series
   {:animation false
@@ -94,7 +87,7 @@
         update (fn [comp]
                  (let [{:keys [trend-values]} (r/props comp)]
                    #_(when-not (s/valid? ::trend-values trend-values)
-                     (throw (ex-info "Invalid trend data, excerpt here " {:trend-values trend-values})))
+                       (throw (ex-info "Invalid trend data, excerpt here " {:trend-values trend-values})))
                    (update-chart-data @chart trend-values)))]
     (r/create-class
       {:component-did-mount    (fn [comp]
