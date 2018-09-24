@@ -93,7 +93,7 @@
   (let [chart (atom nil)
         update (fn [comp]
                  (let [{:keys [trend-values]} (r/props comp)]
-                   (when-not (s/valid? ::trend-values trend-values)
+                   #_(when-not (s/valid? ::trend-values trend-values)
                      (throw (ex-info "Invalid trend data, excerpt here " {:trend-values trend-values})))
                    (update-chart-data @chart trend-values)))]
     (r/create-class
