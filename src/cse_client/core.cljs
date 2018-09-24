@@ -58,31 +58,37 @@
 (rf/reg-sub :state :state)
 
 (defn module-listing [signals module-name]
-  [:ul
-   (map (fn [signal]
-          [:li {:key (str name "_ " (:name signal))} (:name signal) ": " (:value signal)
-           [:button.ui.button {:on-click #(rf/dispatch [:trend module-name (:name signal)])} "Trend"]])
-        signals)])
+  [:div
+   [:a {:href (k/path-for [:index])} "Back"]
+   [:ul
+    (map (fn [signal]
+           [:li {:key (str name "_ " (:name signal))} (:name signal) ": " (:value signal)
+            [:button.ui.button {:on-click #(rf/dispatch [:trend module-name (:name signal)])} "Trend"]])
+         signals)]])
+
+(defn modules-menu [modules]
+  [:div
+   [:h3 "Modules"]
+   [:ul
+    (map (fn [module]
+           [:li {:key module} [:a {:href (k/path-for [:module {:name module}])} module]])
+         modules)]])
+
+(defn controls []
+  [:div.ui.buttons
+   [:button.ui.button {:on-click #(rf/dispatch [:play])} "Play"]
+   [:button.ui.button {:on-click #(rf/dispatch [:pause])} "Pause"]])
 
 (defn root-comp []
   (let [{:keys [module modules]} @(rf/subscribe [:state])
         {:keys [name signals]} module]
     [:div
-     [:h3 "Modules"]
-     [:ul
-      (map (fn [module]
-             [:li {:key module} [:a {:href (k/path-for [:module {:name module}])} module]])
-           modules)]
+     [controls]
      [k/switch-route (comp :name :data)
       :trend [trend/trend-outer]
       :module [module-listing signals name]
-      :index "Nothing yet"
-      nil [:div "Loading..."]]
-
-     [:div.ui.buttons
-      [:button.ui.button {:on-click #(rf/dispatch [:play])} "Play"]
-      [:button.ui.button {:on-click #(rf/dispatch [:pause])} "Pause"]]
-     ]))
+      :index [modules-menu modules]
+      nil [:div "Loading..."]]]))
 
 (k/start! {:routes         routes
            :hash-routing?  true
