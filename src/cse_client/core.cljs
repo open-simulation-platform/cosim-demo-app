@@ -13,6 +13,18 @@
    ["/modules/:name" :module]
    ["/trend/:module/:signal" :trend]])
 
+(k/reg-controller :trend
+                  {:params (fn [route]
+                             (when (= :trend (-> route :data :name))
+                               (:path-params route)))
+                   :start  [:trend]})
+
+(k/reg-controller :module
+                  {:params (fn [route]
+                             (when (= :module (-> route :data :name))
+                               (-> route :path-params :name)))
+                   :start  [:module]})
+
 (k/reg-controller :websocket-controller
                   {:params (constantly true)
                    :start  [:start-websockets]})
@@ -31,29 +43,32 @@
                         (update-in [:trend-values 0 :trend-data] conj [value value])
                         (update :state merge message)))))
 
-(defn ws-request [command]
+(defn ws-request [config]
   (merge
-    (when command
-      {:command command})
     {:module      "Clock"
      :modules     false
-     :connections false}))
+     :connections false}
+    config))
+
+(k/reg-event-fx :module
+                (fn [_ [module]]
+                  {:dispatch [::websocket/send socket-url (ws-request {:module module})]}))
 
 (k/reg-event-fx :play
                 (fn [_ _]
-                  {:dispatch [::websocket/send socket-url (ws-request "play")]}))
+                  {:dispatch [::websocket/send socket-url (ws-request {:command "play"})]}))
 
 
 (k/reg-event-fx :pause
                 (fn [_ _]
-                  {:dispatch [::websocket/send socket-url (ws-request "pause")]}))
+                  {:dispatch [::websocket/send socket-url (ws-request {:command "pause"})]}))
 
 (k/reg-event-fx :trend
-                (fn [{:keys [db]} [module signal]]
-                  {:db          (assoc db :trend-values [{:trend-data []
-                                                          :module     "Clock"
-                                                          :signal     "Clock"}])
-                   :navigate-to [:trend {:module module :signal signal}]}))
+                (fn [{:keys [db]} [{:keys [module signal]}]]
+                  {:dispatch [::websocket/send socket-url (ws-request {:command "trend"})]
+                   :db       (assoc db :trend-values [{:trend-data []
+                                                       :module     module
+                                                       :signal     signal}])}))
 
 (rf/reg-sub :state :state)
 
@@ -63,7 +78,7 @@
    [:ul
     (map (fn [signal]
            [:li {:key (str name "_ " (:name signal))} (:name signal) ": " (:value signal)
-            [:button.ui.button {:on-click #(rf/dispatch [:trend module-name (:name signal)])} "Trend"]])
+            [:a {:href (k/path-for [:trend {:module module-name :signal (:name signal)}])} "Trend"]])
          signals)]])
 
 (defn modules-menu [modules]
