@@ -5,6 +5,7 @@
                  [reagent "0.8.1"]
                  [re-frame "0.10.6" :exclusions [reagent]]
                  [soda-ash "0.82.2"]
+                 [cljsjs/highstock "6.0.7-0"]
                  [org.clojure/clojurescript "1.10.238"]
                  [org.clojure/clojure "1.9.0"]]
   :plugins [[lein-count "1.0.7"]

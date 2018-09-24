@@ -2,9 +2,7 @@
   (:require [kee-frame.core :as k]
             [kee-frame.websocket :as websocket]
             [re-frame.core :as rf]
-            [clojure.string :as string]
-            [kee-frame.api :as api]
-            [reitit.core :as reitit]))
+            [cse-client.trend :as trend]))
 
 (def socket-url "ws://localhost:8000/ws")
 
@@ -12,24 +10,8 @@
 
 (def routes
   [["/" :index]
-   ["/mdoules/:name" :module]])
-
-(defonce router (reitit/router routes))
-
-(defrecord ReititRouter [routes]
-  api/Router
-
-  (data->url [_ [route-name path-params]]
-    (str (:path (reitit/match-by-name routes route-name path-params))
-         (when-some [q (:query-string path-params)] (str "?" q))
-         (when-some [h (:hash path-params)] (str "#" h))))
-
-  (url->data [_ url]
-    (let [[path+query fragment] (-> url (string/replace #"^/#" "") (string/split #"#" 2))
-          [path query] (string/split path+query #"\?" 2)]
-      (some-> (reitit/match-by-path routes path)
-              (assoc :query-string query :hash fragment)))))
-
+   ["/modules/:name" :module]
+   ["/modules/:name/trend" :trend]])
 
 (k/reg-controller :websocket-controller
                   {:params #(when (-> % :data :name (= :index)) true)
@@ -45,7 +27,10 @@
 
 (k/reg-event-db ::socket-message-received
                 (fn [db [{message :message}]]
-                  (update db :state merge message)))
+                  (let [value (-> message :module :signals first :value)]
+                    (-> db
+                        (update-in [:trend-values 0 :trend-data] conj [value value])
+                        (update :state merge message)))))
 
 (defn ws-request [command]
   (merge
@@ -63,6 +48,12 @@
 (k/reg-event-fx :pause
                 (fn [_ _]
                   {:dispatch [::websocket/send socket-url (ws-request "pause")]}))
+
+(k/reg-event-db :trend
+                (fn [db _]
+                  (assoc db :trend-values [{:trend-data []
+                                            :module     "Clock"
+                                            :signal     "Clock"}])))
 
 (rf/reg-sub :state :state)
 
@@ -84,10 +75,12 @@
            signals)]
      [:div.ui.buttons
       [:button.ui.button {:on-click #(rf/dispatch [:play])} "Play"]
-      [:button.ui.button {:on-click #(rf/dispatch [:pause])} "Pause"]]]))
+      [:button.ui.button {:on-click #(rf/dispatch [:pause])} "Pause"]
+      [:button.ui.button {:on-click #(rf/dispatch [:trend])} "Trend"]]
+     [trend/trend]]))
 
-(k/start! {:router         (->ReititRouter router)
+(k/start! {:routes         routes
            :hash-routing?  true
            :debug?         {:blacklist #{::socket-message-received}}
            :root-component [root-comp]
-           :initial-db     {}})
+           :initial-db     {:trend-values []}})
