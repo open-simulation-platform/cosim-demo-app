@@ -77,7 +77,7 @@
       [:button.ui.button {:on-click #(rf/dispatch [:play])} "Play"]
       [:button.ui.button {:on-click #(rf/dispatch [:pause])} "Pause"]
       [:button.ui.button {:on-click #(rf/dispatch [:trend])} "Trend"]]
-     [trend/trend]]))
+     [trend/trend-outer]]))
 
 (k/start! {:routes         routes
            :hash-routing?  true

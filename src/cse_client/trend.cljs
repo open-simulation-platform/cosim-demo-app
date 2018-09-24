@@ -2,7 +2,8 @@
   (:require [reagent.core :as r]
             [cljsjs.highstock]
             [re-frame.core :as rf]
-            [cljs.spec.alpha :as s]))
+            [cljs.spec.alpha :as s]
+            [expound.alpha :as e]))
 
 (def chart-atom (atom nil))
 
@@ -88,10 +89,12 @@
   ^{:key text}
   [:button.btn.btn-default {:on-click #(rf/dispatch [:cybersea.controller.trend/update-millis millis]) :class (if (= trend-millis millis) "selected" "")} text])
 
-(defn chart-ui-2 []
+(defn trend-inner []
   (let [chart (atom nil)
         update (fn [comp]
                  (let [{:keys [trend-values]} (r/props comp)]
+                   (when-not (s/valid? ::trend-values trend-values)
+                     (throw (ex-info "Invalid trend data, excerpt here " {:trend-values trend-values})))
                    (update-chart-data @chart trend-values)))]
     (r/create-class
       {:component-did-mount    (fn [comp]
@@ -104,20 +107,26 @@
                                   (doall (map (partial range-selector (:trend-millis comp)) range-configs))
                                   [:div#charty]])})))
 
-(defn trend []
+(defn trend-outer []
   (let [trend-values (rf/subscribe [:trend-values])
         trend-millis (rf/subscribe [:trend-millis])]
     (fn []
       [:div.main
-       [chart-ui-2 {:config       default-config
-                    :trend-values @trend-values
-                    :trend-millis @trend-millis}]])))
+       [trend-inner {:config       default-config
+                     :trend-values @trend-values
+                     :trend-millis @trend-millis}]])))
 
 (rf/reg-sub :trend-values :trend-values)
 (rf/reg-sub :trend-millis :trend-millis)
 
+(defn ascending-tuples? [tuples]
+  (= tuples
+     (sort-by first tuples)))
+
 (s/def ::module string?)
 (s/def ::signal string?)
 (s/def ::trend-tuple (s/tuple number? number?))
-(s/def ::trend-data (s/coll-of ::trend-tuple :kind vector?))
+(s/def ::ascending-tuples ascending-tuples?)
+(s/def ::trend-data (s/and (s/coll-of ::trend-tuple :kind vector?) ::ascending-tuples))
 (s/def ::trend-value (s/keys :req-un [::module ::signal ::trend-data]))
+(s/def ::trend-values (s/coll-of ::trend-value))
