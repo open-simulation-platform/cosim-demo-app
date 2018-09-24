@@ -1,15 +1,12 @@
 (defproject cse-client "1.0-SNAPSHOT"
   :min-lein-version "2.0.0"
   :dependencies [[kee-frame "0.2.8-SNAPSHOT"]
-                 [metosin/reitit "0.2.2"]
                  [reagent "0.8.1"]
                  [re-frame "0.10.6" :exclusions [reagent]]
-                 [soda-ash "0.82.2"]
                  [cljsjs/highstock "6.0.7-0"]
-                 [org.clojure/clojurescript "1.10.238"]
+                 [org.clojure/clojurescript "1.10.339"]
                  [org.clojure/clojure "1.9.0"]]
-  :plugins [[lein-count "1.0.7"]
-            [lein-figwheel "0.5.16"]
+  :plugins [[lein-figwheel "0.5.16"]
             [lein-cljsbuild "1.1.7"]]
 
   :clean-targets ^{:protect false} [:target-path :compile-path "resources/public/js/compiled"]
@@ -37,7 +34,5 @@
 
   :profiles {:dev          [:project/dev :profiles/dev]
              :profiles/dev {}
-             :project/dev  {:dependencies [[figwheel "0.5.16"]
-                                           [figwheel-sidecar "0.5.16"]
-                                           [binaryage/devtools "0.9.10"]
+             :project/dev  {:dependencies [[binaryage/devtools "0.9.10"]
                                            [day8.re-frame/re-frame-10x "0.3.3-react16"]]}})
