@@ -102,8 +102,8 @@
                                   [:div#charty]])})))
 
 (defn trend-outer []
-  (let [trend-values (rf/subscribe [:trend-values])
-        trend-millis (rf/subscribe [:trend-millis])]
+  (let [trend-values (rf/subscribe [::trend-values])
+        trend-millis (rf/subscribe [::trend-millis])]
     (fn []
       [:div.main
        [:a {:href (k/path-for [:index])} "Back to modules"]
@@ -111,8 +111,8 @@
                      :trend-values @trend-values
                      :trend-millis @trend-millis}]])))
 
-(rf/reg-sub :trend-values :trend-values)
-(rf/reg-sub :trend-millis :trend-millis)
+(rf/reg-sub ::trend-values :trend-values)
+(rf/reg-sub ::trend-millis :trend-millis)
 
 (defn ascending-tuples? [tuples]
   (= tuples
