@@ -11,12 +11,23 @@
 (def routes
   [["/" :index]
    ["/modules/:name" :module]
-   ["/modules/:name/trend" :trend]])
+   ["/trend/:module/:signal" :trend]])
+
+(k/reg-controller :trend
+                  {:params (fn [route]
+                             (when (= :trend (-> route :data :name))
+                               (:path-params route)))
+                   :start  [:trend]})
+
+(k/reg-controller :module
+                  {:params (fn [route]
+                             (when (= :module (-> route :data :name))
+                               (-> route :path-params :name)))
+                   :start  [:module]})
 
 (k/reg-controller :websocket-controller
-                  {:params #(when (-> % :data :name (= :index)) true)
-                   :start  [:start-websockets]
-                   :stop   [:stop-websockets]})
+                  {:params (constantly true)
+                   :start  [:start-websockets]})
 
 (k/reg-event-fx :start-websockets
                 (fn [_ _]
@@ -32,52 +43,67 @@
                         (update-in [:trend-values 0 :trend-data] conj [value value])
                         (update :state merge message)))))
 
-(defn ws-request [command]
+(defn ws-request [config]
   (merge
-    (when command
-      {:command command})
     {:module      "Clock"
      :modules     false
-     :connections false}))
+     :connections false}
+    config))
+
+(k/reg-event-fx :module
+                (fn [_ [module]]
+                  {:dispatch [::websocket/send socket-url (ws-request {:module module})]}))
 
 (k/reg-event-fx :play
                 (fn [_ _]
-                  {:dispatch [::websocket/send socket-url (ws-request "play")]}))
+                  {:dispatch [::websocket/send socket-url (ws-request {:command "play"})]}))
 
 
 (k/reg-event-fx :pause
                 (fn [_ _]
-                  {:dispatch [::websocket/send socket-url (ws-request "pause")]}))
+                  {:dispatch [::websocket/send socket-url (ws-request {:command "pause"})]}))
 
-(k/reg-event-db :trend
-                (fn [db _]
-                  (assoc db :trend-values [{:trend-data []
-                                            :module     "Clock"
-                                            :signal     "Clock"}])))
+(k/reg-event-fx :trend
+                (fn [{:keys [db]} [{:keys [module signal]}]]
+                  {:dispatch [::websocket/send socket-url (ws-request {:command "trend"})]
+                   :db       (assoc db :trend-values [{:trend-data []
+                                                       :module     module
+                                                       :signal     signal}])}))
 
 (rf/reg-sub :state :state)
+
+(defn module-listing [signals module-name]
+  [:div
+   [:a {:href (k/path-for [:index])} "Back to modules"]
+   [:ul
+    (map (fn [signal]
+           [:li {:key (str name "_ " (:name signal))} (:name signal) ": " (:value signal)
+            [:a {:href (k/path-for [:trend {:module module-name :signal (:name signal)}])} "Trend"]])
+         signals)]])
+
+(defn modules-menu [modules]
+  [:div
+   [:h3 "Modules"]
+   [:ul
+    (map (fn [module]
+           [:li {:key module} [:a {:href (k/path-for [:module {:name module}])} module]])
+         modules)]])
+
+(defn controls []
+  [:div.ui.buttons
+   [:button.ui.button {:on-click #(rf/dispatch [:play])} "Play"]
+   [:button.ui.button {:on-click #(rf/dispatch [:pause])} "Pause"]])
 
 (defn root-comp []
   (let [{:keys [module modules]} @(rf/subscribe [:state])
         {:keys [name signals]} module]
     [:div
-     [:h3 "Modules"]
-     [:ul
-      (map (fn [module]
-             [:li {:key module} [:a {:href (k/path-for [:module {:name module}])} module]])
-           modules)]
-     [:h3 "Selected module: " name]
-     [:ul
-      (map (fn [{:keys [name value]}]
-             [:li {:key (str module "_ " name)} "Signal name: " name
-              [:ul
-               [:li "Signal value: " value]]])
-           signals)]
-     [:div.ui.buttons
-      [:button.ui.button {:on-click #(rf/dispatch [:play])} "Play"]
-      [:button.ui.button {:on-click #(rf/dispatch [:pause])} "Pause"]
-      [:button.ui.button {:on-click #(rf/dispatch [:trend])} "Trend"]]
-     [trend/trend-outer]]))
+     [controls]
+     [k/switch-route (comp :name :data)
+      :trend [trend/trend-outer]
+      :module [module-listing signals name]
+      :index [modules-menu modules]
+      nil [:div "Loading..."]]]))
 
 (k/start! {:routes         routes
            :hash-routing?  true
