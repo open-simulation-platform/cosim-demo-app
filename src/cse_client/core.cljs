@@ -8,10 +8,11 @@
 
 (def routes
   [["/" :index]
-   ["/modules/:name" :module]
+   ["/modules/:module" :module]
    ["/trend/:module/:signal" :trend]])
 
-(rf/reg-sub :state :state)
+(rf/reg-sub :module (comp :module :state))
+(rf/reg-sub :modules (comp :modules :state))
 
 
 (k/start! {:routes         routes
