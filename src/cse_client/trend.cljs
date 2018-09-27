@@ -106,7 +106,6 @@
         trend-millis (rf/subscribe [::trend-millis])]
     (fn []
       [:div.main
-       [:a {:href (k/path-for [:index])} "Back to modules"]
        [trend-inner {:config       default-config
                      :trend-values @trend-values
                      :trend-millis @trend-millis}]])))

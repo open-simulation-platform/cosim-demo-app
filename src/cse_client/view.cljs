@@ -2,12 +2,12 @@
   (:require [cse-client.trend :as trend]
             [kee-frame.core :as k]
             [re-frame.core :as rf]
-            [cse-client.controller :as controller]))
+            [cse-client.controller :as controller]
+            [cse-client.dp :as dp]))
 
 (defn module-listing []
   (let [{:keys [signals] :as module} @(rf/subscribe [:module])]
     [:div
-     [:a {:href (k/path-for [:index])} "Back to modules"]
      [:table.ui.single.line.striped.selectable.table
       [:thead
        [:tr
@@ -51,8 +51,8 @@
      [:div.item
       [:div.ui.small.input
        [:input {:placeholder "Search..."}]]]
-     [:a.item "Dashboard"]
-     [:a.item "Settings"]]]
+     [:a.item {:on-click #(rf/dispatch [::controller/play])} "Play"]
+     [:a.item {:on-click #(rf/dispatch [::controller/pause])} "Pause"]]]
    [:div.ui.grid
     [:div.row
      [:div#sidebar.column
@@ -66,7 +66,5 @@
         [k/switch-route (comp :name :data)
          :trend [trend/trend-outer]
          :module [module-listing]
-         :index [:div "Index here......"]
-         nil [:div "Loading..."]]]]]]]
-   #_[controls]
-   ])
+         :index [dp/svg-component]
+         nil [:div "Loading..."]]]]]]]])
