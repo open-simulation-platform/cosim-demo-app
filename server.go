@@ -18,7 +18,7 @@ var data = PageData{
 	CseAnswer: "",
 }
 
-func Server(command chan string, state chan JsonResponse) {
+func Server(command chan []string, state chan JsonResponse) {
 	router := mux.NewRouter()
 	box := packr.NewBox("./resources/public")
 	tmpl := template.Must(template.ParseFiles("layout.html"))

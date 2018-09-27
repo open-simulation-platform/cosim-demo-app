@@ -1,10 +1,10 @@
 package main
 
 type JsonRequest struct {
-	Command     string `json:"command,omitempty"`
-	Module      string `json:"module,omitempty"`
-	Modules     bool   `json:"modules,omitempty"`
-	Connections bool   `json:"connections,omitempty"`
+	Command     []string `json:"command,omitempty"`
+	Module      string   `json:"module,omitempty"`
+	Modules     bool     `json:"modules,omitempty"`
+	Connections bool     `json:"connections,omitempty"`
 }
 
 type Signal struct {
@@ -20,4 +20,11 @@ type Module struct {
 type JsonResponse struct {
 	Modules []string `json:"modules,omitempty"`
 	Module  Module   `json:"module,omitempty"`
+}
+
+type TrendSignal struct {
+	Module          string
+	Signal          string
+	TrendValues     []float64
+	TrendTimestamps []int
 }

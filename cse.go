@@ -90,28 +90,38 @@ func observerGetRealSamples(observer *C.cse_observer, fromSample int) []C.double
 	return realOutVal
 }
 
-func simulate(execution *C.cse_execution, observer *C.cse_observer, command chan string) {
+func simulate(execution *C.cse_execution, observer *C.cse_observer, command chan []string) {
 	var status = "pause"
 	for {
 		select {
 		case cmd := <-command:
-			switch cmd {
+			switch cmd[0] {
 			case "stop":
 				return
 			case "pause":
 				executionStop(execution)
 				status = "pause"
-			default:
+			case "play":
 				executionStart(execution)
 				status = "play"
+			case "trend":
+				addedTrend := TrendSignal{
+					cmd[1],
+					cmd[2],
+					nil,
+					nil,
+				}
+				fmt.Println("Trending %s", addedTrend)
+			default:
+				fmt.Println("Empty command, mildt sagt not good")
 			}
 		default:
 			if status == "play" {
-				executionStatus := executionGetStatus(execution)
-				fmt.Println("Current time: ", executionStatus.current_time)
+				//executionStatus := executionGetStatus(execution)
+				//fmt.Println("Current time: ", executionStatus.current_time)
 				lastOutValue = observerGetReal(observer)
-				lastSamplesValue = observerGetRealSamples(observer, 0)
-				fmt.Println("Last samples: ", lastSamplesValue)
+				//lastSamplesValue = observerGetRealSamples(observer, 0)
+				//fmt.Println("Last samples: ", lastSamplesValue)
 			}
 			time.Sleep(100 * time.Millisecond)
 		}
