@@ -92,6 +92,7 @@ func observerGetRealSamples(observer *C.cse_observer, fromSample int) []C.double
 
 func simulate(execution *C.cse_execution, observer *C.cse_observer, command chan []string) {
 	var status = "pause"
+	var trendSignals = []TrendSignal{}
 	for {
 		select {
 		case cmd := <-command:
@@ -105,15 +106,9 @@ func simulate(execution *C.cse_execution, observer *C.cse_observer, command chan
 				executionStart(execution)
 				status = "play"
 			case "trend":
-				addedTrend := TrendSignal{
-					cmd[1],
-					cmd[2],
-					nil,
-					nil,
-				}
-				fmt.Println("Trending %s", addedTrend)
+				trendSignals = append(trendSignals, TrendSignal{cmd[1], cmd[2], nil, nil})
 			default:
-				fmt.Println("Empty command, mildt sagt not good")
+				fmt.Println("Empty command, mildt sagt not good: ", cmd)
 			}
 		default:
 			if status == "play" {

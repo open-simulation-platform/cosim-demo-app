@@ -18,8 +18,9 @@ type Module struct {
 }
 
 type JsonResponse struct {
-	Modules []string `json:"modules,omitempty"`
-	Module  Module   `json:"module,omitempty"`
+	Modules      []string      `json:"modules,omitempty"`
+	Module       Module        `json:"module,omitempty"`
+	TrendSignals []TrendSignal `json:"trendSignals,omitempty"`
 }
 
 type TrendSignal struct {
