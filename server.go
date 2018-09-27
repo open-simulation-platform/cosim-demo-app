@@ -31,7 +31,5 @@ func Server(command chan []string, state chan JsonResponse) {
 
 	router.HandleFunc("/ws", WebsocketHandler(command, state))
 
-	router.PathPrefix("/static/").Handler(http.StripPrefix("/static/", http.FileServer(box)))
-
 	log.Fatal(http.ListenAndServe(":8000", router))
 }
