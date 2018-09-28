@@ -107,6 +107,8 @@ func simulate(execution *C.cse_execution, observer *C.cse_observer, command chan
 				status = "play"
 			case "trend":
 				trendSignals = append(trendSignals, TrendSignal{cmd[1], cmd[2], nil, nil})
+			case "untrend":
+				trendSignals = []TrendSignal{}
 			default:
 				fmt.Println("Empty command, mildt sagt not good: ", cmd)
 			}
