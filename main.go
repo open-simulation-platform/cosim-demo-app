@@ -2,22 +2,23 @@ package main
 
 import "time"
 
-func loop(state chan JsonResponse, simulationStatus *SimulationStatus) {
+func statePoll(state chan JsonResponse, simulationStatus *SimulationStatus) {
 	for {
 		state <- JsonResponse{
-			Modules: []string{"Clock"},
+			Modules: []string{"Clock", "Cock"},
 			Module: Module{
 				Signals: []Signal{
 					{
-						Name:  "Clock",
+						Name:  simulationStatus.SelectedModule,
 						Value: lastOutValue,
 					},
 				},
 				Name: "Clock",
 			},
 			Status: simulationStatus.Status,
+			TrendSignals: simulationStatus.TrendSignals,
 		}
-		time.Sleep(500 * time.Millisecond)
+		time.Sleep(5000 * time.Millisecond)
 	}
 }
 
@@ -35,12 +36,20 @@ func main() {
 
 	simulationStatus := &SimulationStatus{
 		Status: "pause",
-		TrendSignals: []TrendSignal{},
+		TrendSignals: []TrendSignal{
+			{
+				Module:          "Clock",
+				Signal:          "Clock",
+				TrendValues:     []float64{},
+				TrendTimestamps: []int{},
+			},
+		},
 	}
 
 	// Passing the channel to the go routine
-	go loop(state, simulationStatus)
+	go statePoll(state, simulationStatus)
 	go simulate(execution, observer, cmd, simulationStatus)
+	go polling(execution, observer, simulationStatus)
 
 	//Passing the channel to the server
 	Server(cmd, state)

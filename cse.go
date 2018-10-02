@@ -6,6 +6,7 @@ package main
 import "C"
 import (
 	"fmt"
+	"time"
 )
 
 // UGLY GLOBAL VARIABLE
@@ -79,25 +80,31 @@ func observerGetReal(observer *C.cse_observer) float64 {
 	return float64(realOutVal)
 }
 
-func observerGetRealSamples(observer *C.cse_observer, fromSample int, nSamples int) []C.double {
+func observerGetRealSamples(observer *C.cse_observer, nSamples int, signal *TrendSignal) {
+	fromSample := 0
+	if len(signal.TrendTimestamps) > 0 {
+		fromSample = signal.TrendTimestamps[len(signal.TrendTimestamps) - 1]
+	}
 	slaveIndex := C.int(0)
 	variableIndex := C.uint(0)
 	cnSamples := C.ulonglong(nSamples)
 	realOutVal := make([]C.double, nSamples)
 	timeStamps := make([]C.long, nSamples)
-	C.cse_observer_slave_get_real_samples(observer, slaveIndex, variableIndex, C.long(fromSample), cnSamples, &realOutVal[0], &timeStamps[0])
-	return realOutVal
+	actualNumSamples := C.cse_observer_slave_get_real_samples(observer, slaveIndex, variableIndex, C.long(fromSample), cnSamples, &realOutVal[0], &timeStamps[0])
+
+	for i := 0; i < int(actualNumSamples); i++ {
+		signal.TrendTimestamps = append(signal.TrendTimestamps, int(timeStamps[i]))
+		signal.TrendValues = append(signal.TrendValues, float64(realOutVal[i]))
+	}
+
 }
 
-/*
-func polling(execution *C.cse_execution, observer *C.cse_observer) {
-	fromSample := 0
+func polling(execution *C.cse_execution, observer *C.cse_observer, status *SimulationStatus) {
 	for {
-		samples := observerGetRealSamples(observer, fromSample, 10)
+		observerGetRealSamples(observer, 10, &status.TrendSignals[0])
 		time.Sleep(500 * time.Millisecond)
 	}
 }
-*/
 
 func simulate(execution *C.cse_execution, observer *C.cse_observer, command chan []string, status *SimulationStatus) {
 	for {
@@ -113,9 +120,11 @@ func simulate(execution *C.cse_execution, observer *C.cse_observer, command chan
 				executionStart(execution)
 				status.Status = "play"
 			case "trend":
-				status.TrendSignals = append(status.TrendSignals, TrendSignal{cmd[1], cmd[2], nil, nil})
+				//status.TrendSignals = append(status.TrendSignals, TrendSignal{cmd[1], cmd[2], nil, nil})
 			case "untrend":
 				status.TrendSignals = []TrendSignal{}
+			case "module":
+				status.SelectedModule = cmd[1]
 			default:
 				fmt.Println("Empty command, mildt sagt not good: ", cmd)
 			}
