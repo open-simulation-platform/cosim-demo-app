@@ -6,7 +6,6 @@ package main
 import "C"
 import (
 	"fmt"
-	"time"
 )
 
 // UGLY GLOBAL VARIABLE
@@ -80,19 +79,27 @@ func observerGetReal(observer *C.cse_observer) float64 {
 	return float64(realOutVal)
 }
 
-func observerGetRealSamples(observer *C.cse_observer, fromSample int) []C.double {
+func observerGetRealSamples(observer *C.cse_observer, fromSample int, nSamples int) []C.double {
 	slaveIndex := C.int(0)
 	variableIndex := C.uint(0)
-	nSamples := C.ulonglong(10)
-	realOutVal := make([]C.double, 10)
-	timeStamps := make([]C.long, 10)
-	C.cse_observer_slave_get_real_samples(observer, slaveIndex, variableIndex, C.long(fromSample), nSamples, &realOutVal[0], &timeStamps[0])
+	cnSamples := C.ulonglong(nSamples)
+	realOutVal := make([]C.double, nSamples)
+	timeStamps := make([]C.long, nSamples)
+	C.cse_observer_slave_get_real_samples(observer, slaveIndex, variableIndex, C.long(fromSample), cnSamples, &realOutVal[0], &timeStamps[0])
 	return realOutVal
 }
 
-func simulate(execution *C.cse_execution, observer *C.cse_observer, command chan []string) {
-	var status = "pause"
-	var trendSignals = []TrendSignal{}
+/*
+func polling(execution *C.cse_execution, observer *C.cse_observer) {
+	fromSample := 0
+	for {
+		samples := observerGetRealSamples(observer, fromSample, 10)
+		time.Sleep(500 * time.Millisecond)
+	}
+}
+*/
+
+func simulate(execution *C.cse_execution, observer *C.cse_observer, command chan []string, status *SimulationStatus) {
 	for {
 		select {
 		case cmd := <-command:
@@ -101,26 +108,17 @@ func simulate(execution *C.cse_execution, observer *C.cse_observer, command chan
 				return
 			case "pause":
 				executionStop(execution)
-				status = "pause"
+				status.Status = "pause"
 			case "play":
 				executionStart(execution)
-				status = "play"
+				status.Status = "play"
 			case "trend":
-				trendSignals = append(trendSignals, TrendSignal{cmd[1], cmd[2], nil, nil})
+				status.TrendSignals = append(status.TrendSignals, TrendSignal{cmd[1], cmd[2], nil, nil})
 			case "untrend":
-				trendSignals = []TrendSignal{}
+				status.TrendSignals = []TrendSignal{}
 			default:
 				fmt.Println("Empty command, mildt sagt not good: ", cmd)
 			}
-		default:
-			if status == "play" {
-				//executionStatus := executionGetStatus(execution)
-				//fmt.Println("Current time: ", executionStatus.current_time)
-				lastOutValue = observerGetReal(observer)
-				//lastSamplesValue = observerGetRealSamples(observer, 0)
-				//fmt.Println("Last samples: ", lastSamplesValue)
-			}
-			time.Sleep(100 * time.Millisecond)
 		}
 	}
 }

@@ -2,7 +2,7 @@ package main
 
 import "time"
 
-func loop(state chan JsonResponse) {
+func loop(state chan JsonResponse, simulationStatus *SimulationStatus) {
 	for {
 		state <- JsonResponse{
 			Modules: []string{"Clock"},
@@ -15,6 +15,7 @@ func loop(state chan JsonResponse) {
 				},
 				Name: "Clock",
 			},
+			Status: simulationStatus.Status,
 		}
 		time.Sleep(500 * time.Millisecond)
 	}
@@ -32,9 +33,14 @@ func main() {
 	cmd := make(chan []string, 10)
 	state := make(chan JsonResponse, 10)
 
+	simulationStatus := &SimulationStatus{
+		Status: "pause",
+		TrendSignals: []TrendSignal{},
+	}
+
 	// Passing the channel to the go routine
-	go loop(state)
-	go simulate(execution, observer, cmd)
+	go loop(state, simulationStatus)
+	go simulate(execution, observer, cmd, simulationStatus)
 
 	//Passing the channel to the server
 	Server(cmd, state)

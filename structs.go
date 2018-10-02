@@ -18,6 +18,7 @@ type Module struct {
 }
 
 type JsonResponse struct {
+	Status       string        `json:"status,omitempty"`
 	Modules      []string      `json:"modules,omitempty"`
 	Module       Module        `json:"module,omitempty"`
 	TrendSignals []TrendSignal `json:"trendSignals,omitempty"`
@@ -28,4 +29,9 @@ type TrendSignal struct {
 	Signal          string
 	TrendValues     []float64
 	TrendTimestamps []int
+}
+
+type SimulationStatus struct {
+	TrendSignals []TrendSignal
+	Status       string
 }

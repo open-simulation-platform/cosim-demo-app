@@ -21,19 +21,6 @@ func commandLoop(command chan []string, conn *websocket.Conn) {
 		if json.Command != nil {
 			command <- json.Command
 		}
-		conn.WriteJSON(
-			JsonResponse{
-				Modules: []string{"Clock"},
-				Module: Module{
-					Signals: []Signal{
-						{
-							Name:  "Clock",
-							Value: lastOutValue,
-						},
-					},
-					Name: "Clock",
-				},
-			})
 	}
 }
 
