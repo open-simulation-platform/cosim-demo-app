@@ -99,14 +99,14 @@ func observerGetRealSamples(observer *C.cse_observer, nSamples int, signal *Tren
 
 }
 
-func polling(execution *C.cse_execution, observer *C.cse_observer, status *SimulationStatus) {
+func polling(observer *C.cse_observer, status *SimulationStatus) {
 	for {
 		observerGetRealSamples(observer, 10, &status.TrendSignals[0])
 		time.Sleep(500 * time.Millisecond)
 	}
 }
 
-func simulate(execution *C.cse_execution, observer *C.cse_observer, command chan []string, status *SimulationStatus) {
+func simulate(execution *C.cse_execution, command chan []string, status *SimulationStatus) {
 	for {
 		select {
 		case cmd := <-command:

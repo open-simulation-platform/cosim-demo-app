@@ -15,7 +15,7 @@ func statePoll(state chan JsonResponse, simulationStatus *SimulationStatus) {
 				},
 				Name: "Clock",
 			},
-			Status: simulationStatus.Status,
+			Status:       simulationStatus.Status,
 			TrendSignals: simulationStatus.TrendSignals,
 		}
 		time.Sleep(5000 * time.Millisecond)
@@ -48,8 +48,8 @@ func main() {
 
 	// Passing the channel to the go routine
 	go statePoll(state, simulationStatus)
-	go simulate(execution, observer, cmd, simulationStatus)
-	go polling(execution, observer, simulationStatus)
+	go simulate(execution, cmd, simulationStatus)
+	go polling(observer, simulationStatus)
 
 	//Passing the channel to the server
 	Server(cmd, state)
