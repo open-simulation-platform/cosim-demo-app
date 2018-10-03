@@ -26,7 +26,7 @@
                                        :external-config      {:devtools/config {:features-to-install [:formatters]}}}}
                        {:id           "min"
                         :source-paths ["src"]
-                        :compiler     {:output-to      "../resources/public/js/compiled/app.js"
+                        :compiler     {:output-to      "resources/public/js/compiled/app.js"
                                        :optimizations  :advanced
                                        :parallel-build true}}]}
 

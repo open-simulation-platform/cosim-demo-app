@@ -30,9 +30,9 @@
 
 (k/reg-event-db ::socket-message-received
                 (fn [db [{message :message}]]
-                  (let [value (-> message :module :signals first :value)]
+                  (let [{:keys [TrendTimestamps TrendValues]} (-> message :trendSignals first)]
                     (-> db
-                        (update-in [:trend-values 0 :trend-data] conj [value value])
+                        (assoc-in [:trend-values 0 :trend-data] (map vector TrendTimestamps TrendValues))
                         (update :state merge message)))))
 
 
@@ -52,20 +52,20 @@
 
 (k/reg-event-fx ::play
                 (fn [{:keys [db]} _]
-                  {:dispatch [::websocket/send socket-url (ws-request db {:command "play"})]}))
+                  {:dispatch [::websocket/send socket-url (ws-request db {:command ["play"]})]}))
 
 (k/reg-event-fx ::pause
                 (fn [{:keys [db]} _]
-                  {:dispatch [::websocket/send socket-url (ws-request db {:command "pause"})]}))
+                  {:dispatch [::websocket/send socket-url (ws-request db {:command ["pause"]})]}))
 
 (k/reg-event-fx ::untrend
                 (fn [{:keys [db]} _]
-                  {:dispatch [::websocket/send socket-url (ws-request db {:command [:untrend]})]
+                  {:dispatch [::websocket/send socket-url (ws-request db {:command ["untrend"]})]
                    :db       (assoc db :trend-values [])}))
 
 (k/reg-event-fx ::trend
                 (fn [{:keys [db]} [{:keys [module signal]}]]
-                  {:dispatch [::websocket/send socket-url (ws-request db {:command [:trend module signal]})]
+                  {:dispatch [::websocket/send socket-url (ws-request db {:command ["trend" module signal]})]
                    :db       (assoc db :trend-values [{:trend-data []
                                                        :module     module
                                                        :signal     signal}])}))
