@@ -13,9 +13,10 @@
 
 (k/reg-controller :module
                   {:params (fn [route]
-                             (when (= :module (-> route :data :name))
-                               (-> route :path-params :name)))
-                   :start  [::module-enter]})
+                             (when (-> route :data :name (= :module))
+                               (-> route :path-params :module)))
+                   :start  [::module-enter]
+                   :stop   [::module-leave]})
 
 (k/reg-controller :websocket-controller
                   {:params (constantly true)
@@ -44,11 +45,11 @@
 
 (k/reg-event-fx ::module-enter
                 (fn [{:keys [db]} [module]]
-                  {:dispatch [::websocket/send socket-url (ws-request db {:module module})]}))
+                  {:dispatch [::websocket/send socket-url (ws-request db {:command ["module" module]})]}))
 
 (k/reg-event-fx ::module-leave
                 (fn [{:keys [db]} _]
-                  {:dispatch [::websocket/send socket-url (ws-request db {:module nil})]}))
+                  {:dispatch [::websocket/send socket-url (ws-request db {:command ["module" nil]})]}))
 
 (k/reg-event-fx ::play
                 (fn [{:keys [db]} _]
