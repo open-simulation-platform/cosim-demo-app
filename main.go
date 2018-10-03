@@ -5,15 +5,15 @@ import "time"
 func statePoll(state chan JsonResponse, simulationStatus *SimulationStatus) {
 	for {
 		state <- JsonResponse{
-			Modules: []string{"Clock", "Cock"},
+			Modules: []string{"Clock"},
 			Module: Module{
 				Signals: []Signal{
 					{
-						Name:  simulationStatus.SelectedModule,
+						Name:  "Clock",
 						Value: lastOutValue,
 					},
 				},
-				Name: "Clock",
+				Name: simulationStatus.SelectedModule,
 			},
 			Status:       simulationStatus.Status,
 			TrendSignals: simulationStatus.TrendSignals,
