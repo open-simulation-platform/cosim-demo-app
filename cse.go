@@ -83,7 +83,7 @@ func observerGetReal(observer *C.cse_observer) float64 {
 func observerGetRealSamples(observer *C.cse_observer, nSamples int, signal *TrendSignal) {
 	fromSample := 0
 	if len(signal.TrendTimestamps) > 0 {
-		fromSample = signal.TrendTimestamps[len(signal.TrendTimestamps) - 1]
+		fromSample = signal.TrendTimestamps[len(signal.TrendTimestamps)-1]
 	}
 	slaveIndex := C.int(0)
 	variableIndex := C.uint(0)
@@ -102,7 +102,13 @@ func observerGetRealSamples(observer *C.cse_observer, nSamples int, signal *Tren
 func polling(observer *C.cse_observer, status *SimulationStatus) {
 	for {
 		observerGetRealSamples(observer, 10, &status.TrendSignals[0])
+		setSimulationStatusValue(&status.Module, observer)
 		time.Sleep(500 * time.Millisecond)
+	}
+}
+func setSimulationStatusValue(module *Module, observer *C.cse_observer) {
+	if len(module.Signals) > 0 {
+		module.Signals[0].Value = observerGetReal(observer)
 	}
 }
 
@@ -124,7 +130,15 @@ func simulate(execution *C.cse_execution, command chan []string, status *Simulat
 			case "untrend":
 				status.TrendSignals = []TrendSignal{}
 			case "module":
-				status.SelectedModule = cmd[1]
+				status.Module = Module{
+					Name: cmd[1],
+					Signals: []Signal{
+						{
+							Name:  "Clock",
+							Value: -1,
+						},
+					},
+				}
 			default:
 				fmt.Println("Empty command, mildt sagt not good: ", cmd)
 			}

@@ -10,16 +10,22 @@ func statePoll(state chan JsonResponse, simulationStatus *SimulationStatus) {
 				Signals: []Signal{
 					{
 						Name:  "Clock",
-						Value: lastOutValue,
+						Value: latestValue(simulationStatus),
 					},
 				},
-				Name: simulationStatus.SelectedModule,
+				Name: simulationStatus.Module.Name,
 			},
 			Status:       simulationStatus.Status,
 			TrendSignals: simulationStatus.TrendSignals,
 		}
-		time.Sleep(5000 * time.Millisecond)
+		time.Sleep(1000 * time.Millisecond)
 	}
+}
+func latestValue(status *SimulationStatus) float64 {
+	if len(status.Module.Signals) > 0 {
+		return status.Module.Signals[0].Value
+	}
+	return 0
 }
 
 func main() {

@@ -32,7 +32,7 @@ type TrendSignal struct {
 }
 
 type SimulationStatus struct {
-	SelectedModule string
+	Module         Module
 	TrendSignals   []TrendSignal
 	Status         string
 }
