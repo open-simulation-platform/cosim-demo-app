@@ -1,8 +1,7 @@
 (ns cse-client.controller
   (:require [kee-frame.core :as k]
-            [kee-frame.websocket :as websocket]))
-
-(def socket-url "ws://localhost:8000/ws")
+            [kee-frame.websocket :as websocket]
+            [cse-client.config :refer [socket-url]]))
 
 (k/reg-controller :trend
                   {:params (fn [route]

@@ -3,7 +3,8 @@
             [kee-frame.core :as k]
             [re-frame.core :as rf]
             [cse-client.controller :as controller]
-            [cse-client.dp :as dp]))
+            [cse-client.dp :as dp]
+            [cse-client.config :refer [socket-url]]))
 
 (defn module-listing []
   (let [{:keys [signals] :as module} @(rf/subscribe [:module])]
@@ -44,27 +45,27 @@
    [:button.ui.button {:on-click #(rf/dispatch [::controller/pause])} "Pause"]])
 
 (defn root-comp []
-  [:div
-   [:div.ui.inverted.huge.borderless.fixed.fluid.menu
-    [:a.header.item "Project name"]
-    [:div.right.menu
-     [:div.item
-      [:div.ui.small.input
-       [:input {:placeholder "Search..."}]]]
-     [:a.item {:on-click #(rf/dispatch [::controller/play])} "Play"]
-     [:a.item {:on-click #(rf/dispatch [::controller/pause])} "Pause"]]]
-   [:div.ui.grid
-    [:div.row
-     [:div#sidebar.column
-      [sidebar]]
-     [:div#content.column
-      [:div.ui.grid
-       [:div.row
-        [:h1.ui.huge.header "Dashboard"]]
-       [:div.ui.divider]
-       [:div.row
-        [k/switch-route (comp :name :data)
-         :trend [trend/trend-outer]
-         :module [module-listing]
-         :index [dp/svg-component]
-         nil [:div "Loading..."]]]]]]]])
+  (let [socket-state (rf/subscribe [:kee-frame.websocket/state socket-url])]
+    [:div
+     [:div.ui.inverted.huge.borderless.fixed.fluid.menu
+      [:a.header.item "Project name"]
+      [:div.right.menu
+       [:div.item
+        [:div "Connection:" (:state @socket-state)]]
+       [:a.item {:on-click #(rf/dispatch [::controller/play])} "Play"]
+       [:a.item {:on-click #(rf/dispatch [::controller/pause])} "Pause"]]]
+     [:div.ui.grid
+      [:div.row
+       [:div#sidebar.column
+        [sidebar]]
+       [:div#content.column
+        [:div.ui.grid
+         [:div.row
+          [:h1.ui.huge.header "Dashboard"]]
+         [:div.ui.divider]
+         [:div.row
+          [k/switch-route (comp :name :data)
+           :trend [trend/trend-outer]
+           :module [module-listing]
+           :index [dp/svg-component]
+           nil [:div "Loading..."]]]]]]]]))
