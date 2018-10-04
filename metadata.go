@@ -28,7 +28,7 @@ type StringType struct {
 type ScalarVariable struct {
 	XMLName        xml.Name    `xml:"ScalarVariable"`
 	Name           string      `xml:"name,attr"`
-	ValueReference uint32      `xml:"valueReference,attr"`
+	ValueReference int         `xml:"valueReference,attr"`
 	Causality      string      `xml:"causality,attr"`
 	Variability    string      `xml:"variability,attr"`
 	RealType       RealType    `xml:"Real"`
@@ -46,6 +46,37 @@ type ModelDescription struct {
 	FmiVersion     string         `xml:"fmiVersion,attr"`
 	ModelName      string         `xml:"modelName,attr"`
 	ModelVariables ModelVariables `xml:"ModelVariables"`
+}
+
+func getValueType(variable ScalarVariable) string {
+	if variable.RealType.XMLName.Local == "Real" {
+		return "Real"
+	}
+	if variable.IntegerType.XMLName.Local == "Integer" {
+		return "Integer"
+	}
+	if variable.BooleanType.XMLName.Local == "Boolean" {
+		return "Boolean"
+	}
+	if variable.StringType.XMLName.Local == "String" {
+		return "String"
+	}
+	return ""
+}
+
+type Variable struct {
+	Name           string
+	ValueReference int
+	Causality      string
+	Variability    string
+	Type           string
+}
+
+type FMU struct {
+	Name           string
+	ExecutionIndex int
+	ObserverIndex  int
+	Variables      []Variable
 }
 
 func ReadModelDescription(fmuPath string) {
@@ -81,17 +112,26 @@ func ReadModelDescription(fmuPath string) {
 			fmt.Println("We have model name: " + modelDescription.ModelName)
 			fmt.Println("We have fmi version: " + modelDescription.FmiVersion)
 
-			for i := 0; i < len(modelDescription.ModelVariables.ScalarVariables); i++ {
-				variable := modelDescription.ModelVariables.ScalarVariables[i]
-				fmt.Println("Variable Name: " + variable.Name)
-				fmt.Println("Variable Causality: " + variable.Causality)
-				fmt.Println("Variable Variability: " + variable.Variability)
-				fmt.Println("Variable ValueReference: ", variable.ValueReference)
-				fmt.Println("Real?", variable.RealType.XMLName.Local, variable.RealType.StartValue)
-				fmt.Println("Integer?", variable.IntegerType.XMLName.Local, variable.IntegerType.StartValue)
-				fmt.Println("Boolean?", variable.BooleanType.XMLName.Local, variable.BooleanType.StartValue)
-				fmt.Println("String?", variable.StringType.XMLName.Local, variable.StringType.StartValue)
+			var fmu FMU
+			fmu.Name = modelDescription.ModelName
+
+			nVar := len(modelDescription.ModelVariables.ScalarVariables)
+
+			var variables []Variable
+			variables = make([]Variable, nVar)
+			for i := 0; i < nVar; i++ {
+				scalarVariable := modelDescription.ModelVariables.ScalarVariables[i]
+				variables[i] = Variable{
+					Name:           scalarVariable.Name,
+					ValueReference: scalarVariable.ValueReference,
+					Causality:      scalarVariable.Causality,
+					Variability:    scalarVariable.Variability,
+					Type:           getValueType(scalarVariable),
+				}
 			}
+			fmu.Variables = variables
+			fmt.Println(fmu)
+
 		}
 	}
 	return
