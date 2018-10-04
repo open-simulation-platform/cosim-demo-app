@@ -9,7 +9,7 @@ import (
 
 var upgrader = websocket.Upgrader{CheckOrigin: func(r *http.Request) bool { return true },}
 
-func commandLoop(command chan string, conn *websocket.Conn) {
+func commandLoop(command chan []string, conn *websocket.Conn) {
 	for {
 		fmt.Println("Waiting for a message")
 		json := JsonRequest{}
@@ -18,22 +18,9 @@ func commandLoop(command chan string, conn *websocket.Conn) {
 			log.Println("read:", err)
 			break
 		}
-		if json.Command != "" {
+		if json.Command != nil {
 			command <- json.Command
 		}
-		conn.WriteJSON(
-			JsonResponse{
-				Modules: []string{"Clock"},
-				Module: Module{
-					Signals: []Signal{
-						{
-							Name:  "Clock",
-							Value: lastOutValue,
-						},
-					},
-					Name: "Clock",
-				},
-			})
 	}
 }
 
@@ -48,7 +35,7 @@ func stateLoop(state chan JsonResponse, conn *websocket.Conn) {
 	}
 }
 
-func WebsocketHandler(command chan string, state chan JsonResponse) func(w http.ResponseWriter, r *http.Request) {
+func WebsocketHandler(command chan []string, state chan JsonResponse) func(w http.ResponseWriter, r *http.Request) {
 	return func(w http.ResponseWriter, r *http.Request) {
 		conn, err := upgrader.Upgrade(w, r, nil)
 		if err != nil {

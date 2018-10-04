@@ -18,7 +18,7 @@ var data = PageData{
 	CseAnswer: "",
 }
 
-func Server(command chan string, state chan JsonResponse) {
+func Server(command chan []string, state chan JsonResponse) {
 	router := mux.NewRouter()
 	box := packr.NewBox("./resources/public")
 	tmpl := template.Must(template.ParseFiles("layout.html"))
@@ -30,8 +30,6 @@ func Server(command chan string, state chan JsonResponse) {
 	router.PathPrefix("/static/").Handler(http.StripPrefix("/static/", http.FileServer(box)))
 
 	router.HandleFunc("/ws", WebsocketHandler(command, state))
-
-	router.PathPrefix("/static/").Handler(http.StripPrefix("/static/", http.FileServer(box)))
 
 	log.Fatal(http.ListenAndServe(":8000", router))
 }

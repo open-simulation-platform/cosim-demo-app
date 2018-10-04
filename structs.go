@@ -1,15 +1,15 @@
 package main
 
 type JsonRequest struct {
-	Command     string `json:"command,omitempty"`
-	Module      string `json:"module,omitempty"`
-	Modules     bool   `json:"modules,omitempty"`
-	Connections bool   `json:"connections,omitempty"`
+	Command     []string `json:"command,omitempty"`
+	Module      string   `json:"module,omitempty"`
+	Modules     bool     `json:"modules,omitempty"`
+	Connections bool     `json:"connections,omitempty"`
 }
 
 type Signal struct {
-	Name  string  `json:"name,omitempty"`
-	Value float64 `json:"value,omitempty"`
+	Name  string  `json:"name"`
+	Value float64 `json:"value"`
 }
 
 type Module struct {
@@ -18,6 +18,21 @@ type Module struct {
 }
 
 type JsonResponse struct {
-	Modules []string `json:"modules,omitempty"`
-	Module  Module   `json:"module,omitempty"`
+	Status       string        `json:"status,omitempty"`
+	Modules      []string      `json:"modules,omitempty"`
+	Module       Module        `json:"module,omitempty"`
+	TrendSignals []TrendSignal `json:"trendSignals,omitempty"`
+}
+
+type TrendSignal struct {
+	Module          string
+	Signal          string
+	TrendValues     []float64
+	TrendTimestamps []int
+}
+
+type SimulationStatus struct {
+	Module         Module
+	TrendSignals   []TrendSignal
+	Status         string
 }

@@ -80,40 +80,68 @@ func observerGetReal(observer *C.cse_observer) float64 {
 	return float64(realOutVal)
 }
 
-func observerGetRealSamples(observer *C.cse_observer, fromSample int) []C.double {
+func observerGetRealSamples(observer *C.cse_observer, nSamples int, signal *TrendSignal) {
+	fromSample := 0
+	if len(signal.TrendTimestamps) > 0 {
+		fromSample = signal.TrendTimestamps[len(signal.TrendTimestamps)-1]
+	}
 	slaveIndex := C.int(0)
 	variableIndex := C.uint(0)
-	nSamples := C.ulonglong(10)
-	realOutVal := make([]C.double, 10)
-	timeStamps := make([]C.long, 10)
-	C.cse_observer_slave_get_real_samples(observer, slaveIndex, variableIndex, C.long(fromSample), nSamples, &realOutVal[0], &timeStamps[0])
-	return realOutVal
+	cnSamples := C.ulonglong(nSamples)
+	realOutVal := make([]C.double, nSamples)
+	timeStamps := make([]C.long, nSamples)
+	actualNumSamples := C.cse_observer_slave_get_real_samples(observer, slaveIndex, variableIndex, C.long(fromSample), cnSamples, &realOutVal[0], &timeStamps[0])
+
+	for i := 0; i < int(actualNumSamples); i++ {
+		signal.TrendTimestamps = append(signal.TrendTimestamps, int(timeStamps[i]))
+		signal.TrendValues = append(signal.TrendValues, float64(realOutVal[i]))
+	}
+
 }
 
-func simulate(execution *C.cse_execution, observer *C.cse_observer, command chan string) {
-	var status = "pause"
+func polling(observer *C.cse_observer, status *SimulationStatus) {
+	for {
+		observerGetRealSamples(observer, 10, &status.TrendSignals[0])
+		setSimulationStatusValue(&status.Module, observer)
+		time.Sleep(500 * time.Millisecond)
+	}
+}
+func setSimulationStatusValue(module *Module, observer *C.cse_observer) {
+	if len(module.Signals) > 0 {
+		module.Signals[0].Value = observerGetReal(observer)
+	}
+}
+
+func simulate(execution *C.cse_execution, command chan []string, status *SimulationStatus) {
 	for {
 		select {
 		case cmd := <-command:
-			switch cmd {
+			switch cmd[0] {
 			case "stop":
 				return
 			case "pause":
 				executionStop(execution)
-				status = "pause"
-			default:
+				status.Status = "pause"
+			case "play":
 				executionStart(execution)
-				status = "play"
+				status.Status = "play"
+			case "trend":
+				//status.TrendSignals = append(status.TrendSignals, TrendSignal{cmd[1], cmd[2], nil, nil})
+			case "untrend":
+				status.TrendSignals = []TrendSignal{}
+			case "module":
+				status.Module = Module{
+					Name: cmd[1],
+					Signals: []Signal{
+						{
+							Name:  "Clock",
+							Value: -1,
+						},
+					},
+				}
+			default:
+				fmt.Println("Empty command, mildt sagt not good: ", cmd)
 			}
-		default:
-			if status == "play" {
-				executionStatus := executionGetStatus(execution)
-				fmt.Println("Current time: ", executionStatus.current_time)
-				lastOutValue = observerGetReal(observer)
-				lastSamplesValue = observerGetRealSamples(observer, 0)
-				fmt.Println("Last samples: ", lastSamplesValue)
-			}
-			time.Sleep(100 * time.Millisecond)
 		}
 	}
 }
