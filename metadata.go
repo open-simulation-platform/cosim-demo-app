@@ -64,22 +64,7 @@ func getValueType(variable ScalarVariable) string {
 	return ""
 }
 
-type Variable struct {
-	Name           string
-	ValueReference int
-	Causality      string
-	Variability    string
-	Type           string
-}
-
-type FMU struct {
-	Name           string
-	ExecutionIndex int
-	ObserverIndex  int
-	Variables      []Variable
-}
-
-func ReadModelDescription(fmuPath string) {
+func ReadModelDescription(fmuPath string) (fmu FMU) {
 
 	// Open a zip archive for reading.
 	reader, err := zip.OpenReader(fmuPath)
@@ -131,6 +116,8 @@ func ReadModelDescription(fmuPath string) {
 			}
 			fmu.Variables = variables
 			fmt.Println(fmu)
+
+			return fmu
 
 		}
 	}

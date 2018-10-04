@@ -13,7 +13,7 @@ import (
 var lastOutValue = 0.0
 var lastSamplesValue = []C.double{}
 
-func printLastError() () {
+func printLastError() {
 	fmt.Printf("Error code %d: %s\n", int(C.cse_last_error_code()), C.GoString(C.cse_last_error_message()))
 }
 
@@ -37,22 +37,22 @@ func executionAddObserver(execution *C.cse_execution, observer *C.cse_observer) 
 	return
 }
 
-func observerAddSlave(observer *C.cse_observer, slave *C.cse_slave) (slaveIndex C.int) {
-	slaveIndex = C.cse_observer_add_slave(observer, slave)
+func observerAddSlave(observer *C.cse_observer, slave *C.cse_slave) int {
+	slaveIndex := C.cse_observer_add_slave(observer, slave)
 	if slaveIndex < 0 {
 		printLastError()
 		//C.cse_observer_destroy(observer)
 	}
-	return
+	return int(slaveIndex)
 }
 
-func executionAddSlave(execution *C.cse_execution, slave *C.cse_slave) (slaveIndex C.int) {
-	slaveIndex = C.cse_execution_add_slave(execution, slave)
+func executionAddSlave(execution *C.cse_execution, slave *C.cse_slave) int {
+	slaveIndex := C.cse_execution_add_slave(execution, slave)
 	if slaveIndex < 0 {
 		printLastError()
 		C.cse_execution_destroy(execution)
 	}
-	return
+	return int(slaveIndex)
 }
 
 func executionStart(execution *C.cse_execution) {
