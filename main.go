@@ -1,6 +1,8 @@
 package main
 
-import "time"
+import (
+	"time"
+)
 
 func statePoll(state chan JsonResponse, simulationStatus *SimulationStatus) {
 	for {
@@ -30,11 +32,13 @@ func latestValue(status *SimulationStatus) float64 {
 
 func main() {
 	execution := createExecution()
-	localSlave := createLocalSlave("C:/dev/osp/cse-core/test/data/fmi2/Clock.fmu")
+	localSlave := createLocalSlave("C:/MC/git/cse-core/cse-core/test/data/fmi2/Clock.fmu")
 	observer := createObserver()
 	executionAddSlave(execution, localSlave)
 	observerAddSlave(observer, localSlave)
 	executionAddObserver(execution, observer)
+
+	ReadModelDescription("C:/MC/git/cse-core/cse-core/test/data/fmi2/Clock.fmu")
 
 	// Creating a command channel
 	cmd := make(chan []string, 10)
