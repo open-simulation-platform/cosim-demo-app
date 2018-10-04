@@ -2,7 +2,7 @@ pipeline {
     agent none
 
     triggers {
-        upstream(upstreamProjects: 'cse-core/master', threshold: hudson.model.Result.SUCCESS)
+        upstream(upstreamProjects: 'open-simulation-platform/cse-core/master', threshold: hudson.model.Result.SUCCESS)
     }
 
     options { checkoutToSubdirectory('src/cse-server-go') }
@@ -22,7 +22,7 @@ pipeline {
                     }
 
                     tools {
-                        go 'go-1.11' 
+                        go 'go-1.11'
                         //'com.cloudbees.jenkins.plugins.customtools.CustomTool' 'mingw-w64' awaiting fix in customToolsPlugin
                     }
 
@@ -30,7 +30,7 @@ pipeline {
                         sh 'echo Building on Windows'
 
                         copyArtifacts(
-                            projectName: 'cse-core/master',
+                            projectName: 'open-simulation-platform/cse-core/master',
                             filter: 'install/debug/**/*',
                             target: 'src')
                         
