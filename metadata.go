@@ -10,19 +10,19 @@ import (
 
 type RealType struct {
 	XMLName    xml.Name `xml:"Real"`
-	StartValue float64  `xml:"startValue"`
+	StartValue float64  `xml:"start"`
 }
 type IntegerType struct {
 	XMLName    xml.Name `xml:"Integer"`
-	StartValue int      `xml:"startValue"`
+	StartValue int      `xml:"start"`
 }
 type BooleanType struct {
 	XMLName    xml.Name `xml:"Boolean"`
-	StartValue bool     `xml:"startValue"`
+	StartValue bool     `xml:"start"`
 }
 type StringType struct {
 	XMLName    xml.Name `xml:"String"`
-	StartValue string   `xml:"startValue"`
+	StartValue string   `xml:"start"`
 }
 
 type ScalarVariable struct {
@@ -30,6 +30,7 @@ type ScalarVariable struct {
 	Name           string      `xml:"name,attr"`
 	ValueReference uint32      `xml:"valueReference,attr"`
 	Causality      string      `xml:"causality,attr"`
+	Variability    string      `xml:"variability,attr"`
 	RealType       RealType    `xml:"Real"`
 	IntegerType    IntegerType `xml:"Integer"`
 	BooleanType    BooleanType `xml:"Boolean"`
@@ -84,11 +85,12 @@ func ReadModelDescription(fmuPath string) {
 				variable := modelDescription.ModelVariables.ScalarVariables[i]
 				fmt.Println("Variable Name: " + variable.Name)
 				fmt.Println("Variable Causality: " + variable.Causality)
+				fmt.Println("Variable Variability: " + variable.Variability)
 				fmt.Println("Variable ValueReference: ", variable.ValueReference)
-				fmt.Println("Real?", variable.RealType.XMLName.Local)
-				fmt.Println("Integer?", variable.IntegerType.XMLName.Local)
-				fmt.Println("Boolean?", variable.BooleanType.XMLName.Local)
-				fmt.Println("String?", variable.StringType.XMLName.Local)
+				fmt.Println("Real?", variable.RealType.XMLName.Local, variable.RealType.StartValue)
+				fmt.Println("Integer?", variable.IntegerType.XMLName.Local, variable.IntegerType.StartValue)
+				fmt.Println("Boolean?", variable.BooleanType.XMLName.Local, variable.BooleanType.StartValue)
+				fmt.Println("String?", variable.StringType.XMLName.Local, variable.StringType.StartValue)
 			}
 		}
 	}
