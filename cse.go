@@ -9,10 +9,6 @@ import (
 	"time"
 )
 
-// UGLY GLOBAL VARIABLE
-var lastOutValue = 0.0
-var lastSamplesValue = []C.double{}
-
 func printLastError() {
 	fmt.Printf("Error code %d: %s\n", int(C.cse_last_error_code()), C.GoString(C.cse_last_error_message()))
 }
