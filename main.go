@@ -45,10 +45,10 @@ func statePoll(state chan JsonResponse, simulationStatus *SimulationStatus, meta
 
 	for {
 		state <- JsonResponse{
-			Modules: getModuleNames(metaData),
-			Module:  getModuleData(simulationStatus, metaData, observer),
-			Status:  simulationStatus.Status,
-			//TrendSignals: simulationStatus.TrendSignals,
+			Modules:      getModuleNames(metaData),
+			Module:       getModuleData(simulationStatus, metaData, observer),
+			Status:       simulationStatus.Status,
+			TrendSignals: simulationStatus.TrendSignals,
 		}
 		time.Sleep(1000 * time.Millisecond)
 	}
