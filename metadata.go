@@ -1,0 +1,125 @@
+package main
+
+import (
+	"archive/zip"
+	"encoding/xml"
+	"fmt"
+	"golang.org/x/net/html/charset"
+	"log"
+)
+
+type RealType struct {
+	XMLName    xml.Name `xml:"Real"`
+	StartValue float64  `xml:"start"`
+}
+type IntegerType struct {
+	XMLName    xml.Name `xml:"Integer"`
+	StartValue int      `xml:"start"`
+}
+type BooleanType struct {
+	XMLName    xml.Name `xml:"Boolean"`
+	StartValue bool     `xml:"start"`
+}
+type StringType struct {
+	XMLName    xml.Name `xml:"String"`
+	StartValue string   `xml:"start"`
+}
+
+type ScalarVariable struct {
+	XMLName        xml.Name    `xml:"ScalarVariable"`
+	Name           string      `xml:"name,attr"`
+	ValueReference int         `xml:"valueReference,attr"`
+	Causality      string      `xml:"causality,attr"`
+	Variability    string      `xml:"variability,attr"`
+	RealType       RealType    `xml:"Real"`
+	IntegerType    IntegerType `xml:"Integer"`
+	BooleanType    BooleanType `xml:"Boolean"`
+	StringType     StringType  `xml:"String"`
+}
+
+type ModelVariables struct {
+	ScalarVariables []ScalarVariable `xml:"ScalarVariable"`
+}
+
+type ModelDescription struct {
+	XMLName        xml.Name       `xml:"fmiModelDescription"`
+	FmiVersion     string         `xml:"fmiVersion,attr"`
+	ModelName      string         `xml:"modelName,attr"`
+	ModelVariables ModelVariables `xml:"ModelVariables"`
+}
+
+func getValueType(variable ScalarVariable) string {
+	if variable.RealType.XMLName.Local == "Real" {
+		return "Real"
+	}
+	if variable.IntegerType.XMLName.Local == "Integer" {
+		return "Integer"
+	}
+	if variable.BooleanType.XMLName.Local == "Boolean" {
+		return "Boolean"
+	}
+	if variable.StringType.XMLName.Local == "String" {
+		return "String"
+	}
+	return ""
+}
+
+func ReadModelDescription(fmuPath string) (fmu FMU) {
+
+	// Open a zip archive for reading.
+	reader, err := zip.OpenReader(fmuPath)
+	if err != nil {
+		log.Fatal(`ERROR:`, err)
+	}
+	defer reader.Close()
+
+	var modelDescription ModelDescription
+	for _, file := range reader.File {
+		// check if the file matches the name for application portfolio xml
+		if file.Name == "modelDescription.xml" {
+			rc, err := file.Open()
+			if err != nil {
+				log.Fatal(`ERROR:`, err)
+			}
+
+			// Unmarshal bytes
+			decoder := xml.NewDecoder(rc)
+			decoder.CharsetReader = charset.NewReaderLabel
+			err = decoder.Decode(&modelDescription)
+
+			if err != nil {
+				log.Fatal(`ERROR:`, err)
+			}
+
+			rc.Close()
+
+			fmt.Println("We have this many variables:", len(modelDescription.ModelVariables.ScalarVariables))
+			fmt.Println("We have model name: " + modelDescription.ModelName)
+			fmt.Println("We have fmi version: " + modelDescription.FmiVersion)
+
+			var fmu FMU
+			fmu.Name = modelDescription.ModelName
+
+			nVar := len(modelDescription.ModelVariables.ScalarVariables)
+
+			var variables []Variable
+			variables = make([]Variable, nVar)
+			for i := 0; i < nVar; i++ {
+				scalarVariable := modelDescription.ModelVariables.ScalarVariables[i]
+				variables[i] = Variable{
+					Name:           scalarVariable.Name,
+					ValueReference: scalarVariable.ValueReference,
+					Causality:      scalarVariable.Causality,
+					Variability:    scalarVariable.Variability,
+					Type:           getValueType(scalarVariable),
+				}
+			}
+			fmu.Variables = variables
+			fmt.Println(fmu)
+
+			return fmu
+
+		}
+	}
+	return
+}

@@ -32,7 +32,26 @@ type TrendSignal struct {
 }
 
 type SimulationStatus struct {
-	Module         Module
-	TrendSignals   []TrendSignal
-	Status         string
+	Module       Module
+	TrendSignals []TrendSignal
+	Status       string
+}
+
+type Variable struct {
+	Name           string
+	ValueReference int
+	Causality      string
+	Variability    string
+	Type           string
+}
+
+type FMU struct {
+	Name           string
+	ExecutionIndex int
+	ObserverIndex  int
+	Variables      []Variable
+}
+
+type MetaData struct {
+	FMUs []FMU
 }
