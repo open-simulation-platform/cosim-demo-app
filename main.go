@@ -1,5 +1,9 @@
 package main
 
+/*
+	#include <cse.h>
+*/
+import "C"
 import (
 	"os"
 	"time"
@@ -14,17 +18,18 @@ func getModuleNames(metaData *MetaData) []string {
 	return modules
 }
 
-func getModuleData(status *SimulationStatus, metaData *MetaData) (module Module) {
+func getModuleData(status *SimulationStatus, metaData *MetaData, observer *C.cse_observer) (module Module) {
 	if len(status.Module.Name) > 0 {
 		for i := range metaData.FMUs {
 			if metaData.FMUs[i].Name == status.Module.Name {
 				fmu := metaData.FMUs[i]
+				reals := observerGetReals(observer, fmu)
 				nSignals := len(fmu.Variables)
 				signals := make([]Signal, nSignals)
 				for k := range fmu.Variables {
 					signals[k] = Signal{
 						Name:  fmu.Variables[k].Name,
-						Value: 123.45,
+						Value: reals[k],
 					}
 				}
 				module.Name = fmu.Name
@@ -36,12 +41,12 @@ func getModuleData(status *SimulationStatus, metaData *MetaData) (module Module)
 	return module
 }
 
-func statePoll(state chan JsonResponse, simulationStatus *SimulationStatus, metaData *MetaData) {
+func statePoll(state chan JsonResponse, simulationStatus *SimulationStatus, metaData *MetaData, observer *C.cse_observer) {
 
 	for {
 		state <- JsonResponse{
 			Modules: getModuleNames(metaData),
-			Module:  getModuleData(simulationStatus, metaData),
+			Module:  getModuleData(simulationStatus, metaData, observer),
 			Status:  simulationStatus.Status,
 			//TrendSignals: simulationStatus.TrendSignals,
 		}
@@ -90,7 +95,7 @@ func main() {
 	}
 
 	// Passing the channel to the go routine
-	go statePoll(state, simulationStatus, metaData)
+	go statePoll(state, simulationStatus, metaData, observer)
 	go simulate(execution, cmd, simulationStatus)
 	go polling(observer, simulationStatus)
 
