@@ -30,6 +30,7 @@ func getModuleData(status *SimulationStatus, metaData *MetaData, observer *C.cse
 					signals[k] = Signal{
 						Name:      fmu.Variables[k].Name,
 						Causality: fmu.Variables[k].Causality,
+						Type:      fmu.Variables[k].Type,
 						Value:     reals[k],
 					}
 				}
@@ -43,7 +44,6 @@ func getModuleData(status *SimulationStatus, metaData *MetaData, observer *C.cse
 }
 
 func statePoll(state chan JsonResponse, simulationStatus *SimulationStatus, metaData *MetaData, observer *C.cse_observer) {
-
 	for {
 		state <- JsonResponse{
 			Modules: getModuleNames(metaData),
