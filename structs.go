@@ -8,8 +8,9 @@ type JsonRequest struct {
 }
 
 type Signal struct {
-	Name  string  `json:"name"`
-	Value float64 `json:"value"`
+	Name      string  `json:"name"`
+	Causality string  `json:"causality"`
+	Value     float64 `json:"value"`
 }
 
 type Module struct {

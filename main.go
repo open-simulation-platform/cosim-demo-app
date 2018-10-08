@@ -28,8 +28,9 @@ func getModuleData(status *SimulationStatus, metaData *MetaData, observer *C.cse
 				signals := make([]Signal, nSignals)
 				for k := range fmu.Variables {
 					signals[k] = Signal{
-						Name:  fmu.Variables[k].Name,
-						Value: reals[k],
+						Name:      fmu.Variables[k].Name,
+						Causality: fmu.Variables[k].Causality,
+						Value:     reals[k],
 					}
 				}
 				module.Name = fmu.Name
@@ -45,19 +46,13 @@ func statePoll(state chan JsonResponse, simulationStatus *SimulationStatus, meta
 
 	for {
 		state <- JsonResponse{
-			Modules:      getModuleNames(metaData),
-			Module:       getModuleData(simulationStatus, metaData, observer),
-			Status:       simulationStatus.Status,
-			TrendSignals: simulationStatus.TrendSignals,
+			Modules: getModuleNames(metaData),
+			Module:  getModuleData(simulationStatus, metaData, observer),
+			Status:  simulationStatus.Status,
+			//TrendSignals: simulationStatus.TrendSignals,
 		}
 		time.Sleep(1000 * time.Millisecond)
 	}
-}
-func latestValue(status *SimulationStatus) float64 {
-	if len(status.Module.Signals) > 0 {
-		return status.Module.Signals[0].Value
-	}
-	return 0
 }
 
 func main() {
@@ -66,8 +61,8 @@ func main() {
 	executionAddObserver(execution, observer)
 
 	dataDir := os.Getenv("TEST_DATA_DIR")
-	localSlave := createLocalSlave(dataDir + "/fmi2/Clock.fmu")
-	fmu := ReadModelDescription(dataDir + "/fmi2/Clock.fmu")
+	localSlave := createLocalSlave(dataDir + "/fmi2/Current.fmu")
+	fmu := ReadModelDescription(dataDir + "/fmi2/Current.fmu")
 
 	slaveExecutionIndex := executionAddSlave(execution, localSlave)
 	fmu.ExecutionIndex = slaveExecutionIndex
