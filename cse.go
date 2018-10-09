@@ -93,16 +93,18 @@ func observerGetReals(observer *C.cse_observer, fmu FMU) (realSignals []Signal) 
 		}
 	}
 
-	realOutVal := make([]C.double, numReals)
-	C.cse_observer_slave_get_real(observer, C.int(fmu.ObserverIndex), &realValueRefs[0], C.ulonglong(numReals), &realOutVal[0])
+	if numReals > 0 {
+		realOutVal := make([]C.double, numReals)
+		C.cse_observer_slave_get_real(observer, C.int(fmu.ObserverIndex), &realValueRefs[0], C.ulonglong(numReals), &realOutVal[0])
 
-	realSignals = make([]Signal, numReals)
-	for k := range realVariables {
-		realSignals[k] = Signal{
-			Name:      realVariables[k].Name,
-			Causality: realVariables[k].Causality,
-			Type:      realVariables[k].Type,
-			Value:     float64(realOutVal[k]),
+		realSignals = make([]Signal, numReals)
+		for k := range realVariables {
+			realSignals[k] = Signal{
+				Name:      realVariables[k].Name,
+				Causality: realVariables[k].Causality,
+				Type:      realVariables[k].Type,
+				Value:     float64(realOutVal[k]),
+			}
 		}
 	}
 	return realSignals
@@ -121,16 +123,18 @@ func observerGetIntegers(observer *C.cse_observer, fmu FMU) (intSignals []Signal
 		}
 	}
 
-	intOutVal := make([]C.int, numIntegers)
-	C.cse_observer_slave_get_integer(observer, C.int(fmu.ObserverIndex), &intValueRefs[0], C.ulonglong(numIntegers), &intOutVal[0])
+	if numIntegers > 0 {
+		intOutVal := make([]C.int, numIntegers)
+		C.cse_observer_slave_get_integer(observer, C.int(fmu.ObserverIndex), &intValueRefs[0], C.ulonglong(numIntegers), &intOutVal[0])
 
-	intSignals = make([]Signal, numIntegers)
-	for k := range intVariables {
-		intSignals[k] = Signal{
-			Name:      intVariables[k].Name,
-			Causality: intVariables[k].Causality,
-			Type:      intVariables[k].Type,
-			Value:     int(intOutVal[k]),
+		intSignals = make([]Signal, numIntegers)
+		for k := range intVariables {
+			intSignals[k] = Signal{
+				Name:      intVariables[k].Name,
+				Causality: intVariables[k].Causality,
+				Type:      intVariables[k].Type,
+				Value:     int(intOutVal[k]),
+			}
 		}
 	}
 	return intSignals
