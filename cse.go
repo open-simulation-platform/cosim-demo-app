@@ -73,12 +73,6 @@ func executionGetStatus(execution *C.cse_execution) (status executionStatus) {
 	status.current_time = float64(cStatus.current_time)
 	return
 }
-func observerGetReal(observer *C.cse_observer) float64 {
-	realOutVar := C.uint(0)
-	realOutVal := C.double(-1.0)
-	C.cse_observer_slave_get_real(observer, 0, &realOutVar, 1, &realOutVal)
-	return float64(realOutVal)
-}
 
 func observerGetReals(observer *C.cse_observer, fmu FMU) (realSignals []Signal) {
 	var realValueRefs []C.uint
@@ -161,14 +155,10 @@ func observerGetRealSamples(observer *C.cse_observer, nSamples int, signal *Tren
 
 func polling(observer *C.cse_observer, status *SimulationStatus) {
 	for {
-		observerGetRealSamples(observer, 10, &status.TrendSignals[0])
-		setSimulationStatusValue(&status.Module, observer)
+		if len(status.TrendSignals) > 0 {
+			observerGetRealSamples(observer, 10, &status.TrendSignals[0])
+		}
 		time.Sleep(500 * time.Millisecond)
-	}
-}
-func setSimulationStatusValue(module *Module, observer *C.cse_observer) {
-	if len(module.Signals) > 0 {
-		module.Signals[0].Value = observerGetReal(observer)
 	}
 }
 
@@ -186,18 +176,12 @@ func simulate(execution *C.cse_execution, command chan []string, status *Simulat
 				executionStart(execution)
 				status.Status = "play"
 			case "trend":
-				//status.TrendSignals = append(status.TrendSignals, TrendSignal{cmd[1], cmd[2], nil, nil})
+				status.TrendSignals = append(status.TrendSignals, TrendSignal{cmd[1], cmd[2], nil, nil})
 			case "untrend":
 				status.TrendSignals = []TrendSignal{}
 			case "module":
 				status.Module = Module{
 					Name: cmd[1],
-					Signals: []Signal{
-						{
-							Name:  "Clock",
-							Value: -1,
-						},
-					},
 				}
 			default:
 				fmt.Println("Empty command, mildt sagt not good: ", cmd)
