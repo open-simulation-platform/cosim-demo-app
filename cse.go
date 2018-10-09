@@ -108,6 +108,34 @@ func observerGetReals(observer *C.cse_observer, fmu FMU) (realSignals []Signal) 
 	return realSignals
 }
 
+func observerGetIntegers(observer *C.cse_observer, fmu FMU) (intSignals []Signal) {
+	var intValueRefs []C.uint
+	var intVariables []Variable
+	var numIntegers int
+	for i := range fmu.Variables {
+		if fmu.Variables[i].Type == "Integer" {
+			ref := C.uint(fmu.Variables[i].ValueReference)
+			intValueRefs = append(intValueRefs, ref)
+			intVariables = append(intVariables, fmu.Variables[i])
+			numIntegers++
+		}
+	}
+
+	intOutVal := make([]C.int, numIntegers)
+	C.cse_observer_slave_get_integer(observer, C.int(fmu.ObserverIndex), &intValueRefs[0], C.ulonglong(numIntegers), &intOutVal[0])
+
+	intSignals = make([]Signal, numIntegers)
+	for k := range intVariables {
+		intSignals[k] = Signal{
+			Name:      intVariables[k].Name,
+			Causality: intVariables[k].Causality,
+			Type:      intVariables[k].Type,
+			Value:     int(intOutVal[k]),
+		}
+	}
+	return intSignals
+}
+
 func observerGetRealSamples(observer *C.cse_observer, nSamples int, signal *TrendSignal) {
 	fromSample := 0
 	if len(signal.TrendTimestamps) > 0 {

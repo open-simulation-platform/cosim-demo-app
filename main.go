@@ -24,8 +24,10 @@ func getModuleData(status *SimulationStatus, metaData *MetaData, observer *C.cse
 			if metaData.FMUs[i].Name == status.Module.Name {
 				fmu := metaData.FMUs[i]
 				realSignals := observerGetReals(observer, fmu)
+				intSignals := observerGetIntegers(observer, fmu)
 				var signals []Signal
-				signals = append(module.Signals, realSignals...)
+				signals = append(signals, realSignals...)
+				signals = append(signals, intSignals...)
 				module.Name = fmu.Name
 				module.Signals = signals
 			}
@@ -53,8 +55,8 @@ func main() {
 	executionAddObserver(execution, observer)
 
 	dataDir := os.Getenv("TEST_DATA_DIR")
-	localSlave := createLocalSlave(dataDir + "/fmi2/Current.fmu")
-	fmu := ReadModelDescription(dataDir + "/fmi2/Current.fmu")
+	localSlave := createLocalSlave(dataDir + "/fmi1/identity.fmu")
+	fmu := ReadModelDescription(dataDir + "/fmi1/identity.fmu")
 
 	slaveExecutionIndex := executionAddSlave(execution, localSlave)
 	fmu.ExecutionIndex = slaveExecutionIndex
