@@ -11,9 +11,33 @@
    ["/modules/:module" :module]
    ["/trend/:module/:signal" :trend]])
 
+(defn causalities [db]
+  (some->> db
+           :state
+           :module
+           :signals
+           (map :causality)
+           distinct))
+
+(defn active-causality [db]
+  (or ((set (causalities db)) (:active-causality db))
+      (-> db
+          causalities
+          first)))
+
 (rf/reg-sub :module (comp :module :state))
 (rf/reg-sub :modules (comp :modules :state))
-
+(rf/reg-sub :causalities causalities)
+(rf/reg-sub :active-causality active-causality)
+(rf/reg-sub :signals (fn [db]
+                       (some->> db
+                                :state
+                                :module
+                                :signals
+                                (filter (fn [signal]
+                                          (= (active-causality db)
+                                             (:causality signal))))
+                                (sort-by :name))))
 
 (k/start! {:routes         routes
            :hash-routing?  true

@@ -6,9 +6,12 @@
             [cse-client.dp :as dp]
             [cse-client.config :refer [socket-url]]))
 
-(defn module-listing []
-  (let [{:keys [signals] :as module} @(rf/subscribe [:module])]
-    [:div
+(defn tab-content [tabby]
+  (let [module @(rf/subscribe [:module])
+        signals @(rf/subscribe [:signals])
+        active @(rf/subscribe [:active-causality])]
+    [:div.ui.bottom.attached.tab.segment {:data-tab tabby
+                                          :class    (when (= tabby active) "active")}
      [:table.ui.single.line.striped.selectable.table
       [:thead
        [:tr
@@ -17,13 +20,28 @@
         [:th "Value"]
         [:th "..."]]]
       [:tbody
-       (map (fn [{:keys [name value]}]
-              [:tr {:key (str "signal-" name)}
+       (map (fn [{:keys [name value causality type]}]
+              [:tr {:key (str causality "-" name)}
                [:td name]
-               [:td "scalar"]
+               [:td type]
                [:td value]
                [:td [:a {:href (k/path-for [:trend {:module (:name module) :signal name}])} "Trend"]]])
             signals)]]]))
+
+(defn module-listing []
+  (let [causalities @(rf/subscribe [:causalities])
+        active @(rf/subscribe [:active-causality])]
+    [:div
+     [:div.ui.top.attached.tabular.menu
+      (for [causality causalities]
+        ^{:key (str "tab-" causality)}
+        [:a.item {:data-tab causality
+                  :class    (when (= causality active) "active")
+                  :on-click #(rf/dispatch [::controller/causality-enter causality])}
+         causality])]
+     (for [causality causalities]
+       ^{:key (str "tab-content-" causality)}
+       [tab-content causality])]))
 
 (defn sidebar []
   (let [modules @(rf/subscribe [:modules])
