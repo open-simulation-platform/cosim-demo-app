@@ -20,9 +20,8 @@ func getModuleNames(metaData *MetaData) []string {
 
 func getModuleData(status *SimulationStatus, metaData *MetaData, observer *C.cse_observer) (module Module) {
 	if len(status.Module.Name) > 0 {
-		for i := range metaData.FMUs {
-			if metaData.FMUs[i].Name == status.Module.Name {
-				fmu := metaData.FMUs[i]
+		for _, fmu := range metaData.FMUs {
+			if fmu.Name == status.Module.Name {
 				realSignals := observerGetReals(observer, fmu)
 				intSignals := observerGetIntegers(observer, fmu)
 				var signals []Signal
@@ -49,22 +48,32 @@ func statePoll(state chan JsonResponse, simulationStatus *SimulationStatus, meta
 	}
 }
 
+func addFmu(execution *C.cse_execution, observer *C.cse_observer, metaData *MetaData, fmuPath string) {
+	localSlave := createLocalSlave(fmuPath)
+	fmu := ReadModelDescription(fmuPath)
+
+	fmu.ExecutionIndex = executionAddSlave(execution, localSlave)
+	fmu.ObserverIndex = observerAddSlave(observer, localSlave)
+	metaData.FMUs = append(metaData.FMUs, fmu)
+}
+
 func main() {
 	execution := createExecution()
 	observer := createObserver()
 	executionAddObserver(execution, observer)
 
-	dataDir := os.Getenv("TEST_DATA_DIR")
-	localSlave := createLocalSlave(dataDir + "/fmi1/identity.fmu")
-	fmu := ReadModelDescription(dataDir + "/fmi1/identity.fmu")
-
-	slaveExecutionIndex := executionAddSlave(execution, localSlave)
-	fmu.ExecutionIndex = slaveExecutionIndex
-	observerSlaveIndex := observerAddSlave(observer, localSlave)
-	fmu.ObserverIndex = observerSlaveIndex
-
 	metaData := &MetaData{
-		FMUs: []FMU{fmu},
+		FMUs: []FMU{},
+	}
+	dataDir := os.Getenv("TEST_DATA_DIR")
+	var paths = []string{
+		dataDir + "/fmi1/identity.fmu",
+		dataDir + "/fmi2/Clock.fmu",
+		dataDir + "/fmi2/Current.fmu",
+		dataDir + "/fmi2/RoomHeating_OM_RH.fmu",
+	}
+	for _, path := range paths {
+		addFmu(execution, observer, metaData, path)
 	}
 
 	// Creating a command channel
