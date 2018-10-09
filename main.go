@@ -5,7 +5,12 @@ package main
 */
 import "C"
 import (
+	"fmt"
+	"io/ioutil"
+	"log"
 	"os"
+	"path/filepath"
+	"strings"
 	"time"
 )
 
@@ -49,12 +54,35 @@ func statePoll(state chan JsonResponse, simulationStatus *SimulationStatus, meta
 }
 
 func addFmu(execution *C.cse_execution, observer *C.cse_observer, metaData *MetaData, fmuPath string) {
+	log.Println("Loading: " + fmuPath)
 	localSlave := createLocalSlave(fmuPath)
 	fmu := ReadModelDescription(fmuPath)
 
 	fmu.ExecutionIndex = executionAddSlave(execution, localSlave)
 	fmu.ObserverIndex = observerAddSlave(observer, localSlave)
 	metaData.FMUs = append(metaData.FMUs, fmu)
+}
+
+func getFmuPaths(loadFolder string) (paths []string) {
+	info, e := os.Stat(loadFolder)
+	if os.IsNotExist(e) {
+		fmt.Println("Load folder does not exist!")
+		return
+	} else if !info.IsDir() {
+		fmt.Println("Load folder is not a directory!")
+		return
+	} else {
+		files, err := ioutil.ReadDir(loadFolder)
+		if err != nil {
+			log.Fatal(err)
+		}
+		for _, f := range files {
+			if strings.HasSuffix(f.Name(), ".fmu") {
+				paths = append(paths, filepath.Join(loadFolder, f.Name()))
+			}
+		}
+	}
+	return paths
 }
 
 func main() {
@@ -66,12 +94,7 @@ func main() {
 		FMUs: []FMU{},
 	}
 	dataDir := os.Getenv("TEST_DATA_DIR")
-	var paths = []string{
-		dataDir + "/fmi1/identity.fmu",
-		dataDir + "/fmi2/Clock.fmu",
-		dataDir + "/fmi2/Current.fmu",
-		dataDir + "/fmi2/RoomHeating_OM_RH.fmu",
-	}
+	paths := getFmuPaths(dataDir + "/fmi2")
 	for _, path := range paths {
 		addFmu(execution, observer, metaData, path)
 	}
