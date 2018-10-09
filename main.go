@@ -23,17 +23,9 @@ func getModuleData(status *SimulationStatus, metaData *MetaData, observer *C.cse
 		for i := range metaData.FMUs {
 			if metaData.FMUs[i].Name == status.Module.Name {
 				fmu := metaData.FMUs[i]
-				reals := observerGetReals(observer, fmu)
-				nSignals := len(fmu.Variables)
-				signals := make([]Signal, nSignals)
-				for k := range fmu.Variables {
-					signals[k] = Signal{
-						Name:      fmu.Variables[k].Name,
-						Causality: fmu.Variables[k].Causality,
-						Type:      fmu.Variables[k].Type,
-						Value:     reals[k],
-					}
-				}
+				realSignals := observerGetReals(observer, fmu)
+				var signals []Signal
+				signals = append(module.Signals, realSignals...)
 				module.Name = fmu.Name
 				module.Signals = signals
 			}

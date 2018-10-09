@@ -80,22 +80,32 @@ func observerGetReal(observer *C.cse_observer) float64 {
 	return float64(realOutVal)
 }
 
-func observerGetReals(observer *C.cse_observer, fmu FMU) (reals []float64) {
+func observerGetReals(observer *C.cse_observer, fmu FMU) (realSignals []Signal) {
 	var realValueRefs []C.uint
+	var realVariables []Variable
+	var numReals int
 	for i := range fmu.Variables {
 		if fmu.Variables[i].Type == "Real" {
 			ref := C.uint(fmu.Variables[i].ValueReference)
 			realValueRefs = append(realValueRefs, ref)
+			realVariables = append(realVariables, fmu.Variables[i])
+			numReals++
 		}
 	}
 
-	realOutVal := make([]C.double, len(realValueRefs))
-	cnVars := C.ulonglong(len(realValueRefs))
-	C.cse_observer_slave_get_real(observer, C.int(fmu.ObserverIndex), &realValueRefs[0], cnVars, &realOutVal[0])
-	for i := range realOutVal {
-		reals = append(reals, float64(realOutVal[i]))
+	realOutVal := make([]C.double, numReals)
+	C.cse_observer_slave_get_real(observer, C.int(fmu.ObserverIndex), &realValueRefs[0], C.ulonglong(numReals), &realOutVal[0])
+
+	realSignals = make([]Signal, numReals)
+	for k := range realVariables {
+		realSignals[k] = Signal{
+			Name:      realVariables[k].Name,
+			Causality: realVariables[k].Causality,
+			Type:      realVariables[k].Type,
+			Value:     float64(realOutVal[k]),
+		}
 	}
-	return reals
+	return realSignals
 }
 
 func observerGetRealSamples(observer *C.cse_observer, nSamples int, signal *TrendSignal) {
