@@ -73,29 +73,65 @@ func executionGetStatus(execution *C.cse_execution) (status executionStatus) {
 	status.current_time = float64(cStatus.current_time)
 	return
 }
-func observerGetReal(observer *C.cse_observer) float64 {
-	realOutVar := C.uint(0)
-	realOutVal := C.double(-1.0)
-	C.cse_observer_slave_get_real(observer, 0, &realOutVar, 1, &realOutVal)
-	return float64(realOutVal)
-}
 
-func observerGetReals(observer *C.cse_observer, fmu FMU) (reals []float64) {
+func observerGetReals(observer *C.cse_observer, fmu FMU) (realSignals []Signal) {
 	var realValueRefs []C.uint
+	var realVariables []Variable
+	var numReals int
 	for i := range fmu.Variables {
 		if fmu.Variables[i].Type == "Real" {
 			ref := C.uint(fmu.Variables[i].ValueReference)
 			realValueRefs = append(realValueRefs, ref)
+			realVariables = append(realVariables, fmu.Variables[i])
+			numReals++
 		}
 	}
 
-	realOutVal := make([]C.double, len(realValueRefs))
-	cnVars := C.ulonglong(len(realValueRefs))
-	C.cse_observer_slave_get_real(observer, C.int(fmu.ObserverIndex), &realValueRefs[0], cnVars, &realOutVal[0])
-	for i := range realOutVal {
-		reals = append(reals, float64(realOutVal[i]))
+	if numReals > 0 {
+		realOutVal := make([]C.double, numReals)
+		C.cse_observer_slave_get_real(observer, C.int(fmu.ObserverIndex), &realValueRefs[0], C.ulonglong(numReals), &realOutVal[0])
+
+		realSignals = make([]Signal, numReals)
+		for k := range realVariables {
+			realSignals[k] = Signal{
+				Name:      realVariables[k].Name,
+				Causality: realVariables[k].Causality,
+				Type:      realVariables[k].Type,
+				Value:     float64(realOutVal[k]),
+			}
+		}
 	}
-	return reals
+	return realSignals
+}
+
+func observerGetIntegers(observer *C.cse_observer, fmu FMU) (intSignals []Signal) {
+	var intValueRefs []C.uint
+	var intVariables []Variable
+	var numIntegers int
+	for i := range fmu.Variables {
+		if fmu.Variables[i].Type == "Integer" {
+			ref := C.uint(fmu.Variables[i].ValueReference)
+			intValueRefs = append(intValueRefs, ref)
+			intVariables = append(intVariables, fmu.Variables[i])
+			numIntegers++
+		}
+	}
+
+	if numIntegers > 0 {
+		intOutVal := make([]C.int, numIntegers)
+		C.cse_observer_slave_get_integer(observer, C.int(fmu.ObserverIndex), &intValueRefs[0], C.ulonglong(numIntegers), &intOutVal[0])
+
+		intSignals = make([]Signal, numIntegers)
+		for k := range intVariables {
+			intSignals[k] = Signal{
+				Name:      intVariables[k].Name,
+				Causality: intVariables[k].Causality,
+				Type:      intVariables[k].Type,
+				Value:     int(intOutVal[k]),
+			}
+		}
+	}
+	return intSignals
 }
 
 func observerGetRealSamples(observer *C.cse_observer, nSamples int, signal *TrendSignal) {
@@ -119,14 +155,10 @@ func observerGetRealSamples(observer *C.cse_observer, nSamples int, signal *Tren
 
 func polling(observer *C.cse_observer, status *SimulationStatus) {
 	for {
-		observerGetRealSamples(observer, 10, &status.TrendSignals[0])
-		setSimulationStatusValue(&status.Module, observer)
+		if len(status.TrendSignals) > 0 {
+			observerGetRealSamples(observer, 10, &status.TrendSignals[0])
+		}
 		time.Sleep(500 * time.Millisecond)
-	}
-}
-func setSimulationStatusValue(module *Module, observer *C.cse_observer) {
-	if len(module.Signals) > 0 {
-		module.Signals[0].Value = observerGetReal(observer)
 	}
 }
 
@@ -144,18 +176,12 @@ func simulate(execution *C.cse_execution, command chan []string, status *Simulat
 				executionStart(execution)
 				status.Status = "play"
 			case "trend":
-				//status.TrendSignals = append(status.TrendSignals, TrendSignal{cmd[1], cmd[2], nil, nil})
+				status.TrendSignals = append(status.TrendSignals, TrendSignal{cmd[1], cmd[2], nil, nil})
 			case "untrend":
 				status.TrendSignals = []TrendSignal{}
 			case "module":
 				status.Module = Module{
 					Name: cmd[1],
-					Signals: []Signal{
-						{
-							Name:  "Clock",
-							Value: -1,
-						},
-					},
 				}
 			default:
 				fmt.Println("Empty command, mildt sagt not good: ", cmd)

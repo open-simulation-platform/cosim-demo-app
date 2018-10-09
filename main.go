@@ -23,15 +23,11 @@ func getModuleData(status *SimulationStatus, metaData *MetaData, observer *C.cse
 		for i := range metaData.FMUs {
 			if metaData.FMUs[i].Name == status.Module.Name {
 				fmu := metaData.FMUs[i]
-				reals := observerGetReals(observer, fmu)
-				nSignals := len(fmu.Variables)
-				signals := make([]Signal, nSignals)
-				for k := range fmu.Variables {
-					signals[k] = Signal{
-						Name:  fmu.Variables[k].Name,
-						Value: reals[k],
-					}
-				}
+				realSignals := observerGetReals(observer, fmu)
+				intSignals := observerGetIntegers(observer, fmu)
+				var signals []Signal
+				signals = append(signals, realSignals...)
+				signals = append(signals, intSignals...)
 				module.Name = fmu.Name
 				module.Signals = signals
 			}
@@ -42,7 +38,6 @@ func getModuleData(status *SimulationStatus, metaData *MetaData, observer *C.cse
 }
 
 func statePoll(state chan JsonResponse, simulationStatus *SimulationStatus, metaData *MetaData, observer *C.cse_observer) {
-
 	for {
 		state <- JsonResponse{
 			Modules:      getModuleNames(metaData),
@@ -53,12 +48,6 @@ func statePoll(state chan JsonResponse, simulationStatus *SimulationStatus, meta
 		time.Sleep(1000 * time.Millisecond)
 	}
 }
-func latestValue(status *SimulationStatus) float64 {
-	if len(status.Module.Signals) > 0 {
-		return status.Module.Signals[0].Value
-	}
-	return 0
-}
 
 func main() {
 	execution := createExecution()
@@ -66,8 +55,8 @@ func main() {
 	executionAddObserver(execution, observer)
 
 	dataDir := os.Getenv("TEST_DATA_DIR")
-	localSlave := createLocalSlave(dataDir + "/fmi2/Clock.fmu")
-	fmu := ReadModelDescription(dataDir + "/fmi2/Clock.fmu")
+	localSlave := createLocalSlave(dataDir + "/fmi1/identity.fmu")
+	fmu := ReadModelDescription(dataDir + "/fmi1/identity.fmu")
 
 	slaveExecutionIndex := executionAddSlave(execution, localSlave)
 	fmu.ExecutionIndex = slaveExecutionIndex
@@ -83,15 +72,8 @@ func main() {
 	state := make(chan JsonResponse, 10)
 
 	simulationStatus := &SimulationStatus{
-		Status: "pause",
-		TrendSignals: []TrendSignal{
-			{
-				Module:          "Clock",
-				Signal:          "Clock",
-				TrendValues:     []float64{},
-				TrendTimestamps: []int{},
-			},
-		},
+		Status:       "pause",
+		TrendSignals: []TrendSignal{},
 	}
 
 	// Passing the channel to the go routine

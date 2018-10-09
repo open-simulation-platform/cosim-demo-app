@@ -3,7 +3,6 @@ package main
 import (
 	"archive/zip"
 	"encoding/xml"
-	"fmt"
 	"golang.org/x/net/html/charset"
 	"log"
 )
@@ -65,8 +64,6 @@ func getValueType(variable ScalarVariable) string {
 }
 
 func ReadModelDescription(fmuPath string) (fmu FMU) {
-
-	// Open a zip archive for reading.
 	reader, err := zip.OpenReader(fmuPath)
 	if err != nil {
 		log.Fatal(`ERROR:`, err)
@@ -75,30 +72,18 @@ func ReadModelDescription(fmuPath string) (fmu FMU) {
 
 	var modelDescription ModelDescription
 	for _, file := range reader.File {
-		// check if the file matches the name for application portfolio xml
 		if file.Name == "modelDescription.xml" {
 			rc, err := file.Open()
 			if err != nil {
 				log.Fatal(`ERROR:`, err)
 			}
-
-			// Unmarshal bytes
 			decoder := xml.NewDecoder(rc)
 			decoder.CharsetReader = charset.NewReaderLabel
 			err = decoder.Decode(&modelDescription)
-
 			if err != nil {
 				log.Fatal(`ERROR:`, err)
 			}
-
 			rc.Close()
-
-			fmt.Println("We have this many variables:", len(modelDescription.ModelVariables.ScalarVariables))
-			fmt.Println("We have model name: " + modelDescription.ModelName)
-			fmt.Println("We have fmi version: " + modelDescription.FmiVersion)
-
-			var fmu FMU
-			fmu.Name = modelDescription.ModelName
 
 			nVar := len(modelDescription.ModelVariables.ScalarVariables)
 
@@ -115,10 +100,8 @@ func ReadModelDescription(fmuPath string) (fmu FMU) {
 				}
 			}
 			fmu.Variables = variables
-			fmt.Println(fmu)
-
+			fmu.Name = modelDescription.ModelName
 			return fmu
-
 		}
 	}
 	return
