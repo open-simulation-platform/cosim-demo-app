@@ -1,7 +1,15 @@
 (ns cse-client.controller
   (:require [kee-frame.core :as k]
             [kee-frame.websocket :as websocket]
-            [cse-client.config :refer [socket-url]]))
+            [cse-client.config :refer [socket-url]]
+            [re-frame.loggers :as re-frame-log]))
+
+;; Prevent handler overwriting warnings during cljs reload.
+(re-frame-log/set-loggers!
+  {:warn (fn [& args]
+           (when-not (or (re-find #"^re-frame: overwriting" (first args))
+                         (re-find #"^Overwriting controller" (first args)))
+             (apply js/console.warn args)))})
 
 (k/reg-controller :trend
                   {:params (fn [route]
