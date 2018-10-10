@@ -1,11 +1,4 @@
-package main
-
-type JsonRequest struct {
-	Command     []string `json:"command,omitempty"`
-	Module      string   `json:"module,omitempty"`
-	Modules     bool     `json:"modules,omitempty"`
-	Connections bool     `json:"connections,omitempty"`
-}
+package structs
 
 type Signal struct {
 	Name      string      `json:"name"`

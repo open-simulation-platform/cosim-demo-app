@@ -5,6 +5,8 @@ package main
 */
 import "C"
 import (
+	"cse-server-go/server"
+	"cse-server-go/structs"
 	"fmt"
 	"io/ioutil"
 	"log"
@@ -14,7 +16,7 @@ import (
 	"time"
 )
 
-func getModuleNames(metaData *MetaData) []string {
+func getModuleNames(metaData *structs.MetaData) []string {
 	nModules := len(metaData.FMUs)
 	modules := make([]string, nModules)
 	for i := range metaData.FMUs {
@@ -23,7 +25,7 @@ func getModuleNames(metaData *MetaData) []string {
 	return modules
 }
 
-func getModuleData(status *SimulationStatus, metaData *MetaData, observer *C.cse_observer) (module Module) {
+func getModuleData(status *structs.SimulationStatus, metaData *structs.MetaData, observer *C.cse_observer) (module structs.Module) {
 	if len(status.Module.Name) > 0 {
 		for _, fmu := range metaData.FMUs {
 			if fmu.Name == status.Module.Name {
@@ -41,9 +43,10 @@ func getModuleData(status *SimulationStatus, metaData *MetaData, observer *C.cse
 	return module
 }
 
-func statePoll(state chan JsonResponse, simulationStatus *SimulationStatus, metaData *MetaData, observer *C.cse_observer) {
+func statePoll(state chan structs.JsonResponse, simulationStatus *structs.SimulationStatus, metaData *structs.MetaData, observer *C.cse_observer) {
+
 	for {
-		state <- JsonResponse{
+		state <- structs.JsonResponse{
 			Modules:      getModuleNames(metaData),
 			Module:       getModuleData(simulationStatus, metaData, observer),
 			Status:       simulationStatus.Status,
@@ -90,8 +93,8 @@ func main() {
 	observer := createObserver()
 	executionAddObserver(execution, observer)
 
-	metaData := &MetaData{
-		FMUs: []FMU{},
+	metaData := &structs.MetaData{
+		FMUs: []structs.FMU{},
 	}
 	dataDir := os.Getenv("TEST_DATA_DIR")
 	paths := getFmuPaths(dataDir + "/fmi2")
@@ -101,11 +104,11 @@ func main() {
 
 	// Creating a command channel
 	cmd := make(chan []string, 10)
-	state := make(chan JsonResponse, 10)
+	state := make(chan structs.JsonResponse, 10)
 
-	simulationStatus := &SimulationStatus{
+	simulationStatus := &structs.SimulationStatus{
 		Status:       "pause",
-		TrendSignals: []TrendSignal{},
+		TrendSignals: []structs.TrendSignal{},
 	}
 
 	// Passing the channel to the go routine
@@ -114,6 +117,6 @@ func main() {
 	go polling(observer, simulationStatus)
 
 	//Passing the channel to the server
-	Server(cmd, state)
+	server.Server(cmd, state)
 	close(cmd)
 }

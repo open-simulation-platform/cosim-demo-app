@@ -5,6 +5,7 @@ package main
 */
 import "C"
 import (
+	"cse-server-go/structs"
 	"fmt"
 	"time"
 )
@@ -70,7 +71,7 @@ func executionGetStatus(execution *C.cse_execution) (status executionStatus) {
 	return
 }
 
-func observerGetReals(observer *C.cse_observer, fmu FMU) (realSignals []Signal) {
+func observerGetReals(observer *C.cse_observer, fmu structs.FMU) (realSignals []Signal) {
 	var realValueRefs []C.uint
 	var realVariables []Variable
 	var numReals int
@@ -130,7 +131,7 @@ func observerGetIntegers(observer *C.cse_observer, fmu FMU) (intSignals []Signal
 	return intSignals
 }
 
-func observerGetRealSamples(observer *C.cse_observer, nSamples int, signal *TrendSignal) {
+func observerGetRealSamples(observer *C.cse_observer, nSamples int, signal *structs.TrendSignal) {
 	fromSample := 0
 	if len(signal.TrendTimestamps) > 0 {
 		fromSample = signal.TrendTimestamps[len(signal.TrendTimestamps)-1]
@@ -149,7 +150,7 @@ func observerGetRealSamples(observer *C.cse_observer, nSamples int, signal *Tren
 
 }
 
-func polling(observer *C.cse_observer, status *SimulationStatus) {
+func polling(observer *C.cse_observer, status *structs.SimulationStatus) {
 	for {
 		if len(status.TrendSignals) > 0 {
 			observerGetRealSamples(observer, 10, &status.TrendSignals[0])
@@ -158,7 +159,7 @@ func polling(observer *C.cse_observer, status *SimulationStatus) {
 	}
 }
 
-func simulate(execution *C.cse_execution, command chan []string, status *SimulationStatus) {
+func simulate(execution *C.cse_execution, command chan []string, status *structs.SimulationStatus) {
 	for {
 		select {
 		case cmd := <-command:
@@ -174,9 +175,9 @@ func simulate(execution *C.cse_execution, command chan []string, status *Simulat
 			case "trend":
 				status.TrendSignals = append(status.TrendSignals, TrendSignal{cmd[1], cmd[2], nil, nil})
 			case "untrend":
-				status.TrendSignals = []TrendSignal{}
+				status.TrendSignals = []structs.TrendSignal{}
 			case "module":
-				status.Module = Module{
+				status.Module = structs.Module{
 					Name: cmd[1],
 				}
 			default:

@@ -2,6 +2,7 @@ package main
 
 import (
 	"archive/zip"
+	"cse-server-go/structs"
 	"encoding/xml"
 	"golang.org/x/net/html/charset"
 	"log"
@@ -63,7 +64,9 @@ func getValueType(variable ScalarVariable) string {
 	return ""
 }
 
-func ReadModelDescription(fmuPath string) (fmu FMU) {
+func ReadModelDescription(fmuPath string) (fmu structs.FMU) {
+
+	// Open a zip archive for reading.
 	reader, err := zip.OpenReader(fmuPath)
 	if err != nil {
 		log.Fatal(`ERROR:`, err)
@@ -87,11 +90,11 @@ func ReadModelDescription(fmuPath string) (fmu FMU) {
 
 			nVar := len(modelDescription.ModelVariables.ScalarVariables)
 
-			var variables []Variable
-			variables = make([]Variable, nVar)
+			var variables []structs.Variable
+			variables = make([]structs.Variable, nVar)
 			for i := 0; i < nVar; i++ {
 				scalarVariable := modelDescription.ModelVariables.ScalarVariables[i]
-				variables[i] = Variable{
+				variables[i] = structs.Variable{
 					Name:           scalarVariable.Name,
 					ValueReference: scalarVariable.ValueReference,
 					Causality:      scalarVariable.Causality,
