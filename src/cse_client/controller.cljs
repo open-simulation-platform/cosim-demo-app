@@ -50,6 +50,10 @@
      :connections-loaded? (boolean (:connections db))}
     config))
 
+(k/reg-event-db ::causality-enter
+                (fn [db [causality]]
+                  (assoc db :active-causality causality)))
+
 (k/reg-event-fx ::module-enter
                 (fn [{:keys [db]} [module]]
                   {:dispatch [::websocket/send socket-url (ws-request db {:command ["module" module]})]}))
