@@ -1,12 +1,14 @@
-package main
+package cse
 
 /*
 	#include <cse.h>
 */
 import "C"
 import (
+	"cse-server-go/metadata"
 	"cse-server-go/structs"
 	"fmt"
+	"os"
 	"time"
 )
 
@@ -14,27 +16,27 @@ func printLastError() {
 	fmt.Printf("Error code %d: %s\n", int(C.cse_last_error_code()), C.GoString(C.cse_last_error_message()))
 }
 
-func createExecution() (execution *C.cse_execution) {
+func CreateExecution() (execution *C.cse_execution) {
 	execution = C.cse_execution_create(0.0, 0.01)
 	return execution
 }
 
-func createLocalSlave(fmuPath string) (slave *C.cse_slave) {
+func CreateLocalSlave(fmuPath string) (slave *C.cse_slave) {
 	slave = C.cse_local_slave_create(C.CString(fmuPath))
 	return
 }
 
-func createObserver() (observer *C.cse_observer) {
+func CreateObserver() (observer *C.cse_observer) {
 	observer = C.cse_membuffer_observer_create()
 	return
 }
 
-func executionAddObserver(execution *C.cse_execution, observer *C.cse_observer) (observerIndex C.int) {
+func ExecutionAddObserver(execution *C.cse_execution, observer *C.cse_observer) (observerIndex C.int) {
 	observerIndex = C.cse_execution_add_observer(execution, observer)
 	return
 }
 
-func observerAddSlave(observer *C.cse_observer, slave *C.cse_slave) int {
+func ObserverAddSlave(observer *C.cse_observer, slave *C.cse_slave) int {
 	slaveIndex := C.cse_observer_add_slave(observer, slave)
 	if slaveIndex < 0 {
 		printLastError()
@@ -43,7 +45,7 @@ func observerAddSlave(observer *C.cse_observer, slave *C.cse_slave) int {
 	return int(slaveIndex)
 }
 
-func executionAddSlave(execution *C.cse_execution, slave *C.cse_slave) int {
+func ExecutionAddSlave(execution *C.cse_execution, slave *C.cse_slave) int {
 	slaveIndex := C.cse_execution_add_slave(execution, slave)
 	if slaveIndex < 0 {
 		printLastError()
@@ -150,7 +152,7 @@ func observerGetRealSamples(observer *C.cse_observer, nSamples int, signal *stru
 
 }
 
-func polling(observer *C.cse_observer, status *structs.SimulationStatus) {
+func Polling(observer *C.cse_observer, status *structs.SimulationStatus) {
 	for {
 		if len(status.TrendSignals) > 0 {
 			observerGetRealSamples(observer, 10, &status.TrendSignals[0])
@@ -159,7 +161,7 @@ func polling(observer *C.cse_observer, status *structs.SimulationStatus) {
 	}
 }
 
-func simulate(execution *C.cse_execution, command chan []string, status *structs.SimulationStatus) {
+func Simulate(execution *C.cse_execution, command chan []string, status *structs.SimulationStatus) {
 	for {
 		select {
 		case cmd := <-command:
@@ -184,5 +186,34 @@ func simulate(execution *C.cse_execution, command chan []string, status *structs
 				fmt.Println("Empty command, mildt sagt not good: ", cmd)
 			}
 		}
+	}
+}
+
+type SimulatorBeta struct {
+	Execution *C.cse_execution
+	Observer  *C.cse_observer
+	MetaData structs.MetaData
+}
+
+func CreateSimulation() SimulatorBeta {
+	execution := CreateExecution()
+	observer := CreateObserver()
+	ExecutionAddObserver(execution, observer)
+
+	dataDir := os.Getenv("TEST_DATA_DIR")
+	localSlave := CreateLocalSlave(dataDir + "/fmi2/Clock.fmu")
+	fmu := metadata.ReadModelDescription(dataDir + "/fmi2/Clock.fmu")
+
+	slaveExecutionIndex := ExecutionAddSlave(execution, localSlave)
+	fmu.ExecutionIndex = slaveExecutionIndex
+	observerSlaveIndex := ObserverAddSlave(observer, localSlave)
+	fmu.ObserverIndex = observerSlaveIndex
+	metaData := structs.MetaData{
+		FMUs: []structs.FMU{fmu},
+	}
+	return SimulatorBeta{
+		Execution: execution,
+		Observer:  observer,
+		MetaData: metaData,
 	}
 }

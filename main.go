@@ -5,6 +5,7 @@ package main
 */
 import "C"
 import (
+	"cse-server-go/cse"
 	"cse-server-go/server"
 	"cse-server-go/structs"
 	"fmt"
@@ -102,6 +103,8 @@ func main() {
 		addFmu(execution, observer, metaData, path)
 	}
 
+	sim := cse.CreateSimulation()
+
 	// Creating a command channel
 	cmd := make(chan []string, 10)
 	state := make(chan structs.JsonResponse, 10)
@@ -112,9 +115,9 @@ func main() {
 	}
 
 	// Passing the channel to the go routine
-	go statePoll(state, simulationStatus, metaData, observer)
-	go simulate(execution, cmd, simulationStatus)
-	go polling(observer, simulationStatus)
+	go statePoll(state, simulationStatus, &sim.MetaData, sim.Observer)
+	go cse.Simulate(sim.Execution, cmd, simulationStatus)
+	go cse.Polling(sim.Observer, simulationStatus)
 
 	//Passing the channel to the server
 	server.Server(cmd, state)
