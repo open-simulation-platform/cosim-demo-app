@@ -3,9 +3,8 @@ package server
 import (
 	"cse-server-go/structs"
 	"github.com/gorilla/websocket"
-	"net/http"
 	"log"
-	"fmt"
+	"net/http"
 )
 
 type JsonRequest struct {
@@ -20,7 +19,6 @@ var upgrader = websocket.Upgrader{CheckOrigin: func(r *http.Request) bool { retu
 
 func commandLoop(command chan []string, conn *websocket.Conn) {
 	for {
-		fmt.Println("Waiting for a message")
 		json := JsonRequest{}
 		err := conn.ReadJSON(&json)
 		if err != nil {

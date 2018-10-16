@@ -4,23 +4,9 @@ import (
 	"cse-server-go/cse"
 	"cse-server-go/server"
 	"cse-server-go/structs"
-	"os"
 )
 
 func main() {
-	execution := cse.CreateExecution()
-	observer := cse.CreateObserver()
-	cse.ExecutionAddObserver(execution, observer)
-
-	metaData := &structs.MetaData{
-		FMUs: []structs.FMU{},
-	}
-	dataDir := os.Getenv("TEST_DATA_DIR")
-	paths := cse.GetFmuPaths(dataDir + "/fmi2")
-	for _, path := range paths {
-		cse.AddFmu(execution, observer, metaData, path)
-	}
-
 	sim := cse.CreateSimulation()
 
 	// Creating a command channel

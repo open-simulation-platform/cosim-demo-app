@@ -276,17 +276,15 @@ func CreateSimulation() SimulatorBeta {
 	observer := CreateObserver()
 	ExecutionAddObserver(execution, observer)
 
-	dataDir := os.Getenv("TEST_DATA_DIR")
-	localSlave := CreateLocalSlave(dataDir + "/fmi2/Clock.fmu")
-	fmu := metadata.ReadModelDescription(dataDir + "/fmi2/Clock.fmu")
-
-	slaveExecutionIndex := ExecutionAddSlave(execution, localSlave)
-	fmu.ExecutionIndex = slaveExecutionIndex
-	observerSlaveIndex := ObserverAddSlave(observer, localSlave)
-	fmu.ObserverIndex = observerSlaveIndex
 	metaData := structs.MetaData{
-		FMUs: []structs.FMU{fmu},
+		FMUs: []structs.FMU{},
 	}
+	dataDir := os.Getenv("TEST_DATA_DIR")
+	paths := GetFmuPaths(dataDir + "/fmi2")
+	for _, path := range paths {
+		AddFmu(execution, observer, &metaData, path)
+	}
+
 	return SimulatorBeta{
 		Execution: execution,
 		Observer:  observer,
