@@ -20,27 +20,27 @@ func printLastError() {
 	fmt.Printf("Error code %d: %s\n", int(C.cse_last_error_code()), C.GoString(C.cse_last_error_message()))
 }
 
-func CreateExecution() (execution *C.cse_execution) {
+func createExecution() (execution *C.cse_execution) {
 	execution = C.cse_execution_create(0.0, 0.01)
 	return execution
 }
 
-func CreateLocalSlave(fmuPath string) (slave *C.cse_slave) {
+func createLocalSlave(fmuPath string) (slave *C.cse_slave) {
 	slave = C.cse_local_slave_create(C.CString(fmuPath))
 	return
 }
 
-func CreateObserver() (observer *C.cse_observer) {
+func createObserver() (observer *C.cse_observer) {
 	observer = C.cse_membuffer_observer_create()
 	return
 }
 
-func ExecutionAddObserver(execution *C.cse_execution, observer *C.cse_observer) (observerIndex C.int) {
+func executionAddObserver(execution *C.cse_execution, observer *C.cse_observer) (observerIndex C.int) {
 	observerIndex = C.cse_execution_add_observer(execution, observer)
 	return
 }
 
-func ObserverAddSlave(observer *C.cse_observer, slave *C.cse_slave) int {
+func observerAddSlave(observer *C.cse_observer, slave *C.cse_slave) int {
 	slaveIndex := C.cse_observer_add_slave(observer, slave)
 	if slaveIndex < 0 {
 		printLastError()
@@ -49,7 +49,7 @@ func ObserverAddSlave(observer *C.cse_observer, slave *C.cse_slave) int {
 	return int(slaveIndex)
 }
 
-func ExecutionAddSlave(execution *C.cse_execution, slave *C.cse_slave) int {
+func executionAddSlave(execution *C.cse_execution, slave *C.cse_slave) int {
 	slaveIndex := C.cse_execution_add_slave(execution, slave)
 	if slaveIndex < 0 {
 		printLastError()
@@ -66,18 +66,7 @@ func executionStop(execution *C.cse_execution) {
 	C.cse_execution_stop(execution)
 }
 
-type executionStatus struct {
-	current_time float64
-}
-
-func executionGetStatus(execution *C.cse_execution) (status executionStatus) {
-	cStatus := C.cse_execution_status{}
-	C.cse_execution_get_status(execution, &cStatus)
-	status.current_time = float64(cStatus.current_time)
-	return
-}
-
-func ObserverGetReals(observer *C.cse_observer, fmu structs.FMU) (realSignals []structs.Signal) {
+func observerGetReals(observer *C.cse_observer, fmu structs.FMU) (realSignals []structs.Signal) {
 	var realValueRefs []C.uint
 	var realVariables []structs.Variable
 	var numReals int
@@ -107,7 +96,7 @@ func ObserverGetReals(observer *C.cse_observer, fmu structs.FMU) (realSignals []
 	return realSignals
 }
 
-func ObserverGetIntegers(observer *C.cse_observer, fmu structs.FMU) (intSignals []structs.Signal) {
+func observerGetIntegers(observer *C.cse_observer, fmu structs.FMU) (intSignals []structs.Signal) {
 	var intValueRefs []C.uint
 	var intVariables []structs.Variable
 	var numIntegers int
@@ -137,7 +126,7 @@ func ObserverGetIntegers(observer *C.cse_observer, fmu structs.FMU) (intSignals 
 	return intSignals
 }
 
-func ObserverGetRealSamples(observer *C.cse_observer, nSamples int, signal *structs.TrendSignal) {
+func observerGetRealSamples(observer *C.cse_observer, nSamples int, signal *structs.TrendSignal) {
 	fromSample := 0
 	if len(signal.TrendTimestamps) > 0 {
 		fromSample = signal.TrendTimestamps[len(signal.TrendTimestamps)-1]
@@ -159,7 +148,7 @@ func ObserverGetRealSamples(observer *C.cse_observer, nSamples int, signal *stru
 func Polling(sim SimulatorBeta, status *structs.SimulationStatus) {
 	for {
 		if len(status.TrendSignals) > 0 {
-			ObserverGetRealSamples(sim.Observer, 10, &status.TrendSignals[0])
+			observerGetRealSamples(sim.Observer, 10, &status.TrendSignals[0])
 		}
 		time.Sleep(500 * time.Millisecond)
 	}
@@ -206,8 +195,8 @@ func getModuleData(status *structs.SimulationStatus, metaData *structs.MetaData,
 	if len(status.Module.Name) > 0 {
 		for _, fmu := range metaData.FMUs {
 			if fmu.Name == status.Module.Name {
-				realSignals := ObserverGetReals(observer, fmu)
-				intSignals := ObserverGetIntegers(observer, fmu)
+				realSignals := observerGetReals(observer, fmu)
+				intSignals := observerGetIntegers(observer, fmu)
 				var signals []structs.Signal
 				signals = append(signals, realSignals...)
 				signals = append(signals, intSignals...)
@@ -233,17 +222,17 @@ func StatePoll(state chan structs.JsonResponse, simulationStatus *structs.Simula
 	}
 }
 
-func AddFmu(execution *C.cse_execution, observer *C.cse_observer, metaData *structs.MetaData, fmuPath string) {
+func addFmu(execution *C.cse_execution, observer *C.cse_observer, metaData *structs.MetaData, fmuPath string) {
 	log.Println("Loading: " + fmuPath)
-	localSlave := CreateLocalSlave(fmuPath)
+	localSlave := createLocalSlave(fmuPath)
 	fmu := metadata.ReadModelDescription(fmuPath)
 
-	fmu.ExecutionIndex = ExecutionAddSlave(execution, localSlave)
-	fmu.ObserverIndex = ObserverAddSlave(observer, localSlave)
+	fmu.ExecutionIndex = executionAddSlave(execution, localSlave)
+	fmu.ObserverIndex = observerAddSlave(observer, localSlave)
 	metaData.FMUs = append(metaData.FMUs, fmu)
 }
 
-func GetFmuPaths(loadFolder string) (paths []string) {
+func getFmuPaths(loadFolder string) (paths []string) {
 	info, e := os.Stat(loadFolder)
 	if os.IsNotExist(e) {
 		fmt.Println("Load folder does not exist!")
@@ -272,17 +261,17 @@ type SimulatorBeta struct {
 }
 
 func CreateSimulation() SimulatorBeta {
-	execution := CreateExecution()
-	observer := CreateObserver()
-	ExecutionAddObserver(execution, observer)
+	execution := createExecution()
+	observer := createObserver()
+	executionAddObserver(execution, observer)
 
 	metaData := structs.MetaData{
 		FMUs: []structs.FMU{},
 	}
 	dataDir := os.Getenv("TEST_DATA_DIR")
-	paths := GetFmuPaths(dataDir + "/fmi2")
+	paths := getFmuPaths(dataDir + "/fmi2")
 	for _, path := range paths {
-		AddFmu(execution, observer, &metaData, path)
+		addFmu(execution, observer, &metaData, path)
 	}
 
 	return SimulatorBeta{
