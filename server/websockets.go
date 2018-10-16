@@ -1,17 +1,24 @@
-package main
+package server
 
 import (
+	"cse-server-go/structs"
 	"github.com/gorilla/websocket"
-	"net/http"
 	"log"
-	"fmt"
+	"net/http"
 )
+
+type JsonRequest struct {
+	Command     []string `json:"command,omitempty"`
+	Module      string   `json:"module,omitempty"`
+	Modules     bool     `json:"modules,omitempty"`
+	Connections bool     `json:"connections,omitempty"`
+}
+
 
 var upgrader = websocket.Upgrader{CheckOrigin: func(r *http.Request) bool { return true },}
 
 func commandLoop(command chan []string, conn *websocket.Conn) {
 	for {
-		fmt.Println("Waiting for a message")
 		json := JsonRequest{}
 		err := conn.ReadJSON(&json)
 		if err != nil {
@@ -24,7 +31,7 @@ func commandLoop(command chan []string, conn *websocket.Conn) {
 	}
 }
 
-func stateLoop(state chan JsonResponse, conn *websocket.Conn) {
+func stateLoop(state chan structs.JsonResponse, conn *websocket.Conn) {
 	for {
 		latestState := <-state
 		err := conn.WriteJSON(latestState)
@@ -35,7 +42,7 @@ func stateLoop(state chan JsonResponse, conn *websocket.Conn) {
 	}
 }
 
-func WebsocketHandler(command chan []string, state chan JsonResponse) func(w http.ResponseWriter, r *http.Request) {
+func WebsocketHandler(command chan []string, state chan structs.JsonResponse) func(w http.ResponseWriter, r *http.Request) {
 	return func(w http.ResponseWriter, r *http.Request) {
 		conn, err := upgrader.Upgrade(w, r, nil)
 		if err != nil {

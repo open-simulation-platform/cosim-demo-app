@@ -1,17 +1,20 @@
-package main
+package cse
 
 /*
 	#include <cse.h>
 */
 import "C"
 import (
+	"cse-server-go/metadata"
+	"cse-server-go/structs"
 	"fmt"
+	"io/ioutil"
+	"log"
+	"os"
+	"path/filepath"
+	"strings"
 	"time"
 )
-
-// UGLY GLOBAL VARIABLE
-var lastOutValue = 0.0
-var lastSamplesValue = []C.double{}
 
 func printLastError() {
 	fmt.Printf("Error code %d: %s\n", int(C.cse_last_error_code()), C.GoString(C.cse_last_error_message()))
@@ -63,20 +66,9 @@ func executionStop(execution *C.cse_execution) {
 	C.cse_execution_stop(execution)
 }
 
-type executionStatus struct {
-	current_time float64
-}
-
-func executionGetStatus(execution *C.cse_execution) (status executionStatus) {
-	cStatus := C.cse_execution_status{}
-	C.cse_execution_get_status(execution, &cStatus)
-	status.current_time = float64(cStatus.current_time)
-	return
-}
-
-func observerGetReals(observer *C.cse_observer, fmu FMU) (realSignals []Signal) {
+func observerGetReals(observer *C.cse_observer, fmu structs.FMU) (realSignals []structs.Signal) {
 	var realValueRefs []C.uint
-	var realVariables []Variable
+	var realVariables []structs.Variable
 	var numReals int
 	for _, variable := range fmu.Variables {
 		if variable.Type == "Real" {
@@ -91,9 +83,9 @@ func observerGetReals(observer *C.cse_observer, fmu FMU) (realSignals []Signal) 
 		realOutVal := make([]C.double, numReals)
 		C.cse_observer_slave_get_real(observer, C.int(fmu.ObserverIndex), &realValueRefs[0], C.ulonglong(numReals), &realOutVal[0])
 
-		realSignals = make([]Signal, numReals)
+		realSignals = make([]structs.Signal, numReals)
 		for k := range realVariables {
-			realSignals[k] = Signal{
+			realSignals[k] = structs.Signal{
 				Name:      realVariables[k].Name,
 				Causality: realVariables[k].Causality,
 				Type:      realVariables[k].Type,
@@ -104,9 +96,9 @@ func observerGetReals(observer *C.cse_observer, fmu FMU) (realSignals []Signal) 
 	return realSignals
 }
 
-func observerGetIntegers(observer *C.cse_observer, fmu FMU) (intSignals []Signal) {
+func observerGetIntegers(observer *C.cse_observer, fmu structs.FMU) (intSignals []structs.Signal) {
 	var intValueRefs []C.uint
-	var intVariables []Variable
+	var intVariables []structs.Variable
 	var numIntegers int
 	for _, variable := range fmu.Variables {
 		if variable.Type == "Integer" {
@@ -121,9 +113,9 @@ func observerGetIntegers(observer *C.cse_observer, fmu FMU) (intSignals []Signal
 		intOutVal := make([]C.int, numIntegers)
 		C.cse_observer_slave_get_integer(observer, C.int(fmu.ObserverIndex), &intValueRefs[0], C.ulonglong(numIntegers), &intOutVal[0])
 
-		intSignals = make([]Signal, numIntegers)
+		intSignals = make([]structs.Signal, numIntegers)
 		for k := range intVariables {
-			intSignals[k] = Signal{
+			intSignals[k] = structs.Signal{
 				Name:      intVariables[k].Name,
 				Causality: intVariables[k].Causality,
 				Type:      intVariables[k].Type,
@@ -134,7 +126,7 @@ func observerGetIntegers(observer *C.cse_observer, fmu FMU) (intSignals []Signal
 	return intSignals
 }
 
-func observerGetRealSamples(observer *C.cse_observer, nSamples int, signal *TrendSignal) {
+func observerGetRealSamples(observer *C.cse_observer, nSamples int, signal *structs.TrendSignal) {
 	fromSample := 0
 	if len(signal.TrendTimestamps) > 0 {
 		fromSample = signal.TrendTimestamps[len(signal.TrendTimestamps)-1]
@@ -153,16 +145,16 @@ func observerGetRealSamples(observer *C.cse_observer, nSamples int, signal *Tren
 
 }
 
-func polling(observer *C.cse_observer, status *SimulationStatus) {
+func Polling(sim SimulatorBeta, status *structs.SimulationStatus) {
 	for {
 		if len(status.TrendSignals) > 0 {
-			observerGetRealSamples(observer, 10, &status.TrendSignals[0])
+			observerGetRealSamples(sim.Observer, 10, &status.TrendSignals[0])
 		}
 		time.Sleep(500 * time.Millisecond)
 	}
 }
 
-func simulate(execution *C.cse_execution, command chan []string, status *SimulationStatus) {
+func Simulate(sim SimulatorBeta, command chan []string, status *structs.SimulationStatus) {
 	for {
 		select {
 		case cmd := <-command:
@@ -170,22 +162,121 @@ func simulate(execution *C.cse_execution, command chan []string, status *Simulat
 			case "stop":
 				return
 			case "pause":
-				executionStop(execution)
+				executionStop(sim.Execution)
 				status.Status = "pause"
 			case "play":
-				executionStart(execution)
+				executionStart(sim.Execution)
 				status.Status = "play"
 			case "trend":
-				status.TrendSignals = append(status.TrendSignals, TrendSignal{cmd[1], cmd[2], nil, nil})
+				status.TrendSignals = append(status.TrendSignals, structs.TrendSignal{cmd[1], cmd[2], nil, nil})
 			case "untrend":
-				status.TrendSignals = []TrendSignal{}
+				status.TrendSignals = []structs.TrendSignal{}
 			case "module":
-				status.Module = Module{
+				status.Module = structs.Module{
 					Name: cmd[1],
 				}
 			default:
 				fmt.Println("Empty command, mildt sagt not good: ", cmd)
 			}
 		}
+	}
+}
+
+func getModuleNames(metaData *structs.MetaData) []string {
+	nModules := len(metaData.FMUs)
+	modules := make([]string, nModules)
+	for i := range metaData.FMUs {
+		modules[i] = metaData.FMUs[i].Name
+	}
+	return modules
+}
+
+func getModuleData(status *structs.SimulationStatus, metaData *structs.MetaData, observer *C.cse_observer) (module structs.Module) {
+	if len(status.Module.Name) > 0 {
+		for _, fmu := range metaData.FMUs {
+			if fmu.Name == status.Module.Name {
+				realSignals := observerGetReals(observer, fmu)
+				intSignals := observerGetIntegers(observer, fmu)
+				var signals []structs.Signal
+				signals = append(signals, realSignals...)
+				signals = append(signals, intSignals...)
+				module.Name = fmu.Name
+				module.Signals = signals
+			}
+		}
+	}
+
+	return module
+}
+
+func StatePoll(state chan structs.JsonResponse, simulationStatus *structs.SimulationStatus, sim SimulatorBeta) {
+
+	for {
+		state <- structs.JsonResponse{
+			Modules:      getModuleNames(&sim.MetaData),
+			Module:       getModuleData(simulationStatus, &sim.MetaData, sim.Observer),
+			Status:       simulationStatus.Status,
+			TrendSignals: simulationStatus.TrendSignals,
+		}
+		time.Sleep(1000 * time.Millisecond)
+	}
+}
+
+func addFmu(execution *C.cse_execution, observer *C.cse_observer, metaData *structs.MetaData, fmuPath string) {
+	log.Println("Loading: " + fmuPath)
+	localSlave := createLocalSlave(fmuPath)
+	fmu := metadata.ReadModelDescription(fmuPath)
+
+	fmu.ExecutionIndex = executionAddSlave(execution, localSlave)
+	fmu.ObserverIndex = observerAddSlave(observer, localSlave)
+	metaData.FMUs = append(metaData.FMUs, fmu)
+}
+
+func getFmuPaths(loadFolder string) (paths []string) {
+	info, e := os.Stat(loadFolder)
+	if os.IsNotExist(e) {
+		fmt.Println("Load folder does not exist!")
+		return
+	} else if !info.IsDir() {
+		fmt.Println("Load folder is not a directory!")
+		return
+	} else {
+		files, err := ioutil.ReadDir(loadFolder)
+		if err != nil {
+			log.Fatal(err)
+		}
+		for _, f := range files {
+			if strings.HasSuffix(f.Name(), ".fmu") {
+				paths = append(paths, filepath.Join(loadFolder, f.Name()))
+			}
+		}
+	}
+	return paths
+}
+
+type SimulatorBeta struct {
+	Execution *C.cse_execution
+	Observer  *C.cse_observer
+	MetaData  structs.MetaData
+}
+
+func CreateSimulation() SimulatorBeta {
+	execution := createExecution()
+	observer := createObserver()
+	executionAddObserver(execution, observer)
+
+	metaData := structs.MetaData{
+		FMUs: []structs.FMU{},
+	}
+	dataDir := os.Getenv("TEST_DATA_DIR")
+	paths := getFmuPaths(dataDir + "/fmi2")
+	for _, path := range paths {
+		addFmu(execution, observer, &metaData, path)
+	}
+
+	return SimulatorBeta{
+		Execution: execution,
+		Observer:  observer,
+		MetaData:  metaData,
 	}
 }
