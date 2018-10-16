@@ -22,8 +22,7 @@
                   {:params (fn [route]
                              (when (-> route :data :name (= :module))
                                (-> route :path-params :module)))
-                   :start  [::module-enter]
-                   :stop   [::module-leave]})
+                   :start  [::module-enter]})
 
 (k/reg-controller :websocket-controller
                   {:params (constantly true)
