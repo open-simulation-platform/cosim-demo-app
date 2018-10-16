@@ -6,6 +6,7 @@ package main
 import "C"
 import (
 	"cse-server-go/cse"
+	"cse-server-go/metadata"
 	"cse-server-go/server"
 	"cse-server-go/structs"
 	"fmt"
@@ -30,9 +31,9 @@ func getModuleData(status *structs.SimulationStatus, metaData *structs.MetaData,
 	if len(status.Module.Name) > 0 {
 		for _, fmu := range metaData.FMUs {
 			if fmu.Name == status.Module.Name {
-				realSignals := observerGetReals(observer, fmu)
-				intSignals := observerGetIntegers(observer, fmu)
-				var signals []Signal
+				realSignals := cse.ObserverGetReals(observer, fmu)
+				intSignals := cse.ObserverGetIntegers(observer, fmu)
+				var signals []structs.Signal
 				signals = append(signals, realSignals...)
 				signals = append(signals, intSignals...)
 				module.Name = fmu.Name
@@ -57,13 +58,13 @@ func statePoll(state chan structs.JsonResponse, simulationStatus *structs.Simula
 	}
 }
 
-func addFmu(execution *C.cse_execution, observer *C.cse_observer, metaData *MetaData, fmuPath string) {
+func addFmu(execution *C.cse_execution, observer *C.cse_observer, metaData *structs.MetaData, fmuPath string) {
 	log.Println("Loading: " + fmuPath)
-	localSlave := createLocalSlave(fmuPath)
-	fmu := ReadModelDescription(fmuPath)
+	localSlave := cse.CreateLocalSlave(fmuPath)
+	fmu := metadata.ReadModelDescription(fmuPath)
 
-	fmu.ExecutionIndex = executionAddSlave(execution, localSlave)
-	fmu.ObserverIndex = observerAddSlave(observer, localSlave)
+	fmu.ExecutionIndex = cse.ExecutionAddSlave(execution, localSlave)
+	fmu.ObserverIndex = cse.ObserverAddSlave(observer, localSlave)
 	metaData.FMUs = append(metaData.FMUs, fmu)
 }
 
@@ -90,9 +91,9 @@ func getFmuPaths(loadFolder string) (paths []string) {
 }
 
 func main() {
-	execution := createExecution()
-	observer := createObserver()
-	executionAddObserver(execution, observer)
+	execution := cse.CreateExecution()
+	observer := cse.CreateObserver()
+	cse.ExecutionAddObserver(execution, observer)
 
 	metaData := &structs.MetaData{
 		FMUs: []structs.FMU{},

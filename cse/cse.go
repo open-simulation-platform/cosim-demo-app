@@ -73,9 +73,9 @@ func executionGetStatus(execution *C.cse_execution) (status executionStatus) {
 	return
 }
 
-func observerGetReals(observer *C.cse_observer, fmu structs.FMU) (realSignals []Signal) {
+func ObserverGetReals(observer *C.cse_observer, fmu structs.FMU) (realSignals []structs.Signal) {
 	var realValueRefs []C.uint
-	var realVariables []Variable
+	var realVariables []structs.Variable
 	var numReals int
 	for _, variable := range fmu.Variables {
 		if variable.Type == "Real" {
@@ -90,9 +90,9 @@ func observerGetReals(observer *C.cse_observer, fmu structs.FMU) (realSignals []
 		realOutVal := make([]C.double, numReals)
 		C.cse_observer_slave_get_real(observer, C.int(fmu.ObserverIndex), &realValueRefs[0], C.ulonglong(numReals), &realOutVal[0])
 
-		realSignals = make([]Signal, numReals)
+		realSignals = make([]structs.Signal, numReals)
 		for k := range realVariables {
-			realSignals[k] = Signal{
+			realSignals[k] = structs.Signal{
 				Name:      realVariables[k].Name,
 				Causality: realVariables[k].Causality,
 				Type:      realVariables[k].Type,
@@ -103,9 +103,9 @@ func observerGetReals(observer *C.cse_observer, fmu structs.FMU) (realSignals []
 	return realSignals
 }
 
-func observerGetIntegers(observer *C.cse_observer, fmu FMU) (intSignals []Signal) {
+func ObserverGetIntegers(observer *C.cse_observer, fmu structs.FMU) (intSignals []structs.Signal) {
 	var intValueRefs []C.uint
-	var intVariables []Variable
+	var intVariables []structs.Variable
 	var numIntegers int
 	for _, variable := range fmu.Variables {
 		if variable.Type == "Integer" {
@@ -120,9 +120,9 @@ func observerGetIntegers(observer *C.cse_observer, fmu FMU) (intSignals []Signal
 		intOutVal := make([]C.int, numIntegers)
 		C.cse_observer_slave_get_integer(observer, C.int(fmu.ObserverIndex), &intValueRefs[0], C.ulonglong(numIntegers), &intOutVal[0])
 
-		intSignals = make([]Signal, numIntegers)
+		intSignals = make([]structs.Signal, numIntegers)
 		for k := range intVariables {
-			intSignals[k] = Signal{
+			intSignals[k] = structs.Signal{
 				Name:      intVariables[k].Name,
 				Causality: intVariables[k].Causality,
 				Type:      intVariables[k].Type,
@@ -133,7 +133,7 @@ func observerGetIntegers(observer *C.cse_observer, fmu FMU) (intSignals []Signal
 	return intSignals
 }
 
-func observerGetRealSamples(observer *C.cse_observer, nSamples int, signal *structs.TrendSignal) {
+func ObserverGetRealSamples(observer *C.cse_observer, nSamples int, signal *structs.TrendSignal) {
 	fromSample := 0
 	if len(signal.TrendTimestamps) > 0 {
 		fromSample = signal.TrendTimestamps[len(signal.TrendTimestamps)-1]
@@ -155,7 +155,7 @@ func observerGetRealSamples(observer *C.cse_observer, nSamples int, signal *stru
 func Polling(observer *C.cse_observer, status *structs.SimulationStatus) {
 	for {
 		if len(status.TrendSignals) > 0 {
-			observerGetRealSamples(observer, 10, &status.TrendSignals[0])
+			ObserverGetRealSamples(observer, 10, &status.TrendSignals[0])
 		}
 		time.Sleep(500 * time.Millisecond)
 	}
@@ -175,7 +175,7 @@ func Simulate(execution *C.cse_execution, command chan []string, status *structs
 				executionStart(execution)
 				status.Status = "play"
 			case "trend":
-				status.TrendSignals = append(status.TrendSignals, TrendSignal{cmd[1], cmd[2], nil, nil})
+				status.TrendSignals = append(status.TrendSignals, structs.TrendSignal{cmd[1], cmd[2], nil, nil})
 			case "untrend":
 				status.TrendSignals = []structs.TrendSignal{}
 			case "module":
