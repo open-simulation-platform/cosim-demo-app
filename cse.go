@@ -78,11 +78,11 @@ func observerGetReals(observer *C.cse_observer, fmu FMU) (realSignals []Signal) 
 	var realValueRefs []C.uint
 	var realVariables []Variable
 	var numReals int
-	for i := range fmu.Variables {
-		if fmu.Variables[i].Type == "Real" {
-			ref := C.uint(fmu.Variables[i].ValueReference)
+	for _, variable := range fmu.Variables {
+		if variable.Type == "Real" {
+			ref := C.uint(variable.ValueReference)
 			realValueRefs = append(realValueRefs, ref)
-			realVariables = append(realVariables, fmu.Variables[i])
+			realVariables = append(realVariables, variable)
 			numReals++
 		}
 	}
@@ -108,11 +108,11 @@ func observerGetIntegers(observer *C.cse_observer, fmu FMU) (intSignals []Signal
 	var intValueRefs []C.uint
 	var intVariables []Variable
 	var numIntegers int
-	for i := range fmu.Variables {
-		if fmu.Variables[i].Type == "Integer" {
-			ref := C.uint(fmu.Variables[i].ValueReference)
+	for _, variable := range fmu.Variables {
+		if variable.Type == "Integer" {
+			ref := C.uint(variable.ValueReference)
 			intValueRefs = append(intValueRefs, ref)
-			intVariables = append(intVariables, fmu.Variables[i])
+			intVariables = append(intVariables, variable)
 			numIntegers++
 		}
 	}
