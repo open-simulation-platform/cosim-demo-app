@@ -145,7 +145,7 @@ func observerGetRealSamples(observer *C.cse_observer, nSamples int, signal *stru
 
 }
 
-func Polling(sim SimulatorBeta, status *structs.SimulationStatus) {
+func Polling(sim *SimulatorBeta, status *structs.SimulationStatus) {
 	for {
 		if len(status.TrendSignals) > 0 {
 			observerGetRealSamples(sim.Observer, 10, &status.TrendSignals[0])
@@ -154,11 +154,14 @@ func Polling(sim SimulatorBeta, status *structs.SimulationStatus) {
 	}
 }
 
-func Simulate(sim SimulatorBeta, command chan []string, status *structs.SimulationStatus) {
+func Simulate(sim *SimulatorBeta, command chan []string, status *structs.SimulationStatus) {
 	for {
 		select {
 		case cmd := <-command:
 			switch cmd[0] {
+			case "load":
+				StartSimulation(sim, cmd[1])
+				status.Loaded = true
 			case "stop":
 				return
 			case "pause":
@@ -209,14 +212,22 @@ func getModuleData(status *structs.SimulationStatus, metaData *structs.MetaData,
 	return module
 }
 
-func StatePoll(state chan structs.JsonResponse, simulationStatus *structs.SimulationStatus, sim SimulatorBeta) {
+func StatePoll(state chan structs.JsonResponse, simulationStatus *structs.SimulationStatus, sim *SimulatorBeta) {
 
 	for {
-		state <- structs.JsonResponse{
-			Modules:      getModuleNames(&sim.MetaData),
-			Module:       getModuleData(simulationStatus, &sim.MetaData, sim.Observer),
-			Status:       simulationStatus.Status,
-			TrendSignals: simulationStatus.TrendSignals,
+		if simulationStatus.Loaded {
+			state <- structs.JsonResponse{
+				Loaded:       true,
+				Modules:      getModuleNames(&sim.MetaData),
+				Module:       getModuleData(simulationStatus, &sim.MetaData, sim.Observer),
+				Status:       simulationStatus.Status,
+				TrendSignals: simulationStatus.TrendSignals,
+			}
+		} else {
+			state <- structs.JsonResponse{
+				Loaded: false,
+				Status: simulationStatus.Status,
+			}
 		}
 		time.Sleep(1000 * time.Millisecond)
 	}
@@ -260,7 +271,11 @@ type SimulatorBeta struct {
 	MetaData  structs.MetaData
 }
 
-func CreateSimulation() SimulatorBeta {
+func CreateEmptySimulation() SimulatorBeta {
+	return SimulatorBeta{}
+}
+
+func StartSimulation(beta *SimulatorBeta, fmuDir string) {
 	execution := createExecution()
 	observer := createObserver()
 	executionAddObserver(execution, observer)
@@ -268,15 +283,12 @@ func CreateSimulation() SimulatorBeta {
 	metaData := structs.MetaData{
 		FMUs: []structs.FMU{},
 	}
-	dataDir := os.Getenv("TEST_DATA_DIR")
-	paths := getFmuPaths(dataDir + "/fmi2")
+	paths := getFmuPaths(fmuDir)
 	for _, path := range paths {
 		addFmu(execution, observer, &metaData, path)
 	}
 
-	return SimulatorBeta{
-		Execution: execution,
-		Observer:  observer,
-		MetaData:  metaData,
-	}
+	beta.Execution = execution
+	beta.Observer = observer
+	beta.MetaData = metaData
 }

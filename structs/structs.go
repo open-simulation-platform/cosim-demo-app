@@ -13,6 +13,7 @@ type Module struct {
 }
 
 type JsonResponse struct {
+	Loaded       bool          `json:"loaded"`
 	Status       string        `json:"status,omitempty"`
 	Modules      []string      `json:"modules,omitempty"`
 	Module       Module        `json:"module,omitempty"`
@@ -27,6 +28,7 @@ type TrendSignal struct {
 }
 
 type SimulationStatus struct {
+	Loaded       bool
 	Module       Module
 	TrendSignals []TrendSignal
 	Status       string
