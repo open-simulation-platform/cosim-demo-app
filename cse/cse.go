@@ -62,6 +62,10 @@ func executionStart(execution *C.cse_execution) {
 	C.cse_execution_start(execution)
 }
 
+func executionDestroy(execution *C.cse_execution) {
+	C.cse_execution_destroy(execution)
+}
+
 func executionStop(execution *C.cse_execution) {
 	C.cse_execution_stop(execution)
 }
@@ -160,8 +164,12 @@ func Simulate(sim *SimulatorBeta, command chan []string, status *structs.Simulat
 		case cmd := <-command:
 			switch cmd[0] {
 			case "load":
-				StartSimulation(sim, cmd[1])
+				CreateSimulation(sim, cmd[1])
 				status.Loaded = true
+			case "teardown":
+				status.Loaded = false
+				executionDestroy(sim.Execution)
+				sim = &SimulatorBeta{}
 			case "stop":
 				return
 			case "pause":
@@ -275,7 +283,7 @@ func CreateEmptySimulation() SimulatorBeta {
 	return SimulatorBeta{}
 }
 
-func StartSimulation(beta *SimulatorBeta, fmuDir string) {
+func CreateSimulation(beta *SimulatorBeta, fmuDir string) {
 	execution := createExecution()
 	observer := createObserver()
 	executionAddObserver(execution, observer)

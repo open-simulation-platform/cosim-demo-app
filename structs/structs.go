@@ -15,7 +15,7 @@ type Module struct {
 type JsonResponse struct {
 	Loaded       bool          `json:"loaded"`
 	Status       string        `json:"status,omitempty"`
-	Modules      []string      `json:"modules,omitempty"`
+	Modules      []string      `json:"modules"`
 	Module       Module        `json:"module,omitempty"`
 	TrendSignals []TrendSignal `json:"trendSignals,omitempty"`
 }
