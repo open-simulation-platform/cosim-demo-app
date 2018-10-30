@@ -20,9 +20,9 @@ func main() {
 	}
 
 	// Passing the channel to the go routine
-	go cse.StatePoll(state, simulationStatus, &sim)
-	go cse.Simulate(&sim, cmd, simulationStatus)
-	go cse.Polling(&sim, simulationStatus)
+	go cse.StateUpdateLoop(state, simulationStatus, &sim)
+	go cse.CommandLoop(&sim, cmd, simulationStatus)
+	go cse.TrendLoop(&sim, simulationStatus)
 
 	//Passing the channel to the server
 	server.Server(cmd, state)

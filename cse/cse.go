@@ -149,7 +149,7 @@ func observerGetRealSamples(observer *C.cse_observer, nSamples int, signal *stru
 
 }
 
-func Polling(sim *SimulatorBeta, status *structs.SimulationStatus) {
+func TrendLoop(sim *Simulation, status *structs.SimulationStatus) {
 	for {
 		if len(status.TrendSignals) > 0 {
 			observerGetRealSamples(sim.Observer, 10, &status.TrendSignals[0])
@@ -158,18 +158,18 @@ func Polling(sim *SimulatorBeta, status *structs.SimulationStatus) {
 	}
 }
 
-func Simulate(sim *SimulatorBeta, command chan []string, status *structs.SimulationStatus) {
+func CommandLoop(sim *Simulation, command chan []string, status *structs.SimulationStatus) {
 	for {
 		select {
 		case cmd := <-command:
 			switch cmd[0] {
 			case "load":
-				CreateSimulation(sim, cmd[1])
+				initializeSimulation(sim, cmd[1])
 				status.Loaded = true
 			case "teardown":
 				status.Loaded = false
 				executionDestroy(sim.Execution)
-				sim = &SimulatorBeta{}
+				sim = &Simulation{}
 			case "stop":
 				return
 			case "pause":
@@ -220,7 +220,7 @@ func getModuleData(status *structs.SimulationStatus, metaData *structs.MetaData,
 	return module
 }
 
-func StatePoll(state chan structs.JsonResponse, simulationStatus *structs.SimulationStatus, sim *SimulatorBeta) {
+func StateUpdateLoop(state chan structs.JsonResponse, simulationStatus *structs.SimulationStatus, sim *Simulation) {
 
 	for {
 		if simulationStatus.Loaded {
@@ -273,17 +273,17 @@ func getFmuPaths(loadFolder string) (paths []string) {
 	return paths
 }
 
-type SimulatorBeta struct {
+type Simulation struct {
 	Execution *C.cse_execution
 	Observer  *C.cse_observer
 	MetaData  structs.MetaData
 }
 
-func CreateEmptySimulation() SimulatorBeta {
-	return SimulatorBeta{}
+func CreateEmptySimulation() Simulation {
+	return Simulation{}
 }
 
-func CreateSimulation(beta *SimulatorBeta, fmuDir string) {
+func initializeSimulation(sim *Simulation, fmuDir string) {
 	execution := createExecution()
 	observer := createObserver()
 	executionAddObserver(execution, observer)
@@ -296,7 +296,7 @@ func CreateSimulation(beta *SimulatorBeta, fmuDir string) {
 		addFmu(execution, observer, &metaData, path)
 	}
 
-	beta.Execution = execution
-	beta.Observer = observer
-	beta.MetaData = metaData
+	sim.Execution = execution
+	sim.Observer = observer
+	sim.MetaData = metaData
 }
