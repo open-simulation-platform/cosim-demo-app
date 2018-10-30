@@ -15,7 +15,7 @@ func main() {
 
 	simulationStatus := &structs.SimulationStatus{
 		Loaded:       false,
-		Status:       "pause",
+		Status:       "stopped",
 		TrendSignals: []structs.TrendSignal{},
 	}
 

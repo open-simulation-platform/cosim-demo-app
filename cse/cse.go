@@ -166,8 +166,12 @@ func CommandLoop(sim *Simulation, command chan []string, status *structs.Simulat
 			case "load":
 				initializeSimulation(sim, cmd[1])
 				status.Loaded = true
+				status.Status = "pause"
 			case "teardown":
 				status.Loaded = false
+				status.Status = "stopped"
+				status.TrendSignals = []structs.TrendSignal{}
+				status.Module = structs.Module{}
 				executionDestroy(sim.Execution)
 				sim = &Simulation{}
 			case "stop":
