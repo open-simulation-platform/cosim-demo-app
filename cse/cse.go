@@ -62,6 +62,10 @@ func executionStart(execution *C.cse_execution) {
 	C.cse_execution_start(execution)
 }
 
+func executionDestroy(execution *C.cse_execution) {
+	C.cse_execution_destroy(execution)
+}
+
 func executionStop(execution *C.cse_execution) {
 	C.cse_execution_stop(execution)
 }
@@ -145,7 +149,7 @@ func observerGetRealSamples(observer *C.cse_observer, nSamples int, signal *stru
 
 }
 
-func Polling(sim SimulatorBeta, status *structs.SimulationStatus) {
+func TrendLoop(sim *Simulation, status *structs.SimulationStatus) {
 	for {
 		if len(status.TrendSignals) > 0 {
 			observerGetRealSamples(sim.Observer, 10, &status.TrendSignals[0])
@@ -154,11 +158,22 @@ func Polling(sim SimulatorBeta, status *structs.SimulationStatus) {
 	}
 }
 
-func Simulate(sim SimulatorBeta, command chan []string, status *structs.SimulationStatus) {
+func CommandLoop(sim *Simulation, command chan []string, status *structs.SimulationStatus) {
 	for {
 		select {
 		case cmd := <-command:
 			switch cmd[0] {
+			case "load":
+				initializeSimulation(sim, cmd[1])
+				status.Loaded = true
+				status.Status = "pause"
+			case "teardown":
+				status.Loaded = false
+				status.Status = "stopped"
+				status.TrendSignals = []structs.TrendSignal{}
+				status.Module = structs.Module{}
+				executionDestroy(sim.Execution)
+				sim = &Simulation{}
 			case "stop":
 				return
 			case "pause":
@@ -209,14 +224,22 @@ func getModuleData(status *structs.SimulationStatus, metaData *structs.MetaData,
 	return module
 }
 
-func StatePoll(state chan structs.JsonResponse, simulationStatus *structs.SimulationStatus, sim SimulatorBeta) {
+func StateUpdateLoop(state chan structs.JsonResponse, simulationStatus *structs.SimulationStatus, sim *Simulation) {
 
 	for {
-		state <- structs.JsonResponse{
-			Modules:      getModuleNames(&sim.MetaData),
-			Module:       getModuleData(simulationStatus, &sim.MetaData, sim.Observer),
-			Status:       simulationStatus.Status,
-			TrendSignals: simulationStatus.TrendSignals,
+		if simulationStatus.Loaded {
+			state <- structs.JsonResponse{
+				Loaded:       true,
+				Modules:      getModuleNames(&sim.MetaData),
+				Module:       getModuleData(simulationStatus, &sim.MetaData, sim.Observer),
+				Status:       simulationStatus.Status,
+				TrendSignals: simulationStatus.TrendSignals,
+			}
+		} else {
+			state <- structs.JsonResponse{
+				Loaded: false,
+				Status: simulationStatus.Status,
+			}
 		}
 		time.Sleep(1000 * time.Millisecond)
 	}
@@ -254,13 +277,17 @@ func getFmuPaths(loadFolder string) (paths []string) {
 	return paths
 }
 
-type SimulatorBeta struct {
+type Simulation struct {
 	Execution *C.cse_execution
 	Observer  *C.cse_observer
 	MetaData  structs.MetaData
 }
 
-func CreateSimulation() SimulatorBeta {
+func CreateEmptySimulation() Simulation {
+	return Simulation{}
+}
+
+func initializeSimulation(sim *Simulation, fmuDir string) {
 	execution := createExecution()
 	observer := createObserver()
 	executionAddObserver(execution, observer)
@@ -268,15 +295,12 @@ func CreateSimulation() SimulatorBeta {
 	metaData := structs.MetaData{
 		FMUs: []structs.FMU{},
 	}
-	dataDir := os.Getenv("TEST_DATA_DIR")
-	paths := getFmuPaths(dataDir + "/fmi2")
+	paths := getFmuPaths(fmuDir)
 	for _, path := range paths {
 		addFmu(execution, observer, &metaData, path)
 	}
 
-	return SimulatorBeta{
-		Execution: execution,
-		Observer:  observer,
-		MetaData:  metaData,
-	}
+	sim.Execution = execution
+	sim.Observer = observer
+	sim.MetaData = metaData
 }
