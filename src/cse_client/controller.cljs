@@ -53,30 +53,41 @@
                 (fn [db [causality]]
                   (assoc db :active-causality causality)))
 
+(defn socket-command [db cmd]
+  {:dispatch [::websocket/send socket-url (ws-request db {:command cmd})]})
+
 (k/reg-event-fx ::module-enter
                 (fn [{:keys [db]} [module]]
-                  {:dispatch [::websocket/send socket-url (ws-request db {:command ["module" module]})]}))
+                  (socket-command db ["module" module])))
 
 (k/reg-event-fx ::module-leave
                 (fn [{:keys [db]} _]
-                  {:dispatch [::websocket/send socket-url (ws-request db {:command ["module" nil]})]}))
+                  (socket-command db ["module" nil])))
+
+(k/reg-event-fx ::load
+                (fn [{:keys [db]} [folder]]
+                  (socket-command db ["load" folder])))
+
+(k/reg-event-fx ::teardown
+                (fn [{:keys [db]} _]
+                  (socket-command db ["teardown"])))
 
 (k/reg-event-fx ::play
                 (fn [{:keys [db]} _]
-                  {:dispatch [::websocket/send socket-url (ws-request db {:command ["play"]})]}))
+                  (socket-command db ["play"])))
 
 (k/reg-event-fx ::pause
                 (fn [{:keys [db]} _]
-                  {:dispatch [::websocket/send socket-url (ws-request db {:command ["pause"]})]}))
+                  (socket-command db ["pause"])))
 
 (k/reg-event-fx ::untrend
                 (fn [{:keys [db]} _]
-                  {:dispatch [::websocket/send socket-url (ws-request db {:command ["untrend"]})]
-                   :db       (assoc db :trend-values [])}))
+                  (merge (socket-command db ["untrend"])
+                         {:db (assoc db :trend-values [])})))
 
 (k/reg-event-fx ::trend
                 (fn [{:keys [db]} [{:keys [module signal]}]]
-                  {:dispatch [::websocket/send socket-url (ws-request db {:command ["trend" module signal]})]
-                   :db       (assoc db :trend-values [{:trend-data []
-                                                       :module     module
-                                                       :signal     signal}])}))
+                  (merge (socket-command db ["trend" module signal])
+                         {:db (assoc db :trend-values [{:trend-data []
+                                                        :module     module
+                                                        :signal     signal}])})))

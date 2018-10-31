@@ -2,6 +2,7 @@
   (:require [cse-client.trend :as trend]
             [kee-frame.core :as k]
             [re-frame.core :as rf]
+            [reagent.core :as r]
             [cse-client.controller :as controller]
             [cse-client.dp :as dp]
             [cse-client.config :refer [socket-url]]))
@@ -62,16 +63,37 @@
    [:button.ui.button {:on-click #(rf/dispatch [::controller/play])} "Play"]
    [:button.ui.button {:on-click #(rf/dispatch [::controller/pause])} "Pause"]])
 
+(defn index-page []
+  (let [loaded? (rf/subscribe [:loaded?])
+        load-dir (r/atom "")]
+    (fn []
+      (if @loaded?
+        [dp/svg-component]
+        [:div [:div "Specify a folder with FMUs:"]
+         [:div.row
+          [:input {:style         {:min-width "400px"}
+                   :type          :text
+                   :default-value ""
+                   :on-change     #(reset! load-dir (-> % .-target .-value))}]]
+         [:div.row [:button.ui.button.pull-right {:disabled (empty? @load-dir)
+                                                  :on-click #(rf/dispatch [::controller/load @load-dir])} "Load simulation"]]]))))
+
 (defn root-comp []
-  (let [socket-state (rf/subscribe [:kee-frame.websocket/state socket-url])]
+  (let [socket-state (rf/subscribe [:kee-frame.websocket/state socket-url])
+        loaded? (rf/subscribe [:loaded?])
+        status (rf/subscribe [:status])]
     [:div
      [:div.ui.inverted.huge.borderless.fixed.fluid.menu
-      [:a.header.item "Project name"]
+      [:a.header.item "Open Simulation Platform"]
       [:div.right.menu
+       (when (and @loaded? (= @status "pause"))
+         [:a.item {:on-click #(rf/dispatch [::controller/teardown])} "Teardown"])
        [:div.item
         [:div "Connection:" (:state @socket-state)]]
-       [:a.item {:on-click #(rf/dispatch [::controller/play])} "Play"]
-       [:a.item {:on-click #(rf/dispatch [::controller/pause])} "Pause"]]]
+       [:button.ui.button {:on-click #(rf/dispatch [::controller/play])
+                           :disabled (or (not @loaded?) (= @status "play"))} "Play"]
+       [:button.ui.button {:on-click #(rf/dispatch [::controller/pause])
+                           :disabled (or (not @loaded?) (= @status "pause"))} "Pause"]]]
      [:div.ui.grid
       [:div.row
        [:div#sidebar.column
@@ -85,5 +107,5 @@
           [k/switch-route (comp :name :data)
            :trend [trend/trend-outer]
            :module [module-listing]
-           :index [dp/svg-component]
+           :index [index-page]
            nil [:div "Loading..."]]]]]]]]))

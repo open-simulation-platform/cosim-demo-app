@@ -25,6 +25,8 @@
           causalities
           first)))
 
+(rf/reg-sub :loaded? (comp :loaded :state))
+(rf/reg-sub :status (comp :status :state))
 (rf/reg-sub :module (comp :module :state))
 (rf/reg-sub :modules (comp :modules :state))
 (rf/reg-sub :causalities causalities)
