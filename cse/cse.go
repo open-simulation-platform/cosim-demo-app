@@ -130,13 +130,14 @@ func observerGetIntegers(observer *C.cse_observer, fmu structs.FMU) (intSignals 
 	return intSignals
 }
 
-func observerGetRealSamples(observer *C.cse_observer, nSamples int, signal *structs.TrendSignal) {
+func observerGetRealSamples(observer *C.cse_observer, metaData structs.MetaData, nSamples int, signal *structs.TrendSignal) {
 	fromSample := 0
+	fmu := findFmu(metaData, signal.Module)
 	if len(signal.TrendTimestamps) > 0 {
 		fromSample = signal.TrendTimestamps[len(signal.TrendTimestamps)-1]
 	}
-	slaveIndex := C.int(0)
-	variableIndex := C.uint(0)
+	slaveIndex := C.int(fmu.ObserverIndex)
+	variableIndex := C.uint(findVariableIndec(fmu, signal.Signal, signal.Causality, signal.Type))
 	cnSamples := C.ulonglong(nSamples)
 	realOutVal := make([]C.double, nSamples)
 	timeStamps := make([]C.long, nSamples)
@@ -148,11 +149,23 @@ func observerGetRealSamples(observer *C.cse_observer, nSamples int, signal *stru
 	}
 
 }
+func findVariableIndec(fmu structs.FMU, signalName string, causality string, valueType string) (index int) {
+	for _, variable := range fmu.Variables {
+		if variable.Name == signalName && variable.Type == valueType && variable.Causality == causality {
+			index = variable.ValueReference
+		}
+	}
+	return
+}
 
 func TrendLoop(sim *Simulation, status *structs.SimulationStatus) {
 	for {
 		if len(status.TrendSignals) > 0 {
-			observerGetRealSamples(sim.Observer, 10, &status.TrendSignals[0])
+			var trend = &status.TrendSignals[0]
+			switch trend.Type {
+			case "Real":
+				observerGetRealSamples(sim.Observer, sim.MetaData, 10, trend)
+			}
 		}
 		time.Sleep(500 * time.Millisecond)
 	}
@@ -183,7 +196,7 @@ func CommandLoop(sim *Simulation, command chan []string, status *structs.Simulat
 				executionStart(sim.Execution)
 				status.Status = "play"
 			case "trend":
-				status.TrendSignals = append(status.TrendSignals, structs.TrendSignal{cmd[1], cmd[2], nil, nil})
+				status.TrendSignals = append(status.TrendSignals, structs.TrendSignal{cmd[1], cmd[2], cmd[3], cmd[4], nil, nil})
 			case "untrend":
 				status.TrendSignals = []structs.TrendSignal{}
 			case "module":
@@ -195,6 +208,15 @@ func CommandLoop(sim *Simulation, command chan []string, status *structs.Simulat
 			}
 		}
 	}
+}
+
+func findFmu(metaData structs.MetaData, moduleName string) (foundFmu structs.FMU) {
+	for _, fmu := range metaData.FMUs {
+		if fmu.Name == moduleName {
+			foundFmu = fmu
+		}
+	}
+	return
 }
 
 func getModuleNames(metaData *structs.MetaData) []string {

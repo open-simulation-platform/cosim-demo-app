@@ -23,6 +23,8 @@ type JsonResponse struct {
 type TrendSignal struct {
 	Module          string
 	Signal          string
+	Causality       string
+	Type            string
 	TrendValues     []float64
 	TrendTimestamps []int
 }
