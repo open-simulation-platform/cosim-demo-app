@@ -137,7 +137,7 @@ func observerGetRealSamples(observer *C.cse_observer, metaData structs.MetaData,
 		fromSample = signal.TrendTimestamps[len(signal.TrendTimestamps)-1]
 	}
 	slaveIndex := C.int(fmu.ObserverIndex)
-	variableIndex := C.uint(findVariableIndec(fmu, signal.Signal, signal.Causality, signal.Type))
+	variableIndex := C.uint(findVariableIndex(fmu, signal.Signal, signal.Causality, signal.Type))
 	cnSamples := C.ulonglong(nSamples)
 	realOutVal := make([]C.double, nSamples)
 	timeStamps := make([]C.long, nSamples)
@@ -149,7 +149,7 @@ func observerGetRealSamples(observer *C.cse_observer, metaData structs.MetaData,
 	}
 
 }
-func findVariableIndec(fmu structs.FMU, signalName string, causality string, valueType string) (index int) {
+func findVariableIndex(fmu structs.FMU, signalName string, causality string, valueType string) (index int) {
 	for _, variable := range fmu.Variables {
 		if variable.Name == signalName && variable.Type == valueType && variable.Causality == causality {
 			index = variable.ValueReference
