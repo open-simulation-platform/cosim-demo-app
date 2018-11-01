@@ -143,7 +143,7 @@ func observerGetRealSamples(observer *C.cse_observer, metaData structs.MetaData,
 	timeStamps := make([]C.long, nSamples)
 	actualNumSamples := C.cse_observer_slave_get_real_samples(observer, slaveIndex, variableIndex, C.long(fromSample), cnSamples, &realOutVal[0], &timeStamps[0])
 
-	for i := 0; i < int(actualNumSamples); i++ {
+	for i := 0; i < int(actualNumSamples); i += 100 {
 		signal.TrendTimestamps = append(signal.TrendTimestamps, int(timeStamps[i]))
 		signal.TrendValues = append(signal.TrendValues, float64(realOutVal[i]))
 	}
@@ -164,7 +164,7 @@ func TrendLoop(sim *Simulation, status *structs.SimulationStatus) {
 			var trend = &status.TrendSignals[0]
 			switch trend.Type {
 			case "Real":
-				observerGetRealSamples(sim.Observer, sim.MetaData, 10, trend)
+				observerGetRealSamples(sim.Observer, sim.MetaData, 1000, trend)
 			}
 		}
 		time.Sleep(500 * time.Millisecond)
