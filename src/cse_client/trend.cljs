@@ -98,7 +98,7 @@
        :component-did-update   update
        :reagent-render         (fn [comp]
                                  [:div {:style {:flex "1 1 auto"}}
-                                  (doall (map (partial range-selector (:trend-millis comp)) range-configs))
+                                  #_(doall (map (partial range-selector (:trend-millis comp)) range-configs))
                                   [:div#charty]])})))
 
 (defn trend-outer []

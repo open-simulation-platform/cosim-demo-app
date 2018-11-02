@@ -86,8 +86,10 @@
                          {:db (assoc db :trend-values [])})))
 
 (k/reg-event-fx ::trend
-                (fn [{:keys [db]} [{:keys [module signal]}]]
-                  (merge (socket-command db ["trend" module signal])
+                (fn [{:keys [db]} [{:keys [module signal causality type]}]]
+                  (merge (socket-command db ["trend" module signal causality type])
                          {:db (assoc db :trend-values [{:trend-data []
                                                         :module     module
-                                                        :signal     signal}])})))
+                                                        :signal     signal
+                                                        :causality  causality
+                                                        :type       type}])})))

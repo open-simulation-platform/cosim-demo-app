@@ -26,7 +26,7 @@
                [:td name]
                [:td type]
                [:td value]
-               [:td [:a {:href (k/path-for [:trend {:module (:name module) :signal name}])} "Trend"]]])
+               [:td [:a {:href (k/path-for [:trend {:module (:name module) :signal name :causality causality :type type}])} "Trend"]]])
             signals)]]]))
 
 (defn module-listing []
@@ -63,12 +63,21 @@
    [:button.ui.button {:on-click #(rf/dispatch [::controller/play])} "Play"]
    [:button.ui.button {:on-click #(rf/dispatch [::controller/pause])} "Pause"]])
 
+(defn dashboard []
+  [:table.ui.basic.table.definition
+   [:tbody
+    (for [[k v] @(rf/subscribe [:overview])]
+      ^{:key k}
+      [:tr
+       [:td k]
+       [:td v]])]])
+
 (defn index-page []
   (let [loaded? (rf/subscribe [:loaded?])
         load-dir (r/atom "")]
     (fn []
       (if @loaded?
-        [dp/svg-component]
+        [dashboard]
         [:div [:div "Specify a folder with FMUs:"]
          [:div.row
           [:input {:style         {:min-width "400px"}
@@ -88,12 +97,15 @@
       [:div.right.menu
        (when (and @loaded? (= @status "pause"))
          [:a.item {:on-click #(rf/dispatch [::controller/teardown])} "Teardown"])
+       (when (= :disconnected (:state @socket-state))
+         [:div.item
+          [:div "Lost server connection!"]])
        [:div.item
-        [:div "Connection:" (:state @socket-state)]]
-       [:button.ui.button {:on-click #(rf/dispatch [::controller/play])
-                           :disabled (or (not @loaded?) (= @status "play"))} "Play"]
-       [:button.ui.button {:on-click #(rf/dispatch [::controller/pause])
-                           :disabled (or (not @loaded?) (= @status "pause"))} "Pause"]]]
+        [:div "Time: " @(rf/subscribe [:time])]]
+       (when (and @loaded? (= @status "pause"))
+         [:a.item {:on-click #(rf/dispatch [::controller/play])} "Play"])
+       (when (and @loaded? (= @status "play"))
+         [:a.item {:on-click #(rf/dispatch [::controller/pause])} "Pause"])]]
      [:div.ui.grid
       [:div.row
        [:div#sidebar.column
@@ -101,7 +113,11 @@
        [:div#content.column
         [:div.ui.grid
          [:div.row
-          [:h1.ui.huge.header "Dashboard"]]
+          [:h1.ui.huge.header [k/switch-route (comp :name :data)
+                               :trend "Trend"
+                               :module "Model"
+                               :index "Simulation status"
+                               nil [:div "Loading..."]]]]
          [:div.ui.divider]
          [:div.row
           [k/switch-route (comp :name :data)

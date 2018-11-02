@@ -56,3 +56,7 @@ body {
 .pull-right {
     float: right !important;
 }
+
+#charty {
+    width: 1000px;
+}
