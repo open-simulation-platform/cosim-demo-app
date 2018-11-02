@@ -25,6 +25,13 @@ func createExecution() (execution *C.cse_execution) {
 	return execution
 }
 
+func getSimulationTime(execution *C.cse_execution) (time float64) {
+	var status C.cse_execution_status
+	C.cse_execution_get_status(execution, &status)
+	time = float64(status.current_time)
+	return
+}
+
 func createLocalSlave(fmuPath string) (slave *C.cse_slave) {
 	slave = C.cse_local_slave_create(C.CString(fmuPath))
 	return
@@ -130,29 +137,46 @@ func observerGetIntegers(observer *C.cse_observer, fmu structs.FMU) (intSignals 
 	return intSignals
 }
 
-func observerGetRealSamples(observer *C.cse_observer, nSamples int, signal *structs.TrendSignal) {
+func compress(timeStamps []C.long, samples []C.double, width int) {
+
+}
+
+func observerGetRealSamples(observer *C.cse_observer, metaData structs.MetaData, nSamples int, signal *structs.TrendSignal) {
 	fromSample := 0
+	fmu := findFmu(metaData, signal.Module)
 	if len(signal.TrendTimestamps) > 0 {
 		fromSample = signal.TrendTimestamps[len(signal.TrendTimestamps)-1]
 	}
-	slaveIndex := C.int(0)
-	variableIndex := C.uint(0)
+	slaveIndex := C.int(fmu.ObserverIndex)
+	variableIndex := C.uint(findVariableIndex(fmu, signal.Signal, signal.Causality, signal.Type))
 	cnSamples := C.ulonglong(nSamples)
 	realOutVal := make([]C.double, nSamples)
 	timeStamps := make([]C.long, nSamples)
 	actualNumSamples := C.cse_observer_slave_get_real_samples(observer, slaveIndex, variableIndex, C.long(fromSample), cnSamples, &realOutVal[0], &timeStamps[0])
 
-	for i := 0; i < int(actualNumSamples); i++ {
+	for i := 0; i < int(actualNumSamples); i += 100 {
 		signal.TrendTimestamps = append(signal.TrendTimestamps, int(timeStamps[i]))
 		signal.TrendValues = append(signal.TrendValues, float64(realOutVal[i]))
 	}
 
 }
+func findVariableIndex(fmu structs.FMU, signalName string, causality string, valueType string) (index int) {
+	for _, variable := range fmu.Variables {
+		if variable.Name == signalName && variable.Type == valueType && variable.Causality == causality {
+			index = variable.ValueReference
+		}
+	}
+	return
+}
 
 func TrendLoop(sim *Simulation, status *structs.SimulationStatus) {
 	for {
 		if len(status.TrendSignals) > 0 {
-			observerGetRealSamples(sim.Observer, 10, &status.TrendSignals[0])
+			var trend = &status.TrendSignals[0]
+			switch trend.Type {
+			case "Real":
+				observerGetRealSamples(sim.Observer, sim.MetaData, 1000, trend)
+			}
 		}
 		time.Sleep(500 * time.Millisecond)
 	}
@@ -166,10 +190,12 @@ func CommandLoop(sim *Simulation, command chan []string, status *structs.Simulat
 			case "load":
 				initializeSimulation(sim, cmd[1])
 				status.Loaded = true
+				status.ConfigDir = cmd[1]
 				status.Status = "pause"
 			case "teardown":
 				status.Loaded = false
 				status.Status = "stopped"
+				status.ConfigDir = ""
 				status.TrendSignals = []structs.TrendSignal{}
 				status.Module = structs.Module{}
 				executionDestroy(sim.Execution)
@@ -183,7 +209,7 @@ func CommandLoop(sim *Simulation, command chan []string, status *structs.Simulat
 				executionStart(sim.Execution)
 				status.Status = "play"
 			case "trend":
-				status.TrendSignals = append(status.TrendSignals, structs.TrendSignal{cmd[1], cmd[2], nil, nil})
+				status.TrendSignals = append(status.TrendSignals, structs.TrendSignal{cmd[1], cmd[2], cmd[3], cmd[4], nil, nil})
 			case "untrend":
 				status.TrendSignals = []structs.TrendSignal{}
 			case "module":
@@ -195,6 +221,15 @@ func CommandLoop(sim *Simulation, command chan []string, status *structs.Simulat
 			}
 		}
 	}
+}
+
+func findFmu(metaData structs.MetaData, moduleName string) (foundFmu structs.FMU) {
+	for _, fmu := range metaData.FMUs {
+		if fmu.Name == moduleName {
+			foundFmu = fmu
+		}
+	}
+	return
 }
 
 func getModuleNames(metaData *structs.MetaData) []string {
@@ -229,15 +264,17 @@ func StateUpdateLoop(state chan structs.JsonResponse, simulationStatus *structs.
 	for {
 		if simulationStatus.Loaded {
 			state <- structs.JsonResponse{
-				Loaded:       true,
-				Modules:      getModuleNames(&sim.MetaData),
-				Module:       getModuleData(simulationStatus, &sim.MetaData, sim.Observer),
-				Status:       simulationStatus.Status,
-				TrendSignals: simulationStatus.TrendSignals,
+				SimulationTime: getSimulationTime(sim.Execution),
+				Modules:        getModuleNames(&sim.MetaData),
+				Module:         getModuleData(simulationStatus, &sim.MetaData, sim.Observer),
+				Loaded:         simulationStatus.Loaded,
+				Status:         simulationStatus.Status,
+				ConfigDir:      simulationStatus.ConfigDir,
+				TrendSignals:   simulationStatus.TrendSignals,
 			}
 		} else {
 			state <- structs.JsonResponse{
-				Loaded: false,
+				Loaded: simulationStatus.Loaded,
 				Status: simulationStatus.Status,
 			}
 		}
