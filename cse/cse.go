@@ -25,6 +25,13 @@ func createExecution() (execution *C.cse_execution) {
 	return execution
 }
 
+func getSimulationTime(execution *C.cse_execution) (time float64) {
+	var status C.cse_execution_status
+	C.cse_execution_get_status(execution, &status)
+	time = float64(status.current_time)
+	return
+}
+
 func createLocalSlave(fmuPath string) (slave *C.cse_slave) {
 	slave = C.cse_local_slave_create(C.CString(fmuPath))
 	return
@@ -130,6 +137,10 @@ func observerGetIntegers(observer *C.cse_observer, fmu structs.FMU) (intSignals 
 	return intSignals
 }
 
+func compress(timeStamps []C.long, samples []C.double, width int) {
+
+}
+
 func observerGetRealSamples(observer *C.cse_observer, metaData structs.MetaData, nSamples int, signal *structs.TrendSignal) {
 	fromSample := 0
 	fmu := findFmu(metaData, signal.Module)
@@ -179,10 +190,12 @@ func CommandLoop(sim *Simulation, command chan []string, status *structs.Simulat
 			case "load":
 				initializeSimulation(sim, cmd[1])
 				status.Loaded = true
+				status.ConfigDir = cmd[1]
 				status.Status = "pause"
 			case "teardown":
 				status.Loaded = false
 				status.Status = "stopped"
+				status.ConfigDir = ""
 				status.TrendSignals = []structs.TrendSignal{}
 				status.Module = structs.Module{}
 				executionDestroy(sim.Execution)
@@ -251,15 +264,17 @@ func StateUpdateLoop(state chan structs.JsonResponse, simulationStatus *structs.
 	for {
 		if simulationStatus.Loaded {
 			state <- structs.JsonResponse{
-				Loaded:       true,
-				Modules:      getModuleNames(&sim.MetaData),
-				Module:       getModuleData(simulationStatus, &sim.MetaData, sim.Observer),
-				Status:       simulationStatus.Status,
-				TrendSignals: simulationStatus.TrendSignals,
+				SimulationTime: getSimulationTime(sim.Execution),
+				Modules:        getModuleNames(&sim.MetaData),
+				Module:         getModuleData(simulationStatus, &sim.MetaData, sim.Observer),
+				Loaded:         simulationStatus.Loaded,
+				Status:         simulationStatus.Status,
+				ConfigDir:      simulationStatus.ConfigDir,
+				TrendSignals:   simulationStatus.TrendSignals,
 			}
 		} else {
 			state <- structs.JsonResponse{
-				Loaded: false,
+				Loaded: simulationStatus.Loaded,
 				Status: simulationStatus.Status,
 			}
 		}

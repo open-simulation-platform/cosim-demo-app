@@ -13,11 +13,13 @@ type Module struct {
 }
 
 type JsonResponse struct {
-	Loaded       bool          `json:"loaded"`
-	Status       string        `json:"status,omitempty"`
-	Modules      []string      `json:"modules"`
-	Module       Module        `json:"module,omitempty"`
-	TrendSignals []TrendSignal `json:"trendSignals,omitempty"`
+	Loaded         bool          `json:"loaded"`
+	SimulationTime float64       `json:"time"`
+	ConfigDir      string        `json:"configDir,omitempty"`
+	Status         string        `json:"status,omitempty"`
+	Modules        []string      `json:"modules"`
+	Module         Module        `json:"module,omitempty"`
+	TrendSignals   []TrendSignal `json:"trendSignals,omitempty"`
 }
 
 type TrendSignal struct {
@@ -31,6 +33,7 @@ type TrendSignal struct {
 
 type SimulationStatus struct {
 	Loaded       bool
+	ConfigDir    string
 	Module       Module
 	TrendSignals []TrendSignal
 	Status       string
