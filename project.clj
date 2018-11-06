@@ -5,7 +5,7 @@
                  [re-frame "0.10.6" :exclusions [reagent]]
                  [cljsjs/highstock "6.0.7-0"]
                  [cljsjs/chartjs "2.7.0-0"]
-                 [org.clojure/clojurescript "1.10.339"]
+                 [org.clojure/clojurescript "1.10.439"]
                  [org.clojure/clojure "1.9.0"]]
   :plugins [[lein-figwheel "0.5.16"]
             [lein-cljsbuild "1.1.7"]]
