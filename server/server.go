@@ -1,7 +1,9 @@
 package server
 
 import (
+	"cse-server-go/cse"
 	"cse-server-go/structs"
+	"encoding/json"
 	"html/template"
 	"net/http"
 	"github.com/gorilla/mux"
@@ -19,7 +21,7 @@ var data = PageData{
 	CseAnswer: "",
 }
 
-func Server(command chan []string, state chan structs.JsonResponse) {
+func Server(command chan []string, state chan structs.JsonResponse, simulationStatus *structs.SimulationStatus, sim *cse.Simulation) {
 	router := mux.NewRouter()
 	box := packr.NewBox("./resources/public")
 	tmpl := template.Must(template.ParseFiles("layout.html"))
@@ -29,6 +31,11 @@ func Server(command chan []string, state chan structs.JsonResponse) {
 	})
 
 	router.PathPrefix("/static/").Handler(http.StripPrefix("/static/", http.FileServer(box)))
+
+	router.HandleFunc("/status", func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Content-Type", "application/json")
+		json.NewEncoder(w).Encode(cse.SimulationStatus(simulationStatus, sim))
+	})
 
 	router.HandleFunc("/ws", WebsocketHandler(command, state))
 

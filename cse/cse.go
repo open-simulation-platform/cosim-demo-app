@@ -250,25 +250,30 @@ func getModuleData(status *structs.SimulationStatus, metaData *structs.MetaData,
 	return module
 }
 
+func SimulationStatus(simulationStatus *structs.SimulationStatus, sim *Simulation) structs.JsonResponse {
+	if simulationStatus.Loaded {
+		return structs.JsonResponse{
+			SimulationTime: getSimulationTime(sim.Execution),
+			Modules:        getModuleNames(&sim.MetaData),
+			Module:         getModuleData(simulationStatus, &sim.MetaData, sim.Observer),
+			Loaded:         simulationStatus.Loaded,
+			Status:         simulationStatus.Status,
+			ConfigDir:      simulationStatus.ConfigDir,
+			TrendSignals:   simulationStatus.TrendSignals,
+		}
+	} else {
+		return structs.JsonResponse{
+			Loaded: simulationStatus.Loaded,
+			Status: simulationStatus.Status,
+		}
+	}
+
+}
+
 func StateUpdateLoop(state chan structs.JsonResponse, simulationStatus *structs.SimulationStatus, sim *Simulation) {
 
 	for {
-		if simulationStatus.Loaded {
-			state <- structs.JsonResponse{
-				SimulationTime: getSimulationTime(sim.Execution),
-				Modules:        getModuleNames(&sim.MetaData),
-				Module:         getModuleData(simulationStatus, &sim.MetaData, sim.Observer),
-				Loaded:         simulationStatus.Loaded,
-				Status:         simulationStatus.Status,
-				ConfigDir:      simulationStatus.ConfigDir,
-				TrendSignals:   simulationStatus.TrendSignals,
-			}
-		} else {
-			state <- structs.JsonResponse{
-				Loaded: simulationStatus.Loaded,
-				Status: simulationStatus.Status,
-			}
-		}
+		state <- SimulationStatus(simulationStatus, sim)
 		time.Sleep(1000 * time.Millisecond)
 	}
 }

@@ -13,18 +13,18 @@ func main() {
 	cmd := make(chan []string, 10)
 	state := make(chan structs.JsonResponse, 10)
 
-	simulationStatus := &structs.SimulationStatus{
+	simulationStatus := structs.SimulationStatus{
 		Loaded:       false,
 		Status:       "stopped",
 		TrendSignals: []structs.TrendSignal{},
 	}
 
 	// Passing the channel to the go routine
-	go cse.StateUpdateLoop(state, simulationStatus, &sim)
-	go cse.CommandLoop(&sim, cmd, simulationStatus)
-	go cse.TrendLoop(&sim, simulationStatus)
+	go cse.StateUpdateLoop(state, &simulationStatus, &sim)
+	go cse.CommandLoop(&sim, cmd, &simulationStatus)
+	go cse.TrendLoop(&sim, &simulationStatus)
 
 	//Passing the channel to the server
-	server.Server(cmd, state)
+	server.Server(cmd, state, &simulationStatus, &sim)
 	close(cmd)
 }
