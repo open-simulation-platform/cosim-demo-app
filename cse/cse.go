@@ -232,22 +232,26 @@ func getModuleNames(metaData *structs.MetaData) []string {
 	return modules
 }
 
-func getModuleData(status *structs.SimulationStatus, metaData *structs.MetaData, observer *C.cse_observer) (module structs.Module) {
+func getModuleData(observer *C.cse_observer, fmu structs.FMU) (module structs.Module){
+	realSignals := observerGetReals(observer, fmu)
+	intSignals := observerGetIntegers(observer, fmu)
+	var signals []structs.Signal
+	signals = append(signals, realSignals...)
+	signals = append(signals, intSignals...)
+	module.Name = fmu.Name
+	module.Signals = signals
+	return
+}
+
+func findModuleData(status *structs.SimulationStatus, metaData *structs.MetaData, observer *C.cse_observer) (module structs.Module) {
 	if len(status.Module.Name) > 0 {
 		for _, fmu := range metaData.FMUs {
 			if fmu.Name == status.Module.Name {
-				realSignals := observerGetReals(observer, fmu)
-				intSignals := observerGetIntegers(observer, fmu)
-				var signals []structs.Signal
-				signals = append(signals, realSignals...)
-				signals = append(signals, intSignals...)
-				module.Name = fmu.Name
-				module.Signals = signals
+				module = getModuleData(observer, fmu)
 			}
 		}
 	}
-
-	return module
+	return
 }
 
 func SimulationStatus(simulationStatus *structs.SimulationStatus, sim *Simulation) structs.JsonResponse {
@@ -255,7 +259,7 @@ func SimulationStatus(simulationStatus *structs.SimulationStatus, sim *Simulatio
 		return structs.JsonResponse{
 			SimulationTime: getSimulationTime(sim.Execution),
 			Modules:        getModuleNames(&sim.MetaData),
-			Module:         getModuleData(simulationStatus, &sim.MetaData, sim.Observer),
+			Module:         findModuleData(simulationStatus, &sim.MetaData, sim.Observer),
 			Loaded:         simulationStatus.Loaded,
 			Status:         simulationStatus.Status,
 			ConfigDir:      simulationStatus.ConfigDir,
