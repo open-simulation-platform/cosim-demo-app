@@ -23,8 +23,8 @@ var data = PageData{
 
 func Server(command chan []string, state chan structs.JsonResponse, simulationStatus *structs.SimulationStatus, sim *cse.Simulation) {
 	router := mux.NewRouter()
-	box := packr.NewBox("./resources/public")
-	tmpl := template.Must(template.ParseFiles("layout.html"))
+	box := packr.NewBox("../resources/public")
+	tmpl := template.Must(template.ParseFiles("../layout.html"))
 
 	router.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
 		tmpl.Execute(w, data)
