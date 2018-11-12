@@ -35,11 +35,14 @@
                                      :format       :json-kw
                                      :wrap-message identity}}))
 
+(defn point [x y]
+  {:x x :y y})
+
 (k/reg-event-db ::socket-message-received
                 (fn [db [{message :message}]]
                   (let [{:keys [TrendTimestamps TrendValues]} (-> message :trendSignals first)]
                     (-> db
-                        (assoc-in [:trend-values 0 :trend-data] (map vector TrendTimestamps TrendValues))
+                        (assoc-in [:trend-values 0 :trend-data] (map point TrendTimestamps TrendValues))
                         (update :state merge message)))))
 
 

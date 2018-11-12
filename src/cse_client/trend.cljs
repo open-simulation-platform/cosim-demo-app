@@ -1,9 +1,8 @@
 (ns cse-client.trend
   (:require [reagent.core :as r]
-            [cljsjs.highstock]
+            [cljsjs.chartjs]
             [re-frame.core :as rf]
-            [cljs.spec.alpha :as s]
-            [kee-frame.core :as k]))
+            [cljs.spec.alpha :as s]))
 
 (def default-series
   {:animation false
@@ -39,26 +38,6 @@
         (.setData (clj->js trend-data) false)))
   (.redraw chart false))
 
-(def range-configs
-  [{:millis (* 1000 10)
-    :type   "second"
-    :text   "10s"}
-   {:millis (* 1000 30)
-    :type   "second"
-    :text   "30s"}
-   {:millis (* 1000 60)
-    :type   "minute"
-    :text   "1m"}
-   {:millis (* 1000 60 5)
-    :type   "minute"
-    :text   "5m"}
-   {:millis (* 1000 60 10)
-    :type   "minute"
-    :text   "10m"}
-   {:millis (* 1000 60 20)
-    :type   "minute"
-    :text   "20m"}])
-
 (defn on-selection [event]
   (if-let [x-axis (some-> event (aget "xAxis") (aget 0))]
     (rf/dispatch [:cybersea.controller.trend/update-zoom {:min (-> x-axis .-min)
@@ -66,8 +45,10 @@
     (rf/dispatch [:cybersea.controller.trend/update-zoom nil])))
 
 (def default-config
-  {:chart     {:type     "line"
-               :zoomType "xy"
+  {:type      "line"
+   :data      {:datasets [{:label "Fard"
+                           :data  [{:x 1 :y 2} {:x 15 :y 25}]}]}
+   :chart     {:zoomType "xy"
                :events   {:selection on-selection}}
    :xAxis     {:type                 "datetime"
                :dateTimeLabelFormats {:millisecond "%H:%M:%S.%L"}
@@ -79,27 +60,22 @@
    :title     {:text ""}
    :legend    {:enabled true}})
 
-(defn range-selector [trend-millis {:keys [text millis]}]
-  ^{:key text}
-  [:button.btn.btn-default {:on-click #(rf/dispatch [:cybersea.controller.trend/update-millis millis]) :class (if (= trend-millis millis) "selected" "")} text])
-
 (defn trend-inner []
   (let [chart (atom nil)
+        ctx (atom nil)
         update (fn [comp]
                  (let [{:keys [trend-values]} (r/props comp)]
-                   #_(when-not (s/valid? ::trend-values trend-values)
-                       (throw (ex-info "Invalid trend data, excerpt here " {:trend-values trend-values})))
-                   (update-chart-data @chart trend-values)))]
+                   #_(update-chart-data @chart trend-values)))]
     (r/create-class
       {:component-did-mount    (fn [comp]
-                                 (reset! chart (.chart js/Highcharts "charty" (clj->js default-config)))
+                                 (reset! ctx (.. js/document (getElementById "charty") (getContext "2d")))
+                                 (reset! chart (js/Chart. @ctx (clj->js default-config)))
                                  (update comp))
        :component-will-unmount #(some-> @chart .destroy)
        :component-did-update   update
        :reagent-render         (fn [comp]
                                  [:div {:style {:flex "1 1 auto"}}
-                                  #_(doall (map (partial range-selector (:trend-millis comp)) range-configs))
-                                  [:div#charty]])})))
+                                  [:canvas#charty]])})))
 
 (defn trend-outer []
   (let [trend-values (rf/subscribe [::trend-values])
