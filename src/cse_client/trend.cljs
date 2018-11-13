@@ -1,102 +1,52 @@
 (ns cse-client.trend
   (:require [reagent.core :as r]
-            [cljsjs.chartjs]
+            [cljsjs.plotly]
             [re-frame.core :as rf]
             [cljs.spec.alpha :as s]))
-
-(def default-series
-  {:animation false
-   :data      []
-   :marker    {:enabled false}
-   :name      "Module and signal info here"})
-
-(defn new-series [{:keys [module signal]}]
-  (assoc default-series :name (str module ": " signal)))
-
-(defn maybe-update-series [chart trend-values]
-  (let [num-series (-> chart .-series count)]               ;; Use (- 1) when stockChart with navigator is enabled
-    (when (not= num-series (count trend-values))
-      (doseq [index (range num-series)]
-        (-> chart
-            .-series
-            (aget 0)
-            (.remove false)))
-      (doseq [trend-variable trend-values]
-        (-> chart
-            (.addSeries (clj->js (new-series trend-variable)) false))))))
 
 (defn indexed [s]
   (map vector (iterate inc 0) s))
 
-(defn update-chart-data [chart trend-values]
+(defn update-chart-data [trend-values]
   (s/assert ::trend-values trend-values)
-  (maybe-update-series chart trend-values)
-  (doseq [[idx {:keys [trend-data]}] (indexed trend-values)]
-    (-> chart
-        .-series
-        (aget idx)
-        (.setData (clj->js trend-data) false)))
-  (.redraw chart false))
 
-(defn on-selection [event]
-  (if-let [x-axis (some-> event (aget "xAxis") (aget 0))]
-    (rf/dispatch [:cybersea.controller.trend/update-zoom {:min (-> x-axis .-min)
-                                                          :max (-> x-axis .-max)}])
-    (rf/dispatch [:cybersea.controller.trend/update-zoom nil])))
-
-(def default-config
-  {:type      "line"
-   :data      {:datasets [{:label "Fard"
-                           :data  [{:x 1 :y 2} {:x 15 :y 25}]}]}
-   :chart     {:zoomType "xy"
-               :events   {:selection on-selection}}
-   :xAxis     {:type                 "datetime"
-               :dateTimeLabelFormats {:millisecond "%H:%M:%S.%L"}
-               :gridLineWidth        1}
-   :yAxis     {:opposite true
-               :title    {:text nil}}
-   :animation false
-   :series    default-series
-   :title     {:text ""}
-   :legend    {:enabled true}})
+  (doseq [[idx {:keys [labels values]}] (indexed trend-values)]
+    (js/Plotly.extendTraces "charty" (clj->js {:x [labels]
+                                               :y [values]})
+                            (clj->js [0]))))
 
 (defn trend-inner []
-  (let [chart (atom nil)
-        ctx (atom nil)
-        update (fn [comp]
+  (let [update (fn [comp]
                  (let [{:keys [trend-values]} (r/props comp)]
-                   #_(update-chart-data @chart trend-values)))]
+                   (update-chart-data trend-values)))]
     (r/create-class
-      {:component-did-mount    (fn [comp]
-                                 (reset! ctx (.. js/document (getElementById "charty") (getContext "2d")))
-                                 (reset! chart (js/Chart. @ctx (clj->js default-config)))
-                                 (update comp))
-       :component-will-unmount #(some-> @chart .destroy)
-       :component-did-update   update
-       :reagent-render         (fn [comp]
-                                 [:div {:style {:flex "1 1 auto"}}
-                                  [:canvas#charty]])})))
+      {:component-did-mount  (fn [comp]
+                               (js/Plotly.plot "charty" (clj->js [{:x []
+                                                                   :y []}])))
+       :component-did-update update
+       :reagent-render       (fn [comp]
+                               [:div {:style {:flex "1 1 auto"}}
+                                [:div#charty]])})))
 
 (defn trend-outer []
   (let [trend-values (rf/subscribe [::trend-values])
         trend-millis (rf/subscribe [::trend-millis])]
     (fn []
       [:div.main
-       [trend-inner {:config       default-config
-                     :trend-values @trend-values
+       [trend-inner {:trend-values @trend-values
                      :trend-millis @trend-millis}]])))
 
 (rf/reg-sub ::trend-values :trend-values)
 (rf/reg-sub ::trend-millis :trend-millis)
 
-(defn ascending-tuples? [tuples]
+(defn ascending-points? [tuples]
   (= tuples
-     (sort-by first tuples)))
+     (sort-by :x tuples)))
 
 (s/def ::module string?)
 (s/def ::signal string?)
-(s/def ::trend-tuple (s/tuple number? number?))
-(s/def ::ascending-tuples ascending-tuples?)
-(s/def ::trend-data (s/and (s/coll-of ::trend-tuple :kind vector?) ::ascending-tuples))
+(s/def ::trend-point (s/keys :req-un [::x ::y]))
+(s/def ::ascending-points ascending-points?)
+(s/def ::trend-data (s/and (s/coll-of ::trend-point :kind vector?) ::ascending-points))
 (s/def ::trend-value (s/keys :req-un [::module ::signal ::trend-data]))
 (s/def ::trend-values (s/coll-of ::trend-value))
