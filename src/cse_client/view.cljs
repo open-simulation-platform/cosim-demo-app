@@ -4,8 +4,9 @@
             [re-frame.core :as rf]
             [reagent.core :as r]
             [cse-client.controller :as controller]
-            [cse-client.dp :as dp]
             [cse-client.config :refer [socket-url]]))
+
+(goog-define default-load-dir "")
 
 (defn tab-content [tabby]
   (let [module @(rf/subscribe [:module])
@@ -74,16 +75,16 @@
 
 (defn index-page []
   (let [loaded? (rf/subscribe [:loaded?])
-        load-dir (r/atom "")]
+        load-dir (r/atom default-load-dir)]
     (fn []
       (if @loaded?
         [dashboard]
         [:div [:div "Specify a folder with FMUs:"]
          [:div.row
-          [:input {:style         {:min-width "400px"}
-                   :type          :text
-                   :default-value ""
-                   :on-change     #(reset! load-dir (-> % .-target .-value))}]]
+          [:input {:style     {:min-width "400px"}
+                   :type      :text
+                   :value     @load-dir
+                   :on-change #(reset! load-dir (-> % .-target .-value))}]]
          [:div.row [:button.ui.button.pull-right {:disabled (empty? @load-dir)
                                                   :on-click #(rf/dispatch [::controller/load @load-dir])} "Load simulation"]]]))))
 
