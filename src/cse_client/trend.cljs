@@ -4,29 +4,25 @@
             [re-frame.core :as rf]
             [cljs.spec.alpha :as s]))
 
-(defn indexed [s]
-  (map vector (iterate inc 0) s))
-
-(defn update-chart-data [trend-values]
+(defn update-chart-data [dom-node trend-values]
   (s/assert ::trend-values trend-values)
 
-  (doseq [[idx {:keys [labels values]}] (indexed trend-values)]
-    (js/Plotly.extendTraces "charty" (clj->js {:x [labels]
+  (doseq [{:keys [labels values]} trend-values]
+    (js/Plotly.extendTraces dom-node (clj->js {:x [labels]
                                                :y [values]})
                             (clj->js [0]))))
 
 (defn trend-inner []
   (let [update (fn [comp]
                  (let [{:keys [trend-values]} (r/props comp)]
-                   (update-chart-data trend-values)))]
+                   (update-chart-data (r/dom-node comp) trend-values)))]
     (r/create-class
       {:component-did-mount  (fn [comp]
-                               (js/Plotly.plot "charty" (clj->js [{:x []
+                               (js/Plotly.plot (r/dom-node comp) (clj->js [{:x []
                                                                    :y []}])))
        :component-did-update update
-       :reagent-render       (fn [comp]
-                               [:div {:style {:flex "1 1 auto"}}
-                                [:div#charty]])})))
+       :reagent-render       (fn []
+                               [:div {:style {:flex "1 1 auto"}}])})))
 
 (defn trend-outer []
   (let [trend-values (rf/subscribe [::trend-values])
