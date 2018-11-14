@@ -7,7 +7,8 @@
                  [org.clojure/clojurescript "1.10.439"]
                  [org.clojure/clojure "1.9.0"]]
   :plugins [[lein-figwheel "0.5.16"]
-            [lein-cljsbuild "1.1.7"]]
+            [lein-cljsbuild "1.1.7"]
+            [lein-count "1.0.9"]]
 
   :clean-targets ^{:protect false} [:target-path :compile-path "resources/public/js/compiled"]
 
