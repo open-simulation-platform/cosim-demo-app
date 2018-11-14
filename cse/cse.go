@@ -8,6 +8,7 @@ import (
 	"cse-server-go/metadata"
 	"cse-server-go/structs"
 	"fmt"
+	"github.com/shirou/gopsutil/mem"
 	"io/ioutil"
 	"log"
 	"os"
@@ -232,7 +233,7 @@ func getModuleNames(metaData *structs.MetaData) []string {
 	return modules
 }
 
-func getModuleData(observer *C.cse_observer, fmu structs.FMU) (module structs.Module){
+func getModuleData(observer *C.cse_observer, fmu structs.FMU) (module structs.Module) {
 	realSignals := observerGetReals(observer, fmu)
 	intSignals := observerGetIntegers(observer, fmu)
 	var signals []structs.Signal
@@ -255,6 +256,7 @@ func findModuleData(status *structs.SimulationStatus, metaData *structs.MetaData
 }
 
 func SimulationStatus(simulationStatus *structs.SimulationStatus, sim *Simulation) structs.JsonResponse {
+	virtualMemoryStats, _ := mem.VirtualMemory()
 	if simulationStatus.Loaded {
 		return structs.JsonResponse{
 			SimulationTime: getSimulationTime(sim.Execution),
@@ -264,6 +266,7 @@ func SimulationStatus(simulationStatus *structs.SimulationStatus, sim *Simulatio
 			Status:         simulationStatus.Status,
 			ConfigDir:      simulationStatus.ConfigDir,
 			TrendSignals:   simulationStatus.TrendSignals,
+			Memory:         virtualMemoryStats,
 		}
 	} else {
 		return structs.JsonResponse{
