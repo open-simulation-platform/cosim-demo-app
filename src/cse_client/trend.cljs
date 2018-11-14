@@ -19,7 +19,7 @@
     (r/create-class
       {:component-did-mount  (fn [comp]
                                (js/Plotly.plot (r/dom-node comp) (clj->js [{:x []
-                                                                   :y []}])))
+                                                                            :y []}])))
        :component-did-update update
        :reagent-render       (fn []
                                [:div {:style {:flex "1 1 auto"}}])})))
