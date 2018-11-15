@@ -36,8 +36,8 @@
    "Real time factor"             "0.9998324"
    "Step size"                    "0.1 s"
    "Connection status"            (get-in db [:kee-frame.websocket/sockets socket-url :state])
-   "CPU load"                     "12 %"
-   "Total memory"                 "121 MB"
+   "CPU load"                     (str (-> db :state :Cpu first :PercentUserTime))
+   "Used memory"                  (str (/ (get-in db [:state :Memory :used]) 1000000) " MB")
    "Path to loaded config folder" (-> db :state :configDir)})
 
 (rf/reg-sub :overview status-data)
