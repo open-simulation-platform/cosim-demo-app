@@ -8,6 +8,7 @@ import (
 	"cse-server-go/metadata"
 	"cse-server-go/structs"
 	"fmt"
+	"github.com/shirou/gopsutil/cpu"
 	"github.com/shirou/gopsutil/mem"
 	"io/ioutil"
 	"log"
@@ -257,6 +258,7 @@ func findModuleData(status *structs.SimulationStatus, metaData *structs.MetaData
 
 func SimulationStatus(simulationStatus *structs.SimulationStatus, sim *Simulation) structs.JsonResponse {
 	virtualMemoryStats, _ := mem.VirtualMemory()
+	cpuInfo, _ := cpu.PerfInfo()
 	if simulationStatus.Loaded {
 		return structs.JsonResponse{
 			SimulationTime: getSimulationTime(sim.Execution),
@@ -267,6 +269,7 @@ func SimulationStatus(simulationStatus *structs.SimulationStatus, sim *Simulatio
 			ConfigDir:      simulationStatus.ConfigDir,
 			TrendSignals:   simulationStatus.TrendSignals,
 			Memory:         virtualMemoryStats,
+			Cpu: cpuInfo,
 		}
 	} else {
 		return structs.JsonResponse{
