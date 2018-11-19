@@ -21,7 +21,7 @@ func printLastError() {
 }
 
 func createExecution() (execution *C.cse_execution) {
-	execution = C.cse_execution_create(0.0, 0.01)
+	execution = C.cse_execution_create(0.0, 0.1)
 	return execution
 }
 
@@ -45,15 +45,6 @@ func createObserver() (observer *C.cse_observer) {
 func executionAddObserver(execution *C.cse_execution, observer *C.cse_observer) (observerIndex C.int) {
 	observerIndex = C.cse_execution_add_observer(execution, observer)
 	return
-}
-
-func observerAddSlave(observer *C.cse_observer, slave *C.cse_slave) int {
-	slaveIndex := C.cse_observer_add_slave(observer, slave)
-	if slaveIndex < 0 {
-		printLastError()
-		//C.cse_observer_destroy(observer)
-	}
-	return int(slaveIndex)
 }
 
 func executionAddSlave(execution *C.cse_execution, slave *C.cse_slave) int {
@@ -92,7 +83,7 @@ func observerGetReals(observer *C.cse_observer, fmu structs.FMU) (realSignals []
 
 	if numReals > 0 {
 		realOutVal := make([]C.double, numReals)
-		C.cse_observer_slave_get_real(observer, C.int(fmu.ObserverIndex), &realValueRefs[0], C.ulonglong(numReals), &realOutVal[0])
+		C.cse_observer_slave_get_real(observer, C.int(fmu.ExecutionIndex), &realValueRefs[0], C.ulonglong(numReals), &realOutVal[0])
 
 		realSignals = make([]structs.Signal, numReals)
 		for k := range realVariables {
@@ -122,7 +113,7 @@ func observerGetIntegers(observer *C.cse_observer, fmu structs.FMU) (intSignals 
 
 	if numIntegers > 0 {
 		intOutVal := make([]C.int, numIntegers)
-		C.cse_observer_slave_get_integer(observer, C.int(fmu.ObserverIndex), &intValueRefs[0], C.ulonglong(numIntegers), &intOutVal[0])
+		C.cse_observer_slave_get_integer(observer, C.int(fmu.ExecutionIndex), &intValueRefs[0], C.ulonglong(numIntegers), &intOutVal[0])
 
 		intSignals = make([]structs.Signal, numIntegers)
 		for k := range intVariables {
@@ -141,25 +132,37 @@ func compress(timeStamps []C.long, samples []C.double, width int) {
 
 }
 
-func observerGetRealSamples(observer *C.cse_observer, metaData structs.MetaData, nSamples int, signal *structs.TrendSignal) {
-	fromSample := 0
+func observerGetRealSamples(observer *C.cse_observer, metaData structs.MetaData, signal *structs.TrendSignal) {
 	fmu := findFmu(metaData, signal.Module)
-	if len(signal.TrendTimestamps) > 0 {
-		fromSample = signal.TrendTimestamps[len(signal.TrendTimestamps)-1]
-	}
-	slaveIndex := C.int(fmu.ObserverIndex)
+	slaveIndex := C.int(fmu.ExecutionIndex)
 	variableIndex := C.uint(findVariableIndex(fmu, signal.Signal, signal.Causality, signal.Type))
-	cnSamples := C.ulonglong(nSamples)
-	realOutVal := make([]C.double, nSamples)
-	timeStamps := make([]C.long, nSamples)
-	actualNumSamples := C.cse_observer_slave_get_real_samples(observer, slaveIndex, variableIndex, C.long(fromSample), cnSamples, &realOutVal[0], &timeStamps[0])
 
-	for i := 0; i < int(actualNumSamples); i += 100 {
-		signal.TrendTimestamps = append(signal.TrendTimestamps, int(timeStamps[i]))
-		signal.TrendValues = append(signal.TrendValues, float64(realOutVal[i]))
+	stepNumbers := make([]C.longlong, 2)
+	C.cse_observer_get_step_numbers_for_duration(observer, slaveIndex, C.double(10.0), &stepNumbers[0])
+
+	first := stepNumbers[0]
+	last := stepNumbers[1]
+
+	numSamples := int(last) - int(first) + 1
+
+	//fmt.Println("num samples:", numSamples, " first: ", int(first))
+
+	cnSamples := C.ulonglong(numSamples)
+	realOutVal := make([]C.double, numSamples)
+	timeStamps := make([]C.longlong, numSamples)
+	actualNumSamples := C.cse_observer_slave_get_real_samples(observer, slaveIndex, variableIndex, first, cnSamples, &realOutVal[0], &timeStamps[0])
+
+	trendVals := make([]float64, int(actualNumSamples))
+	times := make([]int, int(actualNumSamples))
+	for i := 0; i < int(actualNumSamples); i++ {
+		trendVals[i] = float64(realOutVal[i])
+		times[i] = int(timeStamps[i])
+
 	}
-
+	signal.TrendTimestamps = times
+	signal.TrendValues = trendVals
 }
+
 func findVariableIndex(fmu structs.FMU, signalName string, causality string, valueType string) (index int) {
 	for _, variable := range fmu.Variables {
 		if variable.Name == signalName && variable.Type == valueType && variable.Causality == causality {
@@ -175,7 +178,7 @@ func TrendLoop(sim *Simulation, status *structs.SimulationStatus) {
 			var trend = &status.TrendSignals[0]
 			switch trend.Type {
 			case "Real":
-				observerGetRealSamples(sim.Observer, sim.MetaData, 1000, trend)
+				observerGetRealSamples(sim.Observer, sim.MetaData, trend)
 			}
 		}
 		time.Sleep(500 * time.Millisecond)
@@ -288,7 +291,6 @@ func addFmu(execution *C.cse_execution, observer *C.cse_observer, metaData *stru
 	fmu := metadata.ReadModelDescription(fmuPath)
 
 	fmu.ExecutionIndex = executionAddSlave(execution, localSlave)
-	fmu.ObserverIndex = observerAddSlave(observer, localSlave)
 	metaData.FMUs = append(metaData.FMUs, fmu)
 }
 
