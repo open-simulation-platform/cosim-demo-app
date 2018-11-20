@@ -17,6 +17,9 @@ func main() {
 		Loaded:       false,
 		Status:       "stopped",
 		TrendSignals: []structs.TrendSignal{},
+		TrendSpec: structs.TrendSpec{
+			Auto:  true,
+			Range: 10.0},
 	}
 
 	// Passing the channel to the go routine

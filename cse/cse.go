@@ -12,6 +12,7 @@ import (
 	"log"
 	"os"
 	"path/filepath"
+	"strconv"
 	"strings"
 	"time"
 )
@@ -128,17 +129,17 @@ func observerGetIntegers(observer *C.cse_observer, fmu structs.FMU) (intSignals 
 	return intSignals
 }
 
-func compress(timeStamps []C.long, samples []C.double, width int) {
-
-}
-
-func observerGetRealSamples(observer *C.cse_observer, metaData structs.MetaData, signal *structs.TrendSignal) {
+func observerGetRealSamples(observer *C.cse_observer, metaData structs.MetaData, signal *structs.TrendSignal, spec structs.TrendSpec) {
 	fmu := findFmu(metaData, signal.Module)
 	slaveIndex := C.int(fmu.ExecutionIndex)
 	variableIndex := C.uint(findVariableIndex(fmu, signal.Signal, signal.Causality, signal.Type))
 
 	stepNumbers := make([]C.longlong, 2)
-	C.cse_observer_get_step_numbers_for_duration(observer, slaveIndex, C.double(10.0), &stepNumbers[0])
+	if spec.Auto {
+		C.cse_observer_get_step_numbers_for_duration(observer, slaveIndex, C.double(spec.Range), &stepNumbers[0])
+	} else {
+		C.cse_observer_get_step_numbers(observer, slaveIndex, C.double(spec.Begin), C.double(spec.End), &stepNumbers[0])
+	}
 
 	first := stepNumbers[0]
 	last := stepNumbers[1]
@@ -149,15 +150,15 @@ func observerGetRealSamples(observer *C.cse_observer, metaData structs.MetaData,
 
 	cnSamples := C.ulonglong(numSamples)
 	realOutVal := make([]C.double, numSamples)
+	timeVal := make([]C.double, numSamples)
 	timeStamps := make([]C.longlong, numSamples)
-	actualNumSamples := C.cse_observer_slave_get_real_samples(observer, slaveIndex, variableIndex, first, cnSamples, &realOutVal[0], &timeStamps[0])
+	actualNumSamples := C.cse_observer_slave_get_real_samples(observer, slaveIndex, variableIndex, first, cnSamples, &realOutVal[0], &timeStamps[0], &timeVal[0])
 
 	trendVals := make([]float64, int(actualNumSamples))
-	times := make([]int, int(actualNumSamples))
+	times := make([]float64, int(actualNumSamples))
 	for i := 0; i < int(actualNumSamples); i++ {
 		trendVals[i] = float64(realOutVal[i])
-		times[i] = int(timeStamps[i])
-
+		times[i] = float64(timeVal[i])
 	}
 	signal.TrendTimestamps = times
 	signal.TrendValues = trendVals
@@ -178,11 +179,20 @@ func TrendLoop(sim *Simulation, status *structs.SimulationStatus) {
 			var trend = &status.TrendSignals[0]
 			switch trend.Type {
 			case "Real":
-				observerGetRealSamples(sim.Observer, sim.MetaData, trend)
+				observerGetRealSamples(sim.Observer, sim.MetaData, trend, status.TrendSpec)
 			}
 		}
 		time.Sleep(500 * time.Millisecond)
 	}
+}
+
+func parseFloat(argument string) float64 {
+	f, err := strconv.ParseFloat(argument, 64)
+	if err != nil {
+		log.Fatal(err)
+		return 0.0
+	}
+	return f
 }
 
 func CommandLoop(sim *Simulation, command chan []string, status *structs.SimulationStatus) {
@@ -215,6 +225,10 @@ func CommandLoop(sim *Simulation, command chan []string, status *structs.Simulat
 				status.TrendSignals = append(status.TrendSignals, structs.TrendSignal{cmd[1], cmd[2], cmd[3], cmd[4], nil, nil})
 			case "untrend":
 				status.TrendSignals = []structs.TrendSignal{}
+			case "trend-zoom":
+				status.TrendSpec = structs.TrendSpec{Auto: false, Begin: parseFloat(cmd[1]), End: parseFloat(cmd[2])}
+			case "trend-zoom-reset":
+				status.TrendSpec = structs.TrendSpec{Auto: true, Range: parseFloat(cmd[1])}
 			case "module":
 				status.Module = structs.Module{
 					Name: cmd[1],
