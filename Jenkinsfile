@@ -30,7 +30,7 @@ pipeline {
                         sh 'echo Building on Windows'
 
                         copyArtifacts(
-                            projectName: 'open-simulation-platform/cse-core/feature/95-observe-simulation-time',
+                            projectName: 'open-simulation-platform/cse-core/feature%2F95-observe-simulation-time',
                             filter: 'install/debug/**/*',
                             target: 'src')
                         
