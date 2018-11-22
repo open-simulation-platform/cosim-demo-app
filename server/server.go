@@ -6,6 +6,7 @@ import (
 	"encoding/json"
 	"github.com/gobuffalo/packr"
 	"github.com/gorilla/mux"
+	"io/ioutil"
 	"log"
 	"net/http"
 )
@@ -21,6 +22,13 @@ func Server(command chan []string, state chan structs.JsonResponse, simulationSt
 		w.Header().Set("Content-Type", "application/json")
 		json.NewEncoder(w).Encode(cse.SimulationStatus(simulationStatus, sim))
 	})
+
+	router.HandleFunc("/command", func(w http.ResponseWriter, r *http.Request) {
+		body, _ := ioutil.ReadAll(r.Body)
+		commandRequest := []string{}
+		json.Unmarshal(body, &commandRequest)
+	command <- commandRequest
+	}).Methods("PUT")
 
 	router.HandleFunc("/ws", WebsocketHandler(command, state))
 
