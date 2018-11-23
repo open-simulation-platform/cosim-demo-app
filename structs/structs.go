@@ -50,7 +50,6 @@ type Variable struct {
 type FMU struct {
 	Name           string
 	ExecutionIndex int
-	ObserverIndex  int
 	Variables      []Variable
 }
 

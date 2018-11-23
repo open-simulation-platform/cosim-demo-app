@@ -47,15 +47,6 @@ func executionAddObserver(execution *C.cse_execution, observer *C.cse_observer) 
 	return
 }
 
-func observerAddSlave(observer *C.cse_observer, slave *C.cse_slave) int {
-	slaveIndex := C.cse_observer_add_slave(observer, slave)
-	if slaveIndex < 0 {
-		printLastError()
-		//C.cse_observer_destroy(observer)
-	}
-	return int(slaveIndex)
-}
-
 func executionAddSlave(execution *C.cse_execution, slave *C.cse_slave) int {
 	slaveIndex := C.cse_execution_add_slave(execution, slave)
 	if slaveIndex < 0 {
@@ -92,7 +83,7 @@ func observerGetReals(observer *C.cse_observer, fmu structs.FMU) (realSignals []
 
 	if numReals > 0 {
 		realOutVal := make([]C.double, numReals)
-		C.cse_observer_slave_get_real(observer, C.int(fmu.ObserverIndex), &realValueRefs[0], C.ulonglong(numReals), &realOutVal[0])
+		C.cse_observer_slave_get_real(observer, C.int(fmu.ExecutionIndex), &realValueRefs[0], C.ulonglong(numReals), &realOutVal[0])
 
 		realSignals = make([]structs.Signal, numReals)
 		for k := range realVariables {
@@ -122,7 +113,7 @@ func observerGetIntegers(observer *C.cse_observer, fmu structs.FMU) (intSignals 
 
 	if numIntegers > 0 {
 		intOutVal := make([]C.int, numIntegers)
-		C.cse_observer_slave_get_integer(observer, C.int(fmu.ObserverIndex), &intValueRefs[0], C.ulonglong(numIntegers), &intOutVal[0])
+		C.cse_observer_slave_get_integer(observer, C.int(fmu.ExecutionIndex), &intValueRefs[0], C.ulonglong(numIntegers), &intOutVal[0])
 
 		intSignals = make([]structs.Signal, numIntegers)
 		for k := range intVariables {
@@ -147,11 +138,11 @@ func observerGetRealSamples(observer *C.cse_observer, metaData structs.MetaData,
 	if len(signal.TrendTimestamps) > 0 {
 		fromSample = signal.TrendTimestamps[len(signal.TrendTimestamps)-1]
 	}
-	slaveIndex := C.int(fmu.ObserverIndex)
+	slaveIndex := C.int(fmu.ExecutionIndex)
 	variableIndex := C.uint(findVariableIndex(fmu, signal.Signal, signal.Causality, signal.Type))
 	cnSamples := C.ulonglong(nSamples)
 	realOutVal := make([]C.double, nSamples)
-	timeStamps := make([]C.long, nSamples)
+	timeStamps := make([]C.longlong, nSamples)
 	actualNumSamples := C.cse_observer_slave_get_real_samples(observer, slaveIndex, variableIndex, C.long(fromSample), cnSamples, &realOutVal[0], &timeStamps[0])
 
 	for i := 0; i < int(actualNumSamples); i += 100 {
@@ -288,7 +279,6 @@ func addFmu(execution *C.cse_execution, observer *C.cse_observer, metaData *stru
 	fmu := metadata.ReadModelDescription(fmuPath)
 
 	fmu.ExecutionIndex = executionAddSlave(execution, localSlave)
-	fmu.ObserverIndex = observerAddSlave(observer, localSlave)
 	metaData.FMUs = append(metaData.FMUs, fmu)
 }
 
