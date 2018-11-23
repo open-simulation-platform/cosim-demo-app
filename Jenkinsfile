@@ -18,6 +18,11 @@ pipeline {
                 sh 'curl -O https://raw.githubusercontent.com/technomancy/leiningen/stable/bin/lein'
                 sh './lein cljsbuild once min'
             }
+            post {
+                success {
+                    archiveArtifacts artifacts: 'resources/public/**/*',  fingerprint: true
+                }
+            }
         }
     }
 }
