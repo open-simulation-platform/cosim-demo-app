@@ -23,6 +23,12 @@ func Server(command chan []string, state chan structs.JsonResponse, simulationSt
 		json.NewEncoder(w).Encode(cse.SimulationStatus(simulationStatus, sim))
 	})
 
+	router.HandleFunc("/modules", func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Content-Type", "application/json")
+		json.NewEncoder(w).Encode(sim.MetaData)
+	})
+
+
 	router.HandleFunc("/command", func(w http.ResponseWriter, r *http.Request) {
 		body, _ := ioutil.ReadAll(r.Body)
 		commandRequest := []string{}
