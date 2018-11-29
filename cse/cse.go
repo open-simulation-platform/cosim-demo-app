@@ -256,6 +256,10 @@ func findModuleData(status *structs.SimulationStatus, metaData *structs.MetaData
 	return
 }
 
+func GetSignalValue(module string, cardinality string, signal string) int {
+	return 1
+}
+
 func SimulationStatus(simulationStatus *structs.SimulationStatus, sim *Simulation) structs.JsonResponse {
 	virtualMemoryStats, _ := mem.VirtualMemory()
 	cpuInfo, _ := cpu.PerfInfo()

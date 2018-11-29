@@ -28,6 +28,14 @@ func Server(command chan []string, state chan structs.JsonResponse, simulationSt
 		json.NewEncoder(w).Encode(sim.MetaData)
 	})
 
+	router.HandleFunc("/value/{module}/{cardinality}/{signal}", func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Content-Type", "application/json")
+		vars := mux.Vars(r)
+		module := vars["module"]
+		cardinality := vars["cardinality"]
+		signal := vars["signal"]
+		json.NewEncoder(w).Encode(cse.GetSignalValue(module, cardinality, signal))
+	})
 
 	router.HandleFunc("/command", func(w http.ResponseWriter, r *http.Request) {
 		body, _ := ioutil.ReadAll(r.Body)
