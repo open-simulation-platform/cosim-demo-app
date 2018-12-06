@@ -35,7 +35,14 @@ type TrendSignal struct {
 	Causality       string
 	Type            string
 	TrendValues     []float64
-	TrendTimestamps []int
+	TrendTimestamps []float64
+}
+
+type TrendSpec struct {
+	Begin float64
+	End   float64
+	Range float64
+	Auto  bool
 }
 
 type SimulationStatus struct {
@@ -43,6 +50,7 @@ type SimulationStatus struct {
 	ConfigDir    string
 	Module       Module
 	TrendSignals []TrendSignal
+	TrendSpec    TrendSpec
 	Status       string
 }
 
