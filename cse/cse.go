@@ -262,7 +262,7 @@ func GetSignalValue(module string, cardinality string, signal string) int {
 
 func SimulationStatus(simulationStatus *structs.SimulationStatus, sim *Simulation) structs.JsonResponse {
 	virtualMemoryStats, _ := mem.VirtualMemory()
-	cpuInfo, _ := cpu.PerfInfo()
+	cpuInfo, _ := cpu.ProcInfo()
 	if simulationStatus.Loaded {
 		return structs.JsonResponse{
 			SimulationTime: getSimulationTime(sim.Execution),

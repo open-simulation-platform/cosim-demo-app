@@ -25,7 +25,7 @@ type JsonResponse struct {
 	Modules        []string `json:"modules"`
 	Module         Module   `json:"module,omitempty"`
 	Memory         *mem.VirtualMemoryStat
-	Cpu            []cpu.Win32_PerfFormattedData_Counters_ProcessorInformation
+	Cpu            []cpu.Win32_PerfFormattedData_PerfOS_System
 	TrendSignals   []TrendSignal `json:"trendSignals,omitempty"`
 }
 
