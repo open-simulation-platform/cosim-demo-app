@@ -2,7 +2,7 @@ pipeline {
     agent none
 
     triggers {
-        upstream(upstreamProjects: 'open-simulation-platform/cse-core/feature/95-observe-simulation-time', threshold: hudson.model.Result.SUCCESS)
+        upstream(upstreamProjects: 'open-simulation-platform/cse-core/master', threshold: hudson.model.Result.SUCCESS)
     }
 
     options { checkoutToSubdirectory('src/cse-server-go') }
@@ -30,7 +30,7 @@ pipeline {
                         sh 'echo Building on Windows'
 
                         copyArtifacts(
-                            projectName: 'open-simulation-platform/cse-core/feature%2F95-observe-simulation-time',
+                            projectName: 'open-simulation-platform/cse-core/master',
                             filter: 'install/debug/**/*',
                             target: 'src')
                         
