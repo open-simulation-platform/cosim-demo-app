@@ -1,5 +1,10 @@
 package structs
 
+import (
+	"github.com/shirou/gopsutil/cpu"
+	"github.com/shirou/gopsutil/mem"
+)
+
 type Signal struct {
 	Name      string      `json:"name"`
 	Causality string      `json:"causality"`
@@ -13,12 +18,14 @@ type Module struct {
 }
 
 type JsonResponse struct {
-	Loaded         bool          `json:"loaded"`
-	SimulationTime float64       `json:"time"`
-	ConfigDir      string        `json:"configDir,omitempty"`
-	Status         string        `json:"status,omitempty"`
-	Modules        []string      `json:"modules"`
-	Module         Module        `json:"module,omitempty"`
+	Loaded         bool     `json:"loaded"`
+	SimulationTime float64  `json:"time"`
+	ConfigDir      string   `json:"configDir,omitempty"`
+	Status         string   `json:"status,omitempty"`
+	Modules        []string `json:"modules"`
+	Module         Module   `json:"module,omitempty"`
+	Memory         *mem.VirtualMemoryStat
+	Cpu            []cpu.Win32_PerfFormattedData_PerfOS_System
 	TrendSignals   []TrendSignal `json:"trendSignals,omitempty"`
 }
 
