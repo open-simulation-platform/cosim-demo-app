@@ -22,14 +22,17 @@ func printLastError() {
 }
 
 func createExecution() (execution *C.cse_execution) {
-	execution = C.cse_execution_create(0.0, 0.1)
+	startTime := C.int64_t(0.0 * 1e9)
+	stepSize := C.int64_t(0.1 * 1e9)
+	execution = C.cse_execution_create(startTime, stepSize)
 	return execution
 }
 
 func getSimulationTime(execution *C.cse_execution) (time float64) {
 	var status C.cse_execution_status
 	C.cse_execution_get_status(execution, &status)
-	time = float64(status.current_time)
+	nanoTime := int64(status.current_time)
+	time = float64(nanoTime) * 1e-9
 	return
 }
 
@@ -136,21 +139,21 @@ func observerGetRealSamples(observer *C.cse_observer, metaData structs.MetaData,
 
 	stepNumbers := make([]C.longlong, 2)
 	if spec.Auto {
-		C.cse_observer_get_step_numbers_for_duration(observer, slaveIndex, C.double(spec.Range), &stepNumbers[0])
+		duration := C.int64_t(spec.Range * 1e9)
+		C.cse_observer_get_step_numbers_for_duration(observer, slaveIndex, duration, &stepNumbers[0])
 	} else {
-		C.cse_observer_get_step_numbers(observer, slaveIndex, C.double(spec.Begin), C.double(spec.End), &stepNumbers[0])
+		tBegin := C.int64_t(spec.Begin * 1e9)
+		tEnd := C.int64_t(spec.End * 1e9)
+		C.cse_observer_get_step_numbers(observer, slaveIndex, tBegin, tEnd, &stepNumbers[0])
 	}
 
 	first := stepNumbers[0]
 	last := stepNumbers[1]
 
 	numSamples := int(last) - int(first) + 1
-
-	//fmt.Println("num samples:", numSamples, " first: ", int(first))
-
 	cnSamples := C.ulonglong(numSamples)
 	realOutVal := make([]C.double, numSamples)
-	timeVal := make([]C.double, numSamples)
+	timeVal := make([]C.cse_time_point, numSamples)
 	timeStamps := make([]C.longlong, numSamples)
 	actualNumSamples := C.cse_observer_slave_get_real_samples(observer, slaveIndex, variableIndex, first, cnSamples, &realOutVal[0], &timeStamps[0], &timeVal[0])
 
@@ -158,7 +161,7 @@ func observerGetRealSamples(observer *C.cse_observer, metaData structs.MetaData,
 	times := make([]float64, int(actualNumSamples))
 	for i := 0; i < int(actualNumSamples); i++ {
 		trendVals[i] = float64(realOutVal[i])
-		times[i] = float64(timeVal[i])
+		times[i] = 1e-9 * float64(timeVal[i])
 	}
 	signal.TrendTimestamps = times
 	signal.TrendValues = trendVals
