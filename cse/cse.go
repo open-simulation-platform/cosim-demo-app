@@ -344,6 +344,27 @@ func addFmu(execution *C.cse_execution, metaData *structs.MetaData, fmuPath stri
 	metaData.FMUs = append(metaData.FMUs, fmu)
 }
 
+func addFmuSsd(metaData *structs.MetaData, name string, index int, fmuPath string) {
+	log.Println("Loading: " + fmuPath)
+	fmu := metadata.ReadModelDescription(fmuPath)
+	fmu.Name = name
+	fmu.ExecutionIndex = index
+	metaData.FMUs = append(metaData.FMUs, fmu)
+}
+
+func addSsdMetadata(execution *C.cse_execution, metaData *structs.MetaData, fmuDir string) {
+	nSlaves := C.cse_execution_get_num_slaves(execution)
+	var slaveInfos = make([]C.cse_slave_info, int(nSlaves))
+	C.cse_execution_get_slave_infos(execution, &slaveInfos[0], nSlaves)
+	for _,info := range slaveInfos {
+		name := C.GoString(&info.name[0])
+		source := C.GoString(&info.source[0])
+		index := int(info.index)
+		pathToFmu := filepath.Join(fmuDir, source)
+		addFmuSsd(metaData, name, index, pathToFmu)
+	}
+}
+
 func getFmuPaths(loadFolder string) (paths []string) {
 	info, e := os.Stat(loadFolder)
 	if os.IsNotExist(e) {
@@ -399,25 +420,24 @@ func CreateEmptySimulation() Simulation {
 }
 
 func initializeSimulation(sim *Simulation, fmuDir string) {
-	var execution *C.cse_execution
-	if hasSsdFile(fmuDir) {
-		execution= createSsdExecution(fmuDir)
-	} else {
-		execution = createExecution()
-
-
-		}
-
-	observer := createObserver()
-	executionAddObserver(execution, observer)
-
 	metaData := structs.MetaData{
 		FMUs: []structs.FMU{},
 	}
 	paths := getFmuPaths(fmuDir)
-	for _, path := range paths {
-		addFmu(execution, &metaData, path)
+
+	var execution *C.cse_execution
+	if hasSsdFile(fmuDir) {
+		execution = createSsdExecution(fmuDir)
+		addSsdMetadata(execution, &metaData, fmuDir)
+	} else {
+		execution = createExecution()
+		for _, path := range paths {
+			addFmu(execution, &metaData, path)
+		}
 	}
+
+	observer := createObserver()
+	executionAddObserver(execution, observer)
 
 	sim.Execution = execution
 	sim.Observer = observer
