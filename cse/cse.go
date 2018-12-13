@@ -12,6 +12,7 @@ import (
 	"github.com/shirou/gopsutil/mem"
 	"io/ioutil"
 	"log"
+	"math"
 	"os"
 	"path/filepath"
 	"strconv"
@@ -27,6 +28,12 @@ func createExecution() (execution *C.cse_execution) {
 	startTime := C.cse_time_point(0.0 * 1e9)
 	stepSize := C.cse_duration(0.1 * 1e9)
 	execution = C.cse_execution_create(startTime, stepSize)
+	return execution
+}
+
+func createSsdExecution(ssdDir string) (execution *C.cse_execution) {
+	startTime := C.cse_time_point(0.0 * 1e9)
+	execution = C.cse_ssp_execution_create(C.CString(ssdDir), startTime)
 	return execution
 }
 
@@ -73,6 +80,13 @@ func executionDestroy(execution *C.cse_execution) {
 func executionStop(execution *C.cse_execution) {
 	C.cse_execution_stop(execution)
 }
+func uglyNanFix(value C.double) interface{} {
+	floatValue := float64(value)
+	if math.IsNaN(floatValue) {
+		return "NaN"
+	}
+	return floatValue
+}
 
 func observerGetReals(observer *C.cse_observer, fmu structs.FMU) (realSignals []structs.Signal) {
 	var realValueRefs []C.cse_variable_index
@@ -97,7 +111,7 @@ func observerGetReals(observer *C.cse_observer, fmu structs.FMU) (realSignals []
 				Name:      realVariables[k].Name,
 				Causality: realVariables[k].Causality,
 				Type:      realVariables[k].Type,
-				Value:     float64(realOutVal[k]),
+				Value:     uglyNanFix(realOutVal[k]),
 			}
 		}
 	}
@@ -321,7 +335,7 @@ func StateUpdateLoop(state chan structs.JsonResponse, simulationStatus *structs.
 	}
 }
 
-func addFmu(execution *C.cse_execution, observer *C.cse_observer, metaData *structs.MetaData, fmuPath string) {
+func addFmu(execution *C.cse_execution, metaData *structs.MetaData, fmuPath string) {
 	log.Println("Loading: " + fmuPath)
 	localSlave := createLocalSlave(fmuPath)
 	fmu := metadata.ReadModelDescription(fmuPath)
@@ -352,6 +366,28 @@ func getFmuPaths(loadFolder string) (paths []string) {
 	return paths
 }
 
+func hasSsdFile(loadFolder string) bool {
+	info, e := os.Stat(loadFolder)
+	if os.IsNotExist(e) {
+		fmt.Println("Load folder does not exist!")
+		return false
+	} else if !info.IsDir() {
+		fmt.Println("Load folder is not a directory!")
+		return false
+	} else {
+		files, err := ioutil.ReadDir(loadFolder)
+		if err != nil {
+			log.Fatal(err)
+		}
+		for _, f := range files {
+			if f.Name() == "SystemStructure.ssd" {
+				return true
+			}
+		}
+	}
+	return false
+}
+
 type Simulation struct {
 	Execution *C.cse_execution
 	Observer  *C.cse_observer
@@ -363,7 +399,15 @@ func CreateEmptySimulation() Simulation {
 }
 
 func initializeSimulation(sim *Simulation, fmuDir string) {
-	execution := createExecution()
+	var execution *C.cse_execution
+	if hasSsdFile(fmuDir) {
+		execution= createSsdExecution(fmuDir)
+	} else {
+		execution = createExecution()
+
+
+		}
+
 	observer := createObserver()
 	executionAddObserver(execution, observer)
 
@@ -372,7 +416,7 @@ func initializeSimulation(sim *Simulation, fmuDir string) {
 	}
 	paths := getFmuPaths(fmuDir)
 	for _, path := range paths {
-		addFmu(execution, observer, &metaData, path)
+		addFmu(execution, &metaData, path)
 	}
 
 	sim.Execution = execution
