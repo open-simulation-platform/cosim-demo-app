@@ -53,6 +53,7 @@
     [:div.ui.secondary.vertical.fluid.menu
      [:a.item {:href  (k/path-for [:index])
                :class (when (= route-name :index) :active)} "Overview"]
+     [:div.header "Models:"]
      (map (fn [module]
             [:a.item {:class (when (= route-module module) :active)
                       :key   module

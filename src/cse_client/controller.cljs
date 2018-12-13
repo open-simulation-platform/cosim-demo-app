@@ -94,3 +94,11 @@
                                                         :signal     signal
                                                         :causality  causality
                                                         :type       type}])})))
+
+(k/reg-event-fx ::trend-zoom
+                (fn [{:keys [db]} [begin end]]
+                  (socket-command db ["trend-zoom" (str begin) (str end)])))
+
+(k/reg-event-fx ::trend-zoom-reset
+                (fn [{:keys [db]} _]
+                  (socket-command db ["trend-zoom-reset" (-> db :trend-range str)])))
