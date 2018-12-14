@@ -55,6 +55,11 @@ func createObserver() (observer *C.cse_observer) {
 	return
 }
 
+func createFileObserver(logPath string) (observer *C.cse_observer) {
+	observer = C.cse_file_observer_create(C.CString(logPath))
+	return
+}
+
 func executionAddObserver(execution *C.cse_execution, observer *C.cse_observer) (observerIndex C.cse_observer_index) {
 	observerIndex = C.cse_execution_add_observer(execution, observer)
 	return
@@ -220,7 +225,7 @@ func CommandLoop(sim *Simulation, command chan []string, status *structs.Simulat
 		case cmd := <-command:
 			switch cmd[0] {
 			case "load":
-				initializeSimulation(sim, cmd[1])
+				initializeSimulation(sim, cmd[1], cmd[2])
 				status.Loaded = true
 				status.ConfigDir = cmd[1]
 				status.Status = "pause"
@@ -356,7 +361,7 @@ func addSsdMetadata(execution *C.cse_execution, metaData *structs.MetaData, fmuD
 	nSlaves := C.cse_execution_get_num_slaves(execution)
 	var slaveInfos = make([]C.cse_slave_info, int(nSlaves))
 	C.cse_execution_get_slave_infos(execution, &slaveInfos[0], nSlaves)
-	for _,info := range slaveInfos {
+	for _, info := range slaveInfos {
 		name := C.GoString(&info.name[0])
 		source := C.GoString(&info.source[0])
 		index := int(info.index)
@@ -410,16 +415,17 @@ func hasSsdFile(loadFolder string) bool {
 }
 
 type Simulation struct {
-	Execution *C.cse_execution
-	Observer  *C.cse_observer
-	MetaData  structs.MetaData
+	Execution    *C.cse_execution
+	Observer     *C.cse_observer
+	FileObserver *C.cse_observer
+	MetaData     structs.MetaData
 }
 
 func CreateEmptySimulation() Simulation {
 	return Simulation{}
 }
 
-func initializeSimulation(sim *Simulation, fmuDir string) {
+func initializeSimulation(sim *Simulation, fmuDir string, logDir string) {
 	metaData := structs.MetaData{
 		FMUs: []structs.FMU{},
 	}
@@ -439,6 +445,11 @@ func initializeSimulation(sim *Simulation, fmuDir string) {
 	observer := createObserver()
 	executionAddObserver(execution, observer)
 
+	if len(logDir) > 0 {
+		fileObserver := createFileObserver(logDir)
+		executionAddObserver(execution, fileObserver)
+		sim.FileObserver = fileObserver
+	}
 	sim.Execution = execution
 	sim.Observer = observer
 	sim.MetaData = metaData
