@@ -1,7 +1,6 @@
 package structs
 
 import (
-	"github.com/shirou/gopsutil/cpu"
 	"github.com/shirou/gopsutil/mem"
 )
 
@@ -25,7 +24,6 @@ type JsonResponse struct {
 	Modules        []string `json:"modules"`
 	Module         Module   `json:"module,omitempty"`
 	Memory         *mem.VirtualMemoryStat
-	Cpu            []cpu.Win32_PerfFormattedData_PerfOS_System
 	TrendSignals   []TrendSignal `json:"trendSignals,omitempty"`
 }
 
