@@ -5,6 +5,9 @@
 *.so
 *.dylib
 
+# Linux binary
+cse-server-go
+
 # Test binary, build with `go test -c`
 *.test
 
