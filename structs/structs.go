@@ -17,14 +17,16 @@ type Module struct {
 }
 
 type JsonResponse struct {
-	Loaded         bool     `json:"loaded"`
-	SimulationTime float64  `json:"time"`
-	ConfigDir      string   `json:"configDir,omitempty"`
-	Status         string   `json:"status,omitempty"`
-	Modules        []string `json:"modules"`
-	Module         Module   `json:"module,omitempty"`
-	Memory         *mem.VirtualMemoryStat
-	TrendSignals   []TrendSignal `json:"trendSignals,omitempty"`
+	Loaded               bool     `json:"loaded"`
+	SimulationTime       float64  `json:"time"`
+	RealTimeFactor       float64  `json:"realTimeFactor"`
+	IsRealTimeSimulation bool     `json:"isRealTime"`
+	ConfigDir            string   `json:"configDir,omitempty"`
+	Status               string   `json:"status,omitempty"`
+	Modules              []string `json:"modules"`
+	Module               Module   `json:"module,omitempty"`
+	Memory               *mem.VirtualMemoryStat
+	TrendSignals         []TrendSignal `json:"trendSignals,omitempty"`
 }
 
 type TrendSignal struct {

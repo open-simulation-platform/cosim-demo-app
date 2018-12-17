@@ -36,11 +36,19 @@ func createSsdExecution(ssdDir string) (execution *C.cse_execution) {
 	return execution
 }
 
-func getSimulationTime(execution *C.cse_execution) (time float64) {
+type executionStatus struct {
+	time                 float64
+	realTimeFactor       float64
+	isRealTimeSimulation bool
+}
+
+func getExecutionStatus(execution *C.cse_execution) (execStatus executionStatus) {
 	var status C.cse_execution_status
 	C.cse_execution_get_status(execution, &status)
 	nanoTime := int64(status.current_time)
-	time = float64(nanoTime) * 1e-9
+	execStatus.time = float64(nanoTime) * 1e-9
+	execStatus.realTimeFactor = float64(status.real_time_factor)
+	execStatus.isRealTimeSimulation = int(status.is_real_time_simulation) > 0
 	return
 }
 
@@ -81,9 +89,22 @@ func executionDestroy(execution *C.cse_execution) {
 	C.cse_execution_destroy(execution)
 }
 
+func observerDestroy(observer *C.cse_observer) {
+	C.cse_observer_destroy(observer)
+}
+
 func executionStop(execution *C.cse_execution) {
 	C.cse_execution_stop(execution)
 }
+
+func executionEnableRealTime(execution *C.cse_execution) {
+	C.cse_execution_enable_real_time_simulation(execution)
+}
+
+func executionDisableRealTime(execution *C.cse_execution) {
+	C.cse_execution_disable_real_time_simulation(execution)
+}
+
 func uglyNanFix(value C.double) interface{} {
 	floatValue := float64(value)
 	if math.IsNaN(floatValue) {
@@ -152,7 +173,7 @@ func observerGetIntegers(observer *C.cse_observer, fmu structs.FMU) (intSignals 
 	return intSignals
 }
 
-func observerGetRealSamples(observer *C.cse_observer, metaData structs.MetaData, signal *structs.TrendSignal, spec structs.TrendSpec) {
+func observerGetRealSamples(observer *C.cse_observer, metaData *structs.MetaData, signal *structs.TrendSignal, spec structs.TrendSpec) {
 	fmu := findFmu(metaData, signal.Module)
 	slaveIndex := C.cse_slave_index(fmu.ExecutionIndex)
 	variableIndex := C.cse_variable_index(findVariableIndex(fmu, signal.Signal, signal.Causality, signal.Type))
@@ -218,6 +239,49 @@ func parseFloat(argument string) float64 {
 	return f
 }
 
+func simulationTeardown(sim *Simulation) {
+	executionDestroy(sim.Execution)
+	observerDestroy(sim.Observer)
+	if nil != sim.FileObserver {
+		observerDestroy(sim.FileObserver)
+	}
+	sim.Execution = nil
+	sim.Observer = nil
+	sim.FileObserver = nil
+	sim.MetaData = &structs.MetaData{}
+}
+
+func initializeSimulation(sim *Simulation, fmuDir string, logDir string) {
+	metaData := structs.MetaData{
+		FMUs: []structs.FMU{},
+	}
+	var execution *C.cse_execution
+	if hasSsdFile(fmuDir) {
+		execution = createSsdExecution(fmuDir)
+		addSsdMetadata(execution, &metaData, fmuDir)
+	} else {
+		execution = createExecution()
+		paths := getFmuPaths(fmuDir)
+		for _, path := range paths {
+			addFmu(execution, &metaData, path)
+		}
+	}
+
+	observer := createObserver()
+	executionAddObserver(execution, observer)
+
+	var fileObserver *C.cse_observer
+	if len(logDir) > 0 {
+		fileObserver := createFileObserver(logDir)
+		executionAddObserver(execution, fileObserver)
+	}
+
+	sim.Execution = execution
+	sim.Observer = observer
+	sim.FileObserver = fileObserver
+	sim.MetaData = &metaData
+}
+
 func CommandLoop(sim *Simulation, command chan []string, status *structs.SimulationStatus) {
 	for {
 		select {
@@ -234,8 +298,7 @@ func CommandLoop(sim *Simulation, command chan []string, status *structs.Simulat
 				status.ConfigDir = ""
 				status.TrendSignals = []structs.TrendSignal{}
 				status.Module = structs.Module{}
-				executionDestroy(sim.Execution)
-				sim = &Simulation{}
+				simulationTeardown(sim)
 			case "stop":
 				return
 			case "pause":
@@ -244,6 +307,10 @@ func CommandLoop(sim *Simulation, command chan []string, status *structs.Simulat
 			case "play":
 				executionStart(sim.Execution)
 				status.Status = "play"
+			case "enable-realtime":
+				executionEnableRealTime(sim.Execution)
+			case "disable-realtime":
+				executionDisableRealTime(sim.Execution)
 			case "trend":
 				status.TrendSignals = append(status.TrendSignals, structs.TrendSignal{cmd[1], cmd[2], cmd[3], cmd[4], nil, nil})
 			case "untrend":
@@ -263,7 +330,7 @@ func CommandLoop(sim *Simulation, command chan []string, status *structs.Simulat
 	}
 }
 
-func findFmu(metaData structs.MetaData, moduleName string) (foundFmu structs.FMU) {
+func findFmu(metaData *structs.MetaData, moduleName string) (foundFmu structs.FMU) {
 	for _, fmu := range metaData.FMUs {
 		if fmu.Name == moduleName {
 			foundFmu = fmu
@@ -310,15 +377,18 @@ func GetSignalValue(module string, cardinality string, signal string) int {
 func SimulationStatus(simulationStatus *structs.SimulationStatus, sim *Simulation) structs.JsonResponse {
 	virtualMemoryStats, _ := mem.VirtualMemory()
 	if simulationStatus.Loaded {
+		execStatus := getExecutionStatus(sim.Execution)
 		return structs.JsonResponse{
-			SimulationTime: getSimulationTime(sim.Execution),
-			Modules:        getModuleNames(&sim.MetaData),
-			Module:         findModuleData(simulationStatus, &sim.MetaData, sim.Observer),
-			Loaded:         simulationStatus.Loaded,
-			Status:         simulationStatus.Status,
-			ConfigDir:      simulationStatus.ConfigDir,
-			TrendSignals:   simulationStatus.TrendSignals,
-			Memory:         virtualMemoryStats,
+			SimulationTime:       execStatus.time,
+			RealTimeFactor:       execStatus.realTimeFactor,
+			IsRealTimeSimulation: execStatus.isRealTimeSimulation,
+			Modules:              getModuleNames(sim.MetaData),
+			Module:               findModuleData(simulationStatus, sim.MetaData, sim.Observer),
+			Loaded:               simulationStatus.Loaded,
+			Status:               simulationStatus.Status,
+			ConfigDir:            simulationStatus.ConfigDir,
+			TrendSignals:         simulationStatus.TrendSignals,
+			Memory:               virtualMemoryStats,
 		}
 	} else {
 		return structs.JsonResponse{
@@ -326,7 +396,6 @@ func SimulationStatus(simulationStatus *structs.SimulationStatus, sim *Simulatio
 			Status: simulationStatus.Status,
 		}
 	}
-
 }
 
 func StateUpdateLoop(state chan structs.JsonResponse, simulationStatus *structs.SimulationStatus, sim *Simulation) {
@@ -347,7 +416,7 @@ func addFmu(execution *C.cse_execution, metaData *structs.MetaData, fmuPath stri
 }
 
 func addFmuSsd(metaData *structs.MetaData, name string, index int, fmuPath string) {
-	log.Println("Loading: " + fmuPath)
+	log.Println("Parsing: " + fmuPath)
 	fmu := metadata.ReadModelDescription(fmuPath)
 	fmu.Name = name
 	fmu.ExecutionIndex = index
@@ -415,39 +484,9 @@ type Simulation struct {
 	Execution    *C.cse_execution
 	Observer     *C.cse_observer
 	FileObserver *C.cse_observer
-	MetaData     structs.MetaData
+	MetaData     *structs.MetaData
 }
 
 func CreateEmptySimulation() Simulation {
 	return Simulation{}
-}
-
-func initializeSimulation(sim *Simulation, fmuDir string, logDir string) {
-	metaData := structs.MetaData{
-		FMUs: []structs.FMU{},
-	}
-	paths := getFmuPaths(fmuDir)
-
-	var execution *C.cse_execution
-	if hasSsdFile(fmuDir) {
-		execution = createSsdExecution(fmuDir)
-		addSsdMetadata(execution, &metaData, fmuDir)
-	} else {
-		execution = createExecution()
-		for _, path := range paths {
-			addFmu(execution, &metaData, path)
-		}
-	}
-
-	observer := createObserver()
-	executionAddObserver(execution, observer)
-
-	if len(logDir) > 0 {
-		fileObserver := createFileObserver(logDir)
-		executionAddObserver(execution, fileObserver)
-		sim.FileObserver = fileObserver
-	}
-	sim.Execution = execution
-	sim.Observer = observer
-	sim.MetaData = metaData
 }
