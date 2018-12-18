@@ -7,6 +7,7 @@
             [cse-client.config :refer [socket-url]]))
 
 (goog-define default-load-dir "")
+(goog-define default-log-dir "")
 
 (defn tab-content [tabby]
   (let [module @(rf/subscribe [:module])
@@ -53,41 +54,75 @@
     [:div.ui.secondary.vertical.fluid.menu
      [:a.item {:href  (k/path-for [:index])
                :class (when (= route-name :index) :active)} "Overview"]
-     [:div.header "Models:"]
+     [:div.ui.divider]
      (map (fn [module]
             [:a.item {:class (when (= route-module module) :active)
                       :key   module
                       :href  (k/path-for [:module {:module module}])} module])
           modules)]))
 
-(defn controls []
-  [:div.ui.buttons
-   [:button.ui.button {:on-click #(rf/dispatch [::controller/play])} "Play"]
-   [:button.ui.button {:on-click #(rf/dispatch [::controller/pause])} "Pause"]])
+(defn realtime-button []
+  (if @(rf/subscribe [:realtime?])
+    [:button.ui.button
+     {:on-click     #(rf/dispatch [::controller/disable-realtime])
+      :data-tooltip "Execute simulation as fast as possible"}
+     "Disable"]
+    [:button.ui.button
+     {:on-click     #(rf/dispatch [::controller/enable-realtime])
+      :data-tooltip "Execute simulation towards real time target"}
+     "Enable"]))
+
+(defn teardown-button []
+  [:button.ui.button {:on-click     #(rf/dispatch [::controller/teardown])
+                      :disabled     (not (= @(rf/subscribe [:status]) "pause"))
+                      :data-tooltip "Tear down current simulation, allowing for a simulation restart. Simulation must be paused."}
+   "Tear down"])
 
 (defn dashboard []
-  [:table.ui.basic.table.definition
-   [:tbody
-    (for [[k v] @(rf/subscribe [:overview])]
-      ^{:key k}
-      [:tr
-       [:td k]
-       [:td v]])]])
+  [:div
+   [:table.ui.basic.table.definition
+    [:tbody
+     (for [[k v] @(rf/subscribe [:overview])]
+       ^{:key k}
+       [:tr
+        [:td k]
+        [:td v]])]]
+   [:div.header "Controls"]
+   [:table.ui.basic.table.definition
+    [:tbody
+     [:tr [:td "Real time target"] [:td [realtime-button]]]
+     [:tr [:td "Simulation execution"] [:td [teardown-button]]]]]])
 
 (defn index-page []
   (let [loaded? (rf/subscribe [:loaded?])
-        load-dir (r/atom default-load-dir)]
+        load-dir (r/atom default-load-dir)
+        log-dir (r/atom default-log-dir)]
     (fn []
       (if @loaded?
         [dashboard]
-        [:div [:div "Specify a folder with FMUs:"]
-         [:div.row
-          [:input {:style     {:min-width "400px"}
-                   :type      :text
-                   :value     @load-dir
-                   :on-change #(reset! load-dir (-> % .-target .-value))}]]
-         [:div.row [:button.ui.button.pull-right {:disabled (empty? @load-dir)
-                                                  :on-click #(rf/dispatch [::controller/load @load-dir])} "Load simulation"]]]))))
+        [:div.ui.two.column.grid
+         [:div.two.column.row
+          [:div.column
+           [:div.ui.fluid.right.labeled.input {:data-tooltip "Specify a directory containing FMUs (and optionally a SystemStructure.ssd file)"}
+            [:input {:style       {:min-width "400px"}
+                     :type        :text
+                     :placeholder "Load folder..."
+                     :value       @load-dir
+                     :on-change   #(reset! load-dir (-> % .-target .-value))}]
+            [:div.ui.label "FMUs"]]]]
+         [:div.two.column.row
+          [:div.column
+           [:div.ui.fluid.right.labeled.input {:data-tooltip "[Optional] Specify a directory where output log files will be stored"}
+            [:input {:style       {:min-width "400px"}
+                     :type        :text
+                     :placeholder "Log folder... (optional)"
+                     :value       @log-dir
+                     :on-change   #(reset! log-dir (-> % .-target .-value))}]
+            [:div.ui.label "logs"]]]]
+         [:div.two.column.row
+          [:div.column
+           [:button.ui.button.pull-right {:disabled (empty? @load-dir)
+                                          :on-click #(rf/dispatch [::controller/load @load-dir @log-dir])} "Load simulation"]]]]))))
 
 (defn root-comp []
   (let [socket-state (rf/subscribe [:kee-frame.websocket/state socket-url])
@@ -95,15 +130,14 @@
         status (rf/subscribe [:status])]
     [:div
      [:div.ui.inverted.huge.borderless.fixed.fluid.menu
-      [:a.header.item "Open Simulation Platform"]
+      [:a.header.item "Core Simulation Environment - demo application"]
       [:div.right.menu
-       (when (and @loaded? (= @status "pause"))
-         [:a.item {:on-click #(rf/dispatch [::controller/teardown])} "Teardown"])
        (when (= :disconnected (:state @socket-state))
          [:div.item
           [:div "Lost server connection!"]])
-       [:div.item
-        [:div "Time: " @(rf/subscribe [:time])]]
+       (when @loaded?
+         [:div.item
+          [:div "Time: " @(rf/subscribe [:time])]])
        (when (and @loaded? (= @status "pause"))
          [:a.item {:on-click #(rf/dispatch [::controller/play])} "Play"])
        (when (and @loaded? (= @status "play"))
@@ -118,7 +152,7 @@
           [:h1.ui.huge.header [k/switch-route (comp :name :data)
                                :trend "Trend"
                                :module "Model"
-                               :index "Simulation status"
+                               :index (if @loaded? "Simulation status" "Simulation setup")
                                nil [:div "Loading..."]]]]
          [:div.ui.divider]
          [:div.row
@@ -126,4 +160,13 @@
            :trend [trend/trend-outer]
            :module [module-listing]
            :index [index-page]
-           nil [:div "Loading..."]]]]]]]]))
+           nil [:div "Loading..."]]]]]]]
+     (when (= :disconnected (:state @socket-state))
+       [:div.ui.page.dimmer.transition.active
+        {:style {:display :flex}}
+        [:div.content
+         [:div.center
+          [:h2.ui.inverted.icon.header
+           [:i.heartbeat.icon]
+           "Lost server connection!"]
+          [:div.sub.header "It looks like the server has crashed"]]]])]))

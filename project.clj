@@ -22,7 +22,8 @@
                                        :source-map-timestamp true
                                        :parallel-build       true
                                        :closure-defines      {cse-client.core/debug                 true
-                                                              cse-client.view/default-load-dir      "C:\\OSP\\demo"
+                                                              cse-client.view/default-load-dir      "C:\\MC\\git\\cse-demos\\house"
+                                                              cse-client.view/default-log-dir       ""
                                                               "re_frame.trace.trace_enabled_QMARK_" true}
                                        :preloads             [devtools.preload day8.re-frame-10x.preload]
                                        :external-config      {:devtools/config {:features-to-install [:formatters]}}}}

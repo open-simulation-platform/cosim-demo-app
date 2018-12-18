@@ -29,21 +29,27 @@
 (defn simulation-time [db]
   (some-> db :state :time (.toFixed 3)))
 
+(defn real-time-factor [db]
+  (some-> db :state :realTimeFactor (.toFixed 3)))
+
+(defn real-time? [db]
+  (if (some-> db :state :isRealTime)
+    "true"
+    "false"))
+
 (defn status-data [db]
-  {
-   "Algorithm type"               "Fixed step"
+  {"Algorithm type"               "Fixed step"
    "Simulation time"              (simulation-time db)
-   "Real time factor"             "0.9998324"
-   "Step size"                    "0.1 s"
+   "Real time factor"             (real-time-factor db)
+   "Real time target"             (real-time? db)
    "Connection status"            (get-in db [:kee-frame.websocket/sockets socket-url :state])
-   "CPU load"                     (str (-> db :state :Cpu first :PercentUserTime))
-   "Used memory"                  (str (/ (get-in db [:state :Memory :used]) 1000000) " MB")
    "Path to loaded config folder" (-> db :state :configDir)})
 
 (rf/reg-sub :overview status-data)
 (rf/reg-sub :time simulation-time)
 (rf/reg-sub :loaded? (comp :loaded :state))
 (rf/reg-sub :status (comp :status :state))
+(rf/reg-sub :realtime? (comp :isRealTime :state))
 (rf/reg-sub :module (comp :module :state))
 (rf/reg-sub :modules (comp :modules :state))
 (rf/reg-sub :causalities causalities)
@@ -63,4 +69,4 @@
            :debug?         {:blacklist #{::controller/socket-message-received}}
            :root-component [view/root-comp]
            :initial-db     {:trend-values []
-                            :trend-range 10}})
+                            :trend-range  10}})

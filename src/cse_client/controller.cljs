@@ -66,8 +66,8 @@
                   (socket-command db ["module" nil])))
 
 (k/reg-event-fx ::load
-                (fn [{:keys [db]} [folder]]
-                  (socket-command db ["load" folder])))
+                (fn [{:keys [db]} [folder log-folder]]
+                  (socket-command db ["load" folder (or log-folder "")])))
 
 (k/reg-event-fx ::teardown
                 (fn [{:keys [db]} _]
@@ -80,6 +80,14 @@
 (k/reg-event-fx ::pause
                 (fn [{:keys [db]} _]
                   (socket-command db ["pause"])))
+
+(k/reg-event-fx ::enable-realtime
+                (fn [{:keys [db]} _]
+                  (socket-command db ["enable-realtime"])))
+
+(k/reg-event-fx ::disable-realtime
+                (fn [{:keys [db]} _]
+                  (socket-command db ["disable-realtime"])))
 
 (k/reg-event-fx ::untrend
                 (fn [{:keys [db]} _]
