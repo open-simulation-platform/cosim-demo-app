@@ -229,11 +229,19 @@ func setVariableValue(sim *Simulation, module string, signal string, causality s
 	varIndex := findVariableIndex(fmu, signal, causality, valueType)
 	switch valueType {
 	case "Real":
-		val := parseFloat(value)
-		setReal(sim.Execution, fmu.ExecutionIndex, varIndex, val)
+		val, err := strconv.ParseFloat(value, 64)
+		if err != nil {
+			log.Println(err)
+		} else {
+			setReal(sim.Execution, fmu.ExecutionIndex, varIndex, val)
+		}
 	case "Integer":
-		val := parseInt(value)
-		setInteger(sim.Execution, fmu.ExecutionIndex, varIndex, val)
+		val, err := strconv.Atoi(value)
+		if err != nil {
+			log.Println(err)
+		} else {
+			setInteger(sim.Execution, fmu.ExecutionIndex, varIndex, val)
+		}
 	default:
 		fmt.Println("Can't set this value:", value)
 	}
@@ -266,15 +274,6 @@ func parseFloat(argument string) float64 {
 	if err != nil {
 		log.Fatal(err)
 		return 0.0
-	}
-	return f
-}
-
-func parseInt(argument string) int {
-	f, err := strconv.Atoi(argument)
-	if err != nil {
-		log.Fatal(err)
-		return 0
 	}
 	return f
 }
