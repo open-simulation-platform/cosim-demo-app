@@ -1,7 +1,11 @@
 # Created by .ignore support plugin (hsz.mobi)
 
 .idea
+*.iml
 
 target
 
 resources/public/js/compiled/*
+
+.nrepl-port
+figwheel_server.log

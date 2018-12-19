@@ -9,13 +9,43 @@
 (goog-define default-load-dir "")
 (goog-define default-log-dir "")
 
+(defn variable-override-editor [module {:keys [name causality type value]}]
+  (let [editing? (r/atom false)
+        internal-value (r/atom value)]
+    (fn [_ {:keys [value]}]
+      (if @editing?
+        [:div.ui.action.input.fluid
+         [:input {:type      :text
+                  :autoFocus true
+                  :id        (str "input-" name)
+                  :value     (if @editing? @internal-value value)
+                  :on-change #(reset! internal-value (.. % -target -value))}]
+         [:button.ui.right.icon.button
+          {:on-click (fn [_]
+                       (rf/dispatch [::controller/set-value module name causality type @internal-value])
+                       (reset! editing? false))}
+          [:i.check.link.icon]]
+         [:button.ui.right.icon.button
+          {:on-click #(reset! editing? false)}
+          [:i.times.link.icon]]]
+        [:div {:style    {:cursor :pointer}
+               :on-click (fn [_]
+                           (reset! editing? true)
+                           (reset! internal-value value))}
+         value]))))
+
+(defn variable-display [module {:keys [value editable?] :as variable}]
+  (if editable?
+    [variable-override-editor module variable]
+    [:div value]))
+
 (defn tab-content [tabby]
   (let [module @(rf/subscribe [:module])
         signals @(rf/subscribe [:signals])
         active @(rf/subscribe [:active-causality])]
     [:div.ui.bottom.attached.tab.segment {:data-tab tabby
                                           :class    (when (= tabby active) "active")}
-     [:table.ui.single.line.striped.selectable.table
+     [:table.ui.single.line.striped.selectable.fixed.table
       [:thead
        [:tr
         [:th "Name"]
@@ -23,28 +53,30 @@
         [:th "Value"]
         [:th "..."]]]
       [:tbody
-       (map (fn [{:keys [name value causality type]}]
-              [:tr {:key (str causality "-" name)}
+       (map (fn [{:keys [name value causality type] :as variable}]
+              [:tr {:key (str (:name module) "-" causality "-" name)}
                [:td name]
                [:td type]
-               [:td value]
+               [:td [variable-display (:name module) variable]]
                [:td [:a {:href (k/path-for [:trend {:module (:name module) :signal name :causality causality :type type}])} "Trend"]]])
             signals)]]]))
 
 (defn module-listing []
   (let [causalities @(rf/subscribe [:causalities])
         active @(rf/subscribe [:active-causality])]
-    [:div
-     [:div.ui.top.attached.tabular.menu
-      (for [causality causalities]
-        ^{:key (str "tab-" causality)}
-        [:a.item {:data-tab causality
-                  :class    (when (= causality active) "active")
-                  :on-click #(rf/dispatch [::controller/causality-enter causality])}
-         causality])]
-     (for [causality causalities]
-       ^{:key (str "tab-content-" causality)}
-       [tab-content causality])]))
+    [:div.ui.one.column.grid
+     [:div.one.column.row
+      [:div.column
+       [:div.ui.top.attached.tabular.menu
+        (for [causality causalities]
+          ^{:key (str "tab-" causality)}
+          [:a.item {:data-tab causality
+                    :class    (when (= causality active) "active")
+                    :on-click #(rf/dispatch [::controller/causality-enter causality])}
+           causality])]
+       (for [causality causalities]
+         ^{:key (str "tab-content-" causality)}
+         [tab-content causality])]]]))
 
 (defn sidebar []
   (let [modules @(rf/subscribe [:modules])
@@ -169,4 +201,4 @@
           [:h2.ui.inverted.icon.header
            [:i.heartbeat.icon]
            "Lost server connection!"]
-          [:div.sub.header "It looks like the server has crashed"]]]])]))
+          [:div.sub.header "It looks like the server is down. Try restarting the server and hit F5"]]]])]))

@@ -103,6 +103,10 @@
                                                         :causality  causality
                                                         :type       type}])})))
 
+(k/reg-event-fx ::set-value
+                (fn [{:keys [db]} [module signal causality type value]]
+                  (socket-command db ["set-value" module signal causality type (str value)])))
+
 (k/reg-event-fx ::trend-zoom
                 (fn [{:keys [db]} [begin end]]
                   (socket-command db ["trend-zoom" (str begin) (str end)])))

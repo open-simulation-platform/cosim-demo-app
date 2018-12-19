@@ -12,19 +12,33 @@
    ["/modules/:module" :module]
    ["/trend/:module/:signal/:causality/:type" :trend]])
 
+(def sort-order
+  (let [order ["input" "independent" "parameter" "calculatedParameter" "local" "internal" "output"]]
+    (zipmap order (range (count order)))))
+
+(defn by-order [s1 s2]
+  (compare (sort-order s1) (sort-order s2)))
+
 (defn causalities [db]
   (some->> db
            :state
            :module
            :signals
            (map :causality)
-           distinct))
+           distinct
+           (sort by-order)))
 
 (defn active-causality [db]
   (or ((set (causalities db)) (:active-causality db))
       (-> db
           causalities
           first)))
+
+(defn editable? [{:keys [type causality] :as variable}]
+  (if (and (#{"input" "parameter"} causality)
+           (#{"Real" "Integer"} type))
+    (assoc variable :editable? true)
+    variable))
 
 (defn simulation-time [db]
   (some-> db :state :time (.toFixed 3)))
@@ -62,6 +76,7 @@
                                 (filter (fn [signal]
                                           (= (active-causality db)
                                              (:causality signal))))
+                                (map editable?)
                                 (sort-by :name))))
 
 (k/start! {:routes         routes
