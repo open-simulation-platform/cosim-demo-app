@@ -14,7 +14,6 @@ type JsonRequest struct {
 	Connections bool     `json:"connections,omitempty"`
 }
 
-
 var upgrader = websocket.Upgrader{CheckOrigin: func(r *http.Request) bool { return true },}
 
 func commandLoop(command chan []string, conn *websocket.Conn) {
@@ -22,10 +21,9 @@ func commandLoop(command chan []string, conn *websocket.Conn) {
 		json := JsonRequest{}
 		err := conn.ReadJSON(&json)
 		if err != nil {
+			log.Println("Encountered problem with command:", &json)
 			log.Println("read:", err)
-			break
-		}
-		if json.Command != nil {
+		} else if json.Command != nil {
 			command <- json.Command
 		}
 	}

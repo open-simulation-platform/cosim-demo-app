@@ -208,6 +208,45 @@ func observerGetRealSamples(observer *C.cse_observer, metaData *structs.MetaData
 	signal.TrendValues = trendVals
 }
 
+func setReal(execution *C.cse_execution, slaveIndex int, variableIndex int, value float64) {
+	vi := make([]C.cse_variable_index, 1)
+	vi[0] = C.cse_variable_index(variableIndex)
+	v := make([]C.double, 1)
+	v[0] = C.double(value)
+	C.cse_execution_slave_set_real(execution, C.cse_slave_index(slaveIndex), &vi[0], C.size_t(1), &v[0])
+}
+
+func setInteger(execution *C.cse_execution, slaveIndex int, variableIndex int, value int) {
+	vi := make([]C.cse_variable_index, 1)
+	vi[0] = C.cse_variable_index(variableIndex)
+	v := make([]C.int, 1)
+	v[0] = C.int(value)
+	C.cse_execution_slave_set_integer(execution, C.cse_slave_index(slaveIndex), &vi[0], C.size_t(1), &v[0])
+}
+
+func setVariableValue(sim *Simulation, module string, signal string, causality string, valueType string, value string) {
+	fmu := findFmu(sim.MetaData, module)
+	varIndex := findVariableIndex(fmu, signal, causality, valueType)
+	switch valueType {
+	case "Real":
+		val, err := strconv.ParseFloat(value, 64)
+		if err != nil {
+			log.Println(err)
+		} else {
+			setReal(sim.Execution, fmu.ExecutionIndex, varIndex, val)
+		}
+	case "Integer":
+		val, err := strconv.Atoi(value)
+		if err != nil {
+			log.Println(err)
+		} else {
+			setInteger(sim.Execution, fmu.ExecutionIndex, varIndex, val)
+		}
+	default:
+		fmt.Println("Can't set this value:", value)
+	}
+}
+
 func findVariableIndex(fmu structs.FMU, signalName string, causality string, valueType string) (index int) {
 	for _, variable := range fmu.Variables {
 		if variable.Name == signalName && variable.Type == valueType && variable.Causality == causality {
@@ -323,6 +362,8 @@ func CommandLoop(sim *Simulation, command chan []string, status *structs.Simulat
 				status.Module = structs.Module{
 					Name: cmd[1],
 				}
+			case "set-value":
+				setVariableValue(sim, cmd[1], cmd[2], cmd[3], cmd[4], cmd[5])
 			default:
 				fmt.Println("Empty command, mildt sagt not good: ", cmd)
 			}
