@@ -6,6 +6,28 @@
             [cljs.spec.alpha :as s]
             [clojure.string :as str]))
 
+(def range-configs
+  [{:seconds 10
+    :text    "10s"}
+   {:seconds 30
+    :text    "30s"}
+   {:seconds 60
+    :text    "1m"}
+   {:seconds (* 60 5)
+    :text    "5m"}
+   {:seconds (* 60 10)
+    :text    "10m"}
+   {:seconds (* 60 20)
+    :text    "20m"}])
+
+(defn range-selector [trend-range {:keys [text seconds]}]
+  ^{:key text}
+  [:button.ui.button
+   {:on-click #(rf/dispatch [::controller/trend-range seconds])
+    :class    (if (= trend-range seconds) "active" "")}
+   text])
+
+
 (defn update-chart-data [dom-node trend-values]
   (s/assert ::trend-values trend-values)
 
@@ -33,26 +55,25 @@
       {:component-did-mount  (fn [comp]
                                (js/Plotly.plot (r/dom-node comp) (clj->js [{:x []
                                                                             :y []}])
-                                               (clj->js {:title @(rf/subscribe [::trend-title])
-                                                         :xaxis {:title "Time [s]"}}))
+                                               (clj->js {:xaxis {:title "Time [s]"}}))
                                (.on (r/dom-node comp) "plotly_relayout" relayout-callback))
        :component-did-update update
        :reagent-render       (fn []
-                               [:div {:style {:flex "1 1 auto"}}])})))
+                               [:div.column])})))
 
 (defn trend-outer []
   (let [trend-values (rf/subscribe [::trend-values])
-        trend-millis (rf/subscribe [::trend-millis])]
+        trend-range (rf/subscribe [::trend-range])]
     (fn []
-      [:div.main
-       [trend-inner {:trend-values @trend-values
-                     :trend-millis @trend-millis}]])))
+      [:div.ui.one.column.grid
+       [:div.one.column.row
+        [:div.column
+         (doall (map (partial range-selector @trend-range) range-configs))]]
+       [:div.one.column.row
+        [trend-inner {:trend-values @trend-values}]]])))
 
 (rf/reg-sub ::trend-values :trend-values)
-(rf/reg-sub ::trend-millis :trend-millis)
-(rf/reg-sub ::trend-title (fn [db]
-                            (let [{:keys [module signal causality type]} (-> db :trend-values first)]
-                              (str/join " - " [module signal causality type]))))
+(rf/reg-sub ::trend-range :trend-range)
 
 (defn ascending-points? [tuples]
   (= tuples

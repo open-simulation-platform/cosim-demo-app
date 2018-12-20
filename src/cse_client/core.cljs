@@ -78,6 +78,7 @@
                                              (:causality signal))))
                                 (map editable?)
                                 (sort-by :name))))
+(rf/reg-sub :trend-title #(:trend-title %))
 
 (k/start! {:routes         routes
            :hash-routing?  true

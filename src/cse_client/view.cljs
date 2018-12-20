@@ -159,7 +159,8 @@
 (defn root-comp []
   (let [socket-state (rf/subscribe [:kee-frame.websocket/state socket-url])
         loaded? (rf/subscribe [:loaded?])
-        status (rf/subscribe [:status])]
+        status (rf/subscribe [:status])
+        trend-title (rf/subscribe [:trend-title])]
     [:div
      [:div.ui.inverted.huge.borderless.fixed.fluid.menu
       [:a.header.item "Core Simulation Environment - demo application"]
@@ -182,7 +183,7 @@
         [:div.ui.grid
          [:div.row
           [:h1.ui.huge.header [k/switch-route (comp :name :data)
-                               :trend "Trend"
+                               :trend (str "Trend - " @trend-title)
                                :module "Model"
                                :index (if @loaded? "Simulation status" "Simulation setup")
                                nil [:div "Loading..."]]]]

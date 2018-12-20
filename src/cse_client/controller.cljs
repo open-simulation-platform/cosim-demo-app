@@ -2,7 +2,8 @@
   (:require [kee-frame.core :as k]
             [kee-frame.websocket :as websocket]
             [cse-client.config :refer [socket-url]]
-            [re-frame.loggers :as re-frame-log]))
+            [re-frame.loggers :as re-frame-log]
+            [clojure.string :as str]))
 
 ;; Prevent handler overwriting warnings during cljs reload.
 (re-frame-log/set-loggers!
@@ -101,7 +102,8 @@
                                                         :module     module
                                                         :signal     signal
                                                         :causality  causality
-                                                        :type       type}])})))
+                                                        :type       type}]
+                                        :trend-title (str/join " - " [module signal causality type]))})))
 
 (k/reg-event-fx ::set-value
                 (fn [{:keys [db]} [module signal causality type value]]
@@ -114,3 +116,8 @@
 (k/reg-event-fx ::trend-zoom-reset
                 (fn [{:keys [db]} _]
                   (socket-command db ["trend-zoom-reset" (-> db :trend-range str)])))
+
+(k/reg-event-fx ::trend-range
+                (fn [{:keys [db]} [new-range]]
+                  {:db       (assoc db :trend-range new-range)
+                   :dispatch [::trend-zoom-reset]}))
