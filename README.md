@@ -37,7 +37,10 @@ https://golang.org/doc/install#install
 
 Add \<install path\>/bin to PATH variable in /etc/environment.
 
-In case you want to change the default Go workspace path (\<home path\>/go) you can set it with GOPATH in /etc/environment.  
+In case you want to change the default Go workspace path (\<home path\>/go) you can set it with GOPATH in /etc/environment.
+
+And to be able to run installed Go packages like e.g. packr without providing the full path, you might also want to add \<workspace path\>/bin to PATH variable in /etc/environment.
+
 https://help.ubuntu.com/community/EnvironmentVariables#A.2Fetc.2Fenvironment  
 Note: Variable expansion does not work in this file, and you have to log out and in again to apply changes.
 
