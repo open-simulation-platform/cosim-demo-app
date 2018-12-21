@@ -258,6 +258,7 @@ func findVariableIndex(fmu structs.FMU, signalName string, causality string, val
 
 func TrendLoop(sim *Simulation, status *structs.SimulationStatus) {
 	for {
+		status.Mutex.Lock()
 		if len(status.TrendSignals) > 0 {
 			for i, _ := range status.TrendSignals {
 				var trend = &status.TrendSignals[i]
@@ -267,6 +268,7 @@ func TrendLoop(sim *Simulation, status *structs.SimulationStatus) {
 				}
 			}
 		}
+		status.Mutex.Unlock()
 		time.Sleep(500 * time.Millisecond)
 	}
 }
@@ -327,6 +329,7 @@ func CommandLoop(sim *Simulation, command chan []string, status *structs.Simulat
 	for {
 		select {
 		case cmd := <-command:
+			status.Mutex.Lock()
 			switch cmd[0] {
 			case "load":
 				initializeSimulation(sim, cmd[1], cmd[2])
@@ -367,8 +370,9 @@ func CommandLoop(sim *Simulation, command chan []string, status *structs.Simulat
 			case "set-value":
 				setVariableValue(sim, cmd[1], cmd[2], cmd[3], cmd[4], cmd[5])
 			default:
-				fmt.Println("Empty command, mildt sagt not good: ", cmd)
+				fmt.Println("Unknown command, this is not good: ", cmd)
 			}
+			status.Mutex.Unlock()
 		}
 	}
 }
@@ -418,6 +422,8 @@ func GetSignalValue(module string, cardinality string, signal string) int {
 }
 
 func SimulationStatus(simulationStatus *structs.SimulationStatus, sim *Simulation) structs.JsonResponse {
+	simulationStatus.Mutex.Lock()
+	defer simulationStatus.Mutex.Unlock()
 	virtualMemoryStats, _ := mem.VirtualMemory()
 	if simulationStatus.Loaded {
 		execStatus := getExecutionStatus(sim.Execution)

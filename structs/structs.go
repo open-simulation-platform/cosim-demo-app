@@ -2,6 +2,7 @@ package structs
 
 import (
 	"github.com/shirou/gopsutil/mem"
+	"sync"
 )
 
 type Signal struct {
@@ -46,6 +47,7 @@ type TrendSpec struct {
 }
 
 type SimulationStatus struct {
+	Mutex        sync.Mutex
 	Loaded       bool
 	ConfigDir    string
 	Module       Module
