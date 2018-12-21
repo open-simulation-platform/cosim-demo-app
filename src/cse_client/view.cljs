@@ -58,7 +58,8 @@
                [:td name]
                [:td type]
                [:td [variable-display (:name module) variable]]
-               [:td [:a {:href (k/path-for [:trend {:module (:name module) :signal name :causality causality :type type}])} "Trend"]]])
+               [:td [:a {:style    {:cursor :pointer}
+                         :on-click #(rf/dispatch [::controller/add-to-trend (:name module) name causality type])} "Add to trend"]]])
             signals)]]]))
 
 (defn module-listing []
@@ -82,10 +83,17 @@
   (let [modules @(rf/subscribe [:modules])
         route @(rf/subscribe [:kee-frame/route])
         route-name (-> route :data :name)
-        route-module (-> route :path-params :module)]
+        route-module (-> route :path-params :module)
+        loaded? @(rf/subscribe [:loaded?])
+        trend-count @(rf/subscribe [:trend-count])]
     [:div.ui.secondary.vertical.fluid.menu
      [:a.item {:href  (k/path-for [:index])
                :class (when (= route-name :index) :active)} "Overview"]
+     (when loaded?
+       [:a.item {:href  (k/path-for [:trend])
+                 :class (when (= route-name :trend) :active)}
+        "Trend"
+        [:div.ui.teal.left.pointing.label trend-count]])
      [:div.ui.divider]
      (map (fn [module]
             [:a.item {:class (when (= route-module module) :active)
@@ -159,8 +167,7 @@
 (defn root-comp []
   (let [socket-state (rf/subscribe [:kee-frame.websocket/state socket-url])
         loaded? (rf/subscribe [:loaded?])
-        status (rf/subscribe [:status])
-        trend-title (rf/subscribe [:trend-title])]
+        status (rf/subscribe [:status])]
     [:div
      [:div.ui.inverted.huge.borderless.fixed.fluid.menu
       [:a.header.item "Core Simulation Environment - demo application"]
@@ -183,8 +190,8 @@
         [:div.ui.grid
          [:div.row
           [:h1.ui.huge.header [k/switch-route (comp :name :data)
-                               :trend (str "Trend - " @trend-title)
                                :module "Model"
+                               :trend "Trend"
                                :index (if @loaded? "Simulation status" "Simulation setup")
                                nil [:div "Loading..."]]]]
          [:div.ui.divider]

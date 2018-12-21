@@ -2,8 +2,7 @@
   (:require [kee-frame.core :as k]
             [kee-frame.websocket :as websocket]
             [cse-client.config :refer [socket-url]]
-            [re-frame.loggers :as re-frame-log]
-            [clojure.string :as str]))
+            [re-frame.loggers :as re-frame-log]))
 
 ;; Prevent handler overwriting warnings during cljs reload.
 (re-frame-log/set-loggers!
@@ -11,13 +10,6 @@
            (when-not (or (re-find #"^re-frame: overwriting" (first args))
                          (re-find #"^Overwriting controller" (first args)))
              (apply js/console.warn args)))})
-
-(k/reg-controller :trend
-                  {:params (fn [route]
-                             (when (= :trend (-> route :data :name))
-                               (:path-params route)))
-                   :start  [::trend]
-                   :stop   [::untrend]})
 
 (k/reg-controller :module
                   {:params (fn [route]
@@ -38,12 +30,7 @@
 
 (k/reg-event-db ::socket-message-received
                 (fn [db [{message :message}]]
-                  (let [{:keys [TrendTimestamps TrendValues]} (-> message :trendSignals first)]
-                    (-> db
-                        (assoc-in [:trend-values 0] {:labels TrendTimestamps
-                                                     :values TrendValues})
-                        (update :state merge message)))))
-
+                  (update db :state merge message)))
 
 (defn ws-request [db config]
   (merge
@@ -92,18 +79,11 @@
 
 (k/reg-event-fx ::untrend
                 (fn [{:keys [db]} _]
-                  (merge (socket-command db ["untrend"])
-                         {:db (assoc db :trend-values [])})))
+                  (socket-command db ["untrend"])))
 
-(k/reg-event-fx ::trend
-                (fn [{:keys [db]} [{:keys [module signal causality type]}]]
-                  (merge (socket-command db ["trend" module signal causality type])
-                         {:db (assoc db :trend-values [{:trend-data []
-                                                        :module     module
-                                                        :signal     signal
-                                                        :causality  causality
-                                                        :type       type}]
-                                        :trend-title (str/join " - " [module signal causality type]))})))
+(k/reg-event-fx ::add-to-trend
+                (fn [{:keys [db]} [module signal causality type]]
+                  (socket-command db ["trend" module signal causality type])))
 
 (k/reg-event-fx ::set-value
                 (fn [{:keys [db]} [module signal causality type value]]
