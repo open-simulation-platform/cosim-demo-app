@@ -26,16 +26,16 @@ type JsonResponse struct {
 	Modules              []string `json:"modules"`
 	Module               Module   `json:"module,omitempty"`
 	Memory               *mem.VirtualMemoryStat
-	TrendSignals         []TrendSignal `json:"trendSignals,omitempty"`
+	TrendSignals         []TrendSignal `json:"trend-values"`
 }
 
 type TrendSignal struct {
-	Module          string
-	Signal          string
-	Causality       string
-	Type            string
-	TrendValues     []float64
-	TrendTimestamps []float64
+	Module          string    `json:"module"`
+	Signal          string    `json:"signal"`
+	Causality       string    `json:"causality"`
+	Type            string    `json:"type"`
+	TrendValues     []float64 `json:"values,omitempty"`
+	TrendTimestamps []float64 `json:"labels,omitempty"`
 }
 
 type TrendSpec struct {

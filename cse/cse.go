@@ -259,10 +259,12 @@ func findVariableIndex(fmu structs.FMU, signalName string, causality string, val
 func TrendLoop(sim *Simulation, status *structs.SimulationStatus) {
 	for {
 		if len(status.TrendSignals) > 0 {
-			var trend = &status.TrendSignals[0]
-			switch trend.Type {
-			case "Real":
-				observerGetRealSamples(sim.Observer, sim.MetaData, trend, status.TrendSpec)
+			for i, _ := range status.TrendSignals {
+				var trend = &status.TrendSignals[i]
+				switch trend.Type {
+				case "Real":
+					observerGetRealSamples(sim.Observer, sim.MetaData, trend, status.TrendSpec)
+				}
 			}
 		}
 		time.Sleep(500 * time.Millisecond)
