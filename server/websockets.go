@@ -2,7 +2,9 @@ package server
 
 import (
 	"cse-server-go/structs"
+	"encoding/json"
 	"github.com/gorilla/websocket"
+	"io"
 	"log"
 	"net/http"
 )
@@ -18,13 +20,21 @@ var upgrader = websocket.Upgrader{CheckOrigin: func(r *http.Request) bool { retu
 
 func commandLoop(command chan []string, conn *websocket.Conn) {
 	for {
-		json := JsonRequest{}
-		err := conn.ReadJSON(&json)
+		data := JsonRequest{}
+		_, r, err := conn.NextReader()
 		if err != nil {
-			log.Println("Encountered problem with command:", &json)
-			log.Println("read:", err)
-		} else if json.Command != nil {
-			command <- json.Command
+			log.Println("read error:", err)
+			break
+		}
+		err = json.NewDecoder(r).Decode(&data)
+		if err == io.EOF {
+			// One value is expected in the message.
+			log.Println("Message was EOF:", err, data)
+			err = io.ErrUnexpectedEOF
+		} else if err != nil {
+			log.Println("Could not parse message:", data, ", error was:", err)
+		} else if data.Command != nil {
+			command <- data.Command
 		}
 	}
 }
