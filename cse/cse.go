@@ -8,7 +8,6 @@ import (
 	"cse-server-go/metadata"
 	"cse-server-go/structs"
 	"fmt"
-	"github.com/shirou/gopsutil/mem"
 	"io/ioutil"
 	"log"
 	"math"
@@ -424,7 +423,6 @@ func GetSignalValue(module string, cardinality string, signal string) int {
 func SimulationStatus(simulationStatus *structs.SimulationStatus, sim *Simulation) structs.JsonResponse {
 	simulationStatus.Mutex.Lock()
 	defer simulationStatus.Mutex.Unlock()
-	virtualMemoryStats, _ := mem.VirtualMemory()
 	if simulationStatus.Loaded {
 		execStatus := getExecutionStatus(sim.Execution)
 		return structs.JsonResponse{
@@ -437,7 +435,6 @@ func SimulationStatus(simulationStatus *structs.SimulationStatus, sim *Simulatio
 			Status:               simulationStatus.Status,
 			ConfigDir:            simulationStatus.ConfigDir,
 			TrendSignals:         simulationStatus.TrendSignals,
-			Memory:               virtualMemoryStats,
 		}
 	} else {
 		return structs.JsonResponse{
