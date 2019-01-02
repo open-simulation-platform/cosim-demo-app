@@ -8,7 +8,6 @@ import (
 	"cse-server-go/metadata"
 	"cse-server-go/structs"
 	"fmt"
-	"github.com/shirou/gopsutil/mem"
 	"io/ioutil"
 	"log"
 	"math"
@@ -258,13 +257,17 @@ func findVariableIndex(fmu structs.FMU, signalName string, causality string, val
 
 func TrendLoop(sim *Simulation, status *structs.SimulationStatus) {
 	for {
+		status.Mutex.Lock()
 		if len(status.TrendSignals) > 0 {
-			var trend = &status.TrendSignals[0]
-			switch trend.Type {
-			case "Real":
-				observerGetRealSamples(sim.Observer, sim.MetaData, trend, status.TrendSpec)
+			for i, _ := range status.TrendSignals {
+				var trend = &status.TrendSignals[i]
+				switch trend.Type {
+				case "Real":
+					observerGetRealSamples(sim.Observer, sim.MetaData, trend, status.TrendSpec)
+				}
 			}
 		}
+		status.Mutex.Unlock()
 		time.Sleep(500 * time.Millisecond)
 	}
 }
@@ -325,6 +328,7 @@ func CommandLoop(sim *Simulation, command chan []string, status *structs.Simulat
 	for {
 		select {
 		case cmd := <-command:
+			status.Mutex.Lock()
 			switch cmd[0] {
 			case "load":
 				initializeSimulation(sim, cmd[1], cmd[2])
@@ -365,8 +369,9 @@ func CommandLoop(sim *Simulation, command chan []string, status *structs.Simulat
 			case "set-value":
 				setVariableValue(sim, cmd[1], cmd[2], cmd[3], cmd[4], cmd[5])
 			default:
-				fmt.Println("Empty command, mildt sagt not good: ", cmd)
+				fmt.Println("Unknown command, this is not good: ", cmd)
 			}
+			status.Mutex.Unlock()
 		}
 	}
 }
@@ -416,7 +421,8 @@ func GetSignalValue(module string, cardinality string, signal string) int {
 }
 
 func SimulationStatus(simulationStatus *structs.SimulationStatus, sim *Simulation) structs.JsonResponse {
-	virtualMemoryStats, _ := mem.VirtualMemory()
+	simulationStatus.Mutex.Lock()
+	defer simulationStatus.Mutex.Unlock()
 	if simulationStatus.Loaded {
 		execStatus := getExecutionStatus(sim.Execution)
 		return structs.JsonResponse{
@@ -429,7 +435,6 @@ func SimulationStatus(simulationStatus *structs.SimulationStatus, sim *Simulatio
 			Status:               simulationStatus.Status,
 			ConfigDir:            simulationStatus.ConfigDir,
 			TrendSignals:         simulationStatus.TrendSignals,
-			Memory:               virtualMemoryStats,
 		}
 	} else {
 		return structs.JsonResponse{
