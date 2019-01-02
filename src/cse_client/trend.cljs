@@ -27,13 +27,33 @@
     :class    (if (= trend-range seconds) "active" "")}
    text])
 
+(defn trend-title [{:keys [module signal causality type]}]
+  (str/join " - " [module signal causality type]))
+
+(defn new-series [trend-variable]
+  {:name (trend-title trend-variable)
+   :x    []
+   :y    []})
+
+(defn maybe-update-series [dom-node trend-values]
+  (let [num-series (-> dom-node .-data .-length)]
+    (when (not= num-series (count trend-values))
+      (doseq [_ (range num-series)]
+        (js/Plotly.deleteTraces dom-node 0))
+      (doseq [trend-variable trend-values]
+        (js/Plotly.addTraces dom-node (clj->js (new-series trend-variable)))))))
+
 
 (defn update-chart-data [dom-node trend-values]
   (s/assert ::trend-values trend-values)
-
-  (doseq [{:keys [labels values]} trend-values]
-    (js/Plotly.update dom-node (clj->js {:x [labels]
-                                         :y [values]}))))
+  (let [init-data {:x [] :y []}
+        data (reduce (fn [data {:keys [labels values]}]
+                       (-> data
+                           (update :x conj labels)
+                           (update :y conj values)))
+                     init-data trend-values)]
+    (maybe-update-series dom-node trend-values)
+    (js/Plotly.update dom-node (clj->js data))))
 
 (defn relayout-callback [js-event]
   (let [event (js->clj js-event)
@@ -66,13 +86,15 @@
         trend-range (rf/subscribe [::trend-range])]
     (fn []
       [:div.ui.one.column.grid
-       [:div.one.column.row
+       [:div.two.column.row
         [:div.column
-         (doall (map (partial range-selector @trend-range) range-configs))]]
+         (doall (map (partial range-selector @trend-range) range-configs))]
+        [:div.column
+         [:button.ui.button.pull-right {:on-click #(rf/dispatch [::controller/untrend])} "Remove all"]]]
        [:div.one.column.row
         [trend-inner {:trend-values @trend-values}]]])))
 
-(rf/reg-sub ::trend-values :trend-values)
+(rf/reg-sub ::trend-values #(-> % :state :trend-values))
 (rf/reg-sub ::trend-range :trend-range)
 
 (defn ascending-points? [tuples]

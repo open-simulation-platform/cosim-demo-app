@@ -10,7 +10,7 @@
 (def routes
   [["/" :index]
    ["/modules/:module" :module]
-   ["/trend/:module/:signal/:causality/:type" :trend]])
+   ["/trend" :trend]])
 
 (def sort-order
   (let [order ["input" "independent" "parameter" "calculatedParameter" "local" "internal" "output"]]
@@ -78,11 +78,10 @@
                                              (:causality signal))))
                                 (map editable?)
                                 (sort-by :name))))
-(rf/reg-sub :trend-title #(:trend-title %))
+(rf/reg-sub :trend-count #(-> % :state :trend-values count))
 
 (k/start! {:routes         routes
            :hash-routing?  true
            :debug?         {:blacklist #{::controller/socket-message-received}}
            :root-component [view/root-comp]
-           :initial-db     {:trend-values []
-                            :trend-range  10}})
+           :initial-db     {:trend-range 10}})
