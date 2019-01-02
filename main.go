@@ -16,6 +16,7 @@ func main() {
 	simulationStatus := structs.SimulationStatus{
 		Loaded:       false,
 		Status:       "stopped",
+		MetaChan:     make(chan *structs.MetaData, 2),
 		TrendSignals: []structs.TrendSignal{},
 		TrendSpec: structs.TrendSpec{
 			Auto:  true,

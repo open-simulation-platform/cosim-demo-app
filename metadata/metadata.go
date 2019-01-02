@@ -88,10 +88,7 @@ func ReadModelDescription(fmuPath string) (fmu structs.FMU) {
 			}
 			rc.Close()
 
-			nVar := len(modelDescription.ModelVariables.ScalarVariables)
-
 			var variables []structs.Variable
-			variables = make([]structs.Variable, nVar)
 			for _, scalarVariable := range modelDescription.ModelVariables.ScalarVariables {
 				if includeVariable(scalarVariable) {
 					variables = append(variables, structs.Variable{

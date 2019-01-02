@@ -26,6 +26,7 @@ type JsonResponse struct {
 	Modules              []string      `json:"modules"`
 	Module               Module        `json:"module,omitempty"`
 	TrendSignals         []TrendSignal `json:"trend-values"`
+	ModuleData           *MetaData      `json:"module-data,omitempty"`
 }
 
 type TrendSignal struct {
@@ -52,22 +53,23 @@ type SimulationStatus struct {
 	TrendSignals []TrendSignal
 	TrendSpec    TrendSpec
 	Status       string
+	MetaChan     chan *MetaData
 }
 
 type Variable struct {
-	Name           string
-	ValueReference int
-	Causality      string
-	Variability    string
-	Type           string
+	Name           string `json:"name"`
+	ValueReference int    `json:"value-reference"`
+	Causality      string `json:"causality"`
+	Variability    string `json:"variability"`
+	Type           string `json:"type"`
 }
 
 type FMU struct {
-	Name           string
-	ExecutionIndex int
-	Variables      []Variable
+	Name           string     `json:"name"`
+	ExecutionIndex int        `json:"index"`
+	Variables      []Variable `json:"variables"`
 }
 
 type MetaData struct {
-	FMUs []FMU
+	FMUs []FMU `json:"fmus,omitempty"`
 }

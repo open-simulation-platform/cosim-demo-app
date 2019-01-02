@@ -335,6 +335,7 @@ func CommandLoop(sim *Simulation, command chan []string, status *structs.Simulat
 				status.Loaded = true
 				status.ConfigDir = cmd[1]
 				status.Status = "pause"
+				status.MetaChan <- sim.MetaData
 			case "teardown":
 				status.Loaded = false
 				status.Status = "stopped"
@@ -342,6 +343,7 @@ func CommandLoop(sim *Simulation, command chan []string, status *structs.Simulat
 				status.TrendSignals = []structs.TrendSignal{}
 				status.Module = structs.Module{}
 				simulationTeardown(sim)
+				status.MetaChan <- sim.MetaData
 			case "stop":
 				return
 			case "pause":
@@ -368,6 +370,8 @@ func CommandLoop(sim *Simulation, command chan []string, status *structs.Simulat
 				}
 			case "set-value":
 				setVariableValue(sim, cmd[1], cmd[2], cmd[3], cmd[4], cmd[5])
+			case "get-module-data":
+				status.MetaChan <- sim.MetaData
 			default:
 				fmt.Println("Unknown command, this is not good: ", cmd)
 			}
@@ -420,7 +424,16 @@ func GetSignalValue(module string, cardinality string, signal string) int {
 	return 1
 }
 
-func SimulationStatus(simulationStatus *structs.SimulationStatus, sim *Simulation) structs.JsonResponse {
+func maybeGetMetaData(simulationStatus *structs.SimulationStatus) *structs.MetaData {
+	select {
+	case m := <-simulationStatus.MetaChan:
+		return m
+	default:
+		return nil
+	}
+}
+
+func GenerateJsonResponse(simulationStatus *structs.SimulationStatus, sim *Simulation) structs.JsonResponse {
 	simulationStatus.Mutex.Lock()
 	defer simulationStatus.Mutex.Unlock()
 	if simulationStatus.Loaded {
@@ -435,6 +448,7 @@ func SimulationStatus(simulationStatus *structs.SimulationStatus, sim *Simulatio
 			Status:               simulationStatus.Status,
 			ConfigDir:            simulationStatus.ConfigDir,
 			TrendSignals:         simulationStatus.TrendSignals,
+			ModuleData:           maybeGetMetaData(simulationStatus),
 		}
 	} else {
 		return structs.JsonResponse{
@@ -445,9 +459,8 @@ func SimulationStatus(simulationStatus *structs.SimulationStatus, sim *Simulatio
 }
 
 func StateUpdateLoop(state chan structs.JsonResponse, simulationStatus *structs.SimulationStatus, sim *Simulation) {
-
 	for {
-		state <- SimulationStatus(simulationStatus, sim)
+		state <- GenerateJsonResponse(simulationStatus, sim)
 		time.Sleep(1000 * time.Millisecond)
 	}
 }
