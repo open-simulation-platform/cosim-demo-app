@@ -2,7 +2,8 @@
   (:require [kee-frame.core :as k]
             [kee-frame.websocket :as websocket]
             [cse-client.config :refer [socket-url]]
-            [re-frame.loggers :as re-frame-log]))
+            [re-frame.loggers :as re-frame-log]
+            [cljs.spec.alpha :as s]))
 
 ;; Prevent handler overwriting warnings during cljs reload.
 (re-frame-log/set-loggers!
@@ -11,11 +12,16 @@
                          (re-find #"^Overwriting controller" (first args)))
              (apply js/console.warn args)))})
 
+(k/reg-controller :module-data
+                  {:params (constantly true)
+                   :start [::fetch-module-data]})
+
 (k/reg-controller :module
                   {:params (fn [route]
                              (when (-> route :data :name (= :module))
                                (-> route :path-params :module)))
-                   :start  [::module-enter]})
+                   :start  [::module-enter]
+                   :stop   [::module-leave]})
 
 (k/reg-controller :websocket-controller
                   {:params (constantly true)
@@ -28,8 +34,14 @@
                                      :format       :json-kw
                                      :wrap-message identity}}))
 
+(s/def ::fmu (s/keys :req-un [::name ::index ::variables]))
+(s/def ::fmus (s/coll-of ::fmu))
+(s/def ::module-data (s/keys :req-un [::fmus]))
+
 (k/reg-event-db ::socket-message-received
                 (fn [db [{message :message}]]
+                  (when-let [module-data (:module-data message)]
+                    (s/assert ::module-data module-data))
                   (update db :state merge message)))
 
 (defn ws-request [db config]
@@ -44,6 +56,10 @@
 
 (defn socket-command [db cmd]
   {:dispatch [::websocket/send socket-url (ws-request db {:command cmd})]})
+
+(k/reg-event-fx ::fetch-module-data
+                (fn [{:keys [db]} _]
+                  (socket-command db ["get-module-data"])))
 
 (k/reg-event-fx ::module-enter
                 (fn [{:keys [db]} [module]]
