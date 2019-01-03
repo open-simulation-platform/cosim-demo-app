@@ -184,10 +184,11 @@
        (when (and @loaded? (= @status "play"))
          [:a.item {:on-click #(rf/dispatch [::controller/pause])} "Pause"])
        [:div.ui.simple.dropdown.item
-        [:i.ellipsis.vertical.icon]
+        [:i.question.circle.icon]
         [:div.menu
-         [:a.item [:i.question.circle.icon] "User guide"]
-         [:a.item {:href "mailto:issue@opensimulationplatform.com?subject=Feedback to CSE Team"} [:i.mail.icon] "Provide feedback"]]]]]
+         [:a.item [:i.file.alternate.icon] "User guide"]
+         [:a.item {:href "mailto:issue@opensimulationplatform.com?subject=Feedback to CSE Team"} [:i.mail.icon] "Provide feedback"]
+         [:a.item {:href "https://meet.dnvgl.com/sites/open-simulation-platform-jip" :target "_blank"} [:i.icon.linkify] "JIP site"]]]]]
      [:div.ui.grid
       [:div.row
        [:div#sidebar.column
