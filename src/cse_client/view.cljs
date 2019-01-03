@@ -99,7 +99,10 @@
             [:a.item {:class (when (= route-module module) :active)
                       :key   module
                       :href  (k/path-for [:module {:module module}])} module])
-          modules)]))
+          modules)
+     (when loaded?
+       [:div.ui.divider])
+     [:a.item {:href "mailto:issue@opensimulationplatform.com?subject=Feedback to CSE Team"} "Provide feedback"]]))
 
 (defn realtime-button []
   (if @(rf/subscribe [:realtime?])
