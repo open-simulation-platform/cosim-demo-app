@@ -88,7 +88,8 @@
         trend-count @(rf/subscribe [:trend-count])]
     [:div.ui.secondary.vertical.fluid.menu
      [:a.item {:href  (k/path-for [:index])
-               :class (when (= route-name :index) :active)} "Overview"]
+               :class (when (= route-name :index) :active)}
+      "Overview"]
      (when loaded?
        [:a.item {:href  (k/path-for [:trend])
                  :class (when (= route-name :trend) :active)}
@@ -99,10 +100,7 @@
             [:a.item {:class (when (= route-module module) :active)
                       :key   module
                       :href  (k/path-for [:module {:module module}])} module])
-          modules)
-     (when loaded?
-       [:div.ui.divider])
-     [:a.item {:href "mailto:issue@opensimulationplatform.com?subject=Feedback to CSE Team"} "Provide feedback"]]))
+          modules)]))
 
 (defn realtime-button []
   (if @(rf/subscribe [:realtime?])
@@ -172,8 +170,8 @@
         loaded? (rf/subscribe [:loaded?])
         status (rf/subscribe [:status])]
     [:div
-     [:div.ui.inverted.huge.borderless.fixed.fluid.menu
-      [:a.header.item "Core Simulation Environment - demo application"]
+     [:div.ui.inverted.huge.borderless.fixed.menu
+      [:a.header.item {:href "/"} "Core Simulation Environment - demo application"]
       [:div.right.menu
        (when (= :disconnected (:state @socket-state))
          [:div.item
@@ -184,7 +182,12 @@
        (when (and @loaded? (= @status "pause"))
          [:a.item {:on-click #(rf/dispatch [::controller/play])} "Play"])
        (when (and @loaded? (= @status "play"))
-         [:a.item {:on-click #(rf/dispatch [::controller/pause])} "Pause"])]]
+         [:a.item {:on-click #(rf/dispatch [::controller/pause])} "Pause"])
+       [:div.ui.simple.dropdown.item
+        [:i.ellipsis.vertical.icon]
+        [:div.menu
+         [:a.item [:i.question.circle.icon] "User guide"]
+         [:a.item {:href "mailto:issue@opensimulationplatform.com?subject=Feedback to CSE Team"} [:i.mail.icon] "Provide feedback"]]]]]
      [:div.ui.grid
       [:div.row
        [:div#sidebar.column
