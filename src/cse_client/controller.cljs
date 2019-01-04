@@ -3,7 +3,8 @@
             [kee-frame.websocket :as websocket]
             [cse-client.config :refer [socket-url]]
             [re-frame.loggers :as re-frame-log]
-            [cljs.spec.alpha :as s]))
+            [cljs.spec.alpha :as s]
+            [clojure.string :as str]))
 
 ;; Prevent handler overwriting warnings during cljs reload.
 (re-frame-log/set-loggers!
@@ -51,18 +52,33 @@
                 (fn [_ _]
                   (socket-command ["get-module-data"])))
 
+(defn encode-variable [{:keys [name causality type value-reference]}]
+  (str/join "," [name causality type value-reference]))
+
+(defn make-signals [db module causality]
+  (->> db
+       :state
+       :module-data
+       :fmus
+       (filter #(= module (:name %)))
+       first
+       :variables
+       (filter #(= causality (:causality %)))
+       (map encode-variable)))
+
 (k/reg-event-fx ::module-enter
                 (fn [{:keys [db]} [{:keys [module causality]}]]
                   (merge
                     {:db (assoc db :current-module module
                                    :active-causality causality)}
-                    (socket-command ["module" module]))))
+                    ;{:dispatch [::websocket/send socket-url {:signals (make-signals db module causality)}]}
+                    (socket-command (concat ["signals" module] (make-signals db module causality))))))
 
 (k/reg-event-fx ::module-leave
                 (fn [{:keys [db]} _]
                   (merge
                     {:db (dissoc db :current-module)}
-                    (socket-command ["module" nil]))))
+                    (socket-command ["signals"]))))
 
 (k/reg-event-fx ::load
                 (fn [_ [folder log-folder]]
