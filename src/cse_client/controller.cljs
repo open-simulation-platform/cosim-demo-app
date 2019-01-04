@@ -14,7 +14,7 @@
 
 (k/reg-controller :module-data
                   {:params (constantly true)
-                   :start [::fetch-module-data]})
+                   :start  [::fetch-module-data]})
 
 (k/reg-controller :module
                   {:params (fn [route]
@@ -44,74 +44,72 @@
                     (s/assert ::module-data module-data))
                   (update db :state merge message)))
 
-(defn ws-request [db config]
-  (merge
-    {:modules-loaded?     (boolean (:modules db))
-     :connections-loaded? (boolean (:connections db))}
-    config))
-
 (k/reg-event-db ::causality-enter
                 (fn [db [causality]]
                   (assoc db :active-causality causality)))
 
-(defn socket-command [db cmd]
-  {:dispatch [::websocket/send socket-url (ws-request db {:command cmd})]})
+(defn socket-command [cmd]
+  {:dispatch [::websocket/send socket-url {:command cmd}]})
 
 (k/reg-event-fx ::fetch-module-data
-                (fn [{:keys [db]} _]
-                  (socket-command db ["get-module-data"])))
+                (fn [_ _]
+                  (socket-command ["get-module-data"])))
 
 (k/reg-event-fx ::module-enter
                 (fn [{:keys [db]} [module]]
-                  (socket-command db ["module" module])))
+                  (merge
+                    {:db (assoc db :current-module module)}
+                    (socket-command ["module" module]))))
 
 (k/reg-event-fx ::module-leave
                 (fn [{:keys [db]} _]
-                  (socket-command db ["module" nil])))
+                  (merge
+                    {:db (dissoc db :current-module)}
+                    (socket-command ["module" nil]))))
 
 (k/reg-event-fx ::load
-                (fn [{:keys [db]} [folder log-folder]]
-                  (socket-command db ["load" folder (or log-folder "")])))
+                (fn [_ [folder log-folder]]
+                  (socket-command ["load" folder (or log-folder "")])))
 
 (k/reg-event-fx ::teardown
-                (fn [{:keys [db]} _]
-                  (socket-command db ["teardown"])))
+                (fn [_ _]
+                  (socket-command ["teardown"])))
 
 (k/reg-event-fx ::play
-                (fn [{:keys [db]} _]
-                  (socket-command db ["play"])))
+                (fn [_ _]
+                  (socket-command ["play"])))
 
 (k/reg-event-fx ::pause
-                (fn [{:keys [db]} _]
-                  (socket-command db ["pause"])))
+                (fn [_ _]
+                  (socket-command ["pause"])))
 
 (k/reg-event-fx ::enable-realtime
-                (fn [{:keys [db]} _]
-                  (socket-command db ["enable-realtime"])))
+                (fn [_ _]
+                  (socket-command ["enable-realtime"])))
 
 (k/reg-event-fx ::disable-realtime
-                (fn [{:keys [db]} _]
-                  (socket-command db ["disable-realtime"])))
+                (fn [_ _]
+                  (socket-command ["disable-realtime"])))
 
 (k/reg-event-fx ::untrend
-                (fn [{:keys [db]} _]
-                  (socket-command db ["untrend"])))
+                (fn [_ _]
+                  (socket-command ["untrend"])))
 
 (k/reg-event-fx ::add-to-trend
-                (fn [{:keys [db]} [module signal causality type]]
-                  (socket-command db ["trend" module signal causality type])))
+                (fn [_ [module signal causality type]]
+                  (socket-command ["trend" module signal causality type])))
 
 (k/reg-event-fx ::set-value
-                (fn [{:keys [db]} [module signal causality type value]]
-                  (socket-command db ["set-value" module signal causality type (str value)])))
+                (fn [_ [module signal causality type value]]
+                  (socket-command ["set-value" module signal causality type (str value)])))
 
 (k/reg-event-fx ::trend-zoom
-                (fn [{:keys [db]} [begin end]]
-                  (socket-command db ["trend-zoom" (str begin) (str end)])))
+                (fn [_ [begin end]]
+                  (socket-command ["trend-zoom" (str begin) (str end)])))
 
 (k/reg-event-fx ::trend-zoom-reset
                 (fn [{:keys [db]} _]
-                  (socket-command db ["trend-zoom-reset" (-> db :trend-range str)])))
+                  (socket-command ["trend-zoom-reset" (-> db :trend-range str)])))
 
 (k/reg-event-fx ::trend-range
                 (fn [{:keys [db]} [new-range]]

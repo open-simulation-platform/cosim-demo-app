@@ -41,6 +41,8 @@
 
 (defn tab-content [tabby]
   (let [module @(rf/subscribe [:module])
+        current-module @(rf/subscribe [:current-module])
+        module-signals @(rf/subscribe [:module-signals])
         signals @(rf/subscribe [:signals])
         active @(rf/subscribe [:active-causality])]
     [:div.ui.bottom.attached.tab.segment {:data-tab tabby
@@ -54,30 +56,33 @@
         [:th "..."]]]
       [:tbody
        (map (fn [{:keys [name value causality type] :as variable}]
-              [:tr {:key (str (:name module) "-" causality "-" name)}
+              [:tr {:key (str current-module "-" causality "-" name)}
                [:td name]
                [:td type]
-               [:td [variable-display (:name module) variable]]
+               [:td [variable-display current-module variable]]
                [:td [:a {:style    {:cursor :pointer}
-                         :on-click #(rf/dispatch [::controller/add-to-trend (:name module) name causality type])} "Add to trend"]]])
-            signals)]]]))
+                         :on-click #(rf/dispatch [::controller/add-to-trend current-module name causality type])} "Add to trend"]]])
+            module-signals)]]]))
 
 (defn module-listing []
   (let [causalities @(rf/subscribe [:causalities])
-        active @(rf/subscribe [:active-causality])]
+        active @(rf/subscribe [:active-causality])
+        module-active? @(rf/subscribe [:module-active?])]
     [:div.ui.one.column.grid
      [:div.one.column.row
-      [:div.column
-       [:div.ui.top.attached.tabular.menu
-        (for [causality causalities]
-          ^{:key (str "tab-" causality)}
-          [:a.item {:data-tab causality
-                    :class    (when (= causality active) "active")
-                    :on-click #(rf/dispatch [::controller/causality-enter causality])}
-           causality])]
-       (for [causality causalities]
-         ^{:key (str "tab-content-" causality)}
-         [tab-content causality])]]]))
+      (if module-active?
+        [:div.column
+         [:div.ui.top.attached.tabular.menu
+          (for [causality causalities]
+            ^{:key (str "tab-" causality)}
+            [:a.item {:data-tab causality
+                      :class    (when (= causality active) "active")
+                      :on-click #(rf/dispatch [::controller/causality-enter causality])}
+             causality])]
+         (for [causality causalities]
+           ^{:key (str "tab-content-" causality)}
+           [tab-content causality])]
+        [:div.preloader.loader])]]))
 
 (defn sidebar []
   (let [modules @(rf/subscribe [:modules])
