@@ -2,7 +2,7 @@ pipeline {
     agent none
 
     triggers {
-        upstream(upstreamProjects: 'open-simulation-platform/cse-core/bug%2Ffix-archive-artifacts-after-conan-build', threshold: hudson.model.Result.SUCCESS)
+        upstream(upstreamProjects: 'open-simulation-platform/cse-core/master', threshold: hudson.model.Result.SUCCESS)
     }
 
     options { checkoutToSubdirectory('src/cse-server-go') }
@@ -30,10 +30,9 @@ pipeline {
                         sh 'echo Building on Windows'
 
                         copyArtifacts(
-                            projectName: 'open-simulation-platform/cse-core/bug%2Ffix-archive-artifacts-after-conan-build',
+                            projectName: 'open-simulation-platform/cse-core/master',
                             filter: 'windows/debug/**/*',
-                            target: 'src'
-                            )
+                            target: 'src')
                         
                         dir ("${GOBIN}") {
                             sh 'curl https://raw.githubusercontent.com/golang/dep/master/install.sh | sh'
