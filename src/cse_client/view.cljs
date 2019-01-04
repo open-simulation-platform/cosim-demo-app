@@ -9,10 +9,10 @@
 (goog-define default-load-dir "")
 (goog-define default-log-dir "")
 
-(defn variable-override-editor [module {:keys [name causality type value]}]
+(defn variable-override-editor [module {:keys [name causality type]} value]
   (let [editing? (r/atom false)
         internal-value (r/atom value)]
-    (fn [_ {:keys [value]}]
+    (fn [_ _ value]
       (if @editing?
         [:div.ui.action.input.fluid
          [:input {:type      :text
@@ -34,16 +34,15 @@
                            (reset! internal-value value))}
          value]))))
 
-(defn variable-display [module {:keys [value editable?] :as variable}]
-  (if editable?
-    [variable-override-editor module variable]
-    [:div value]))
+(defn variable-display [module {:keys [name causality type editable?] :as variable}]
+  (let [value @(rf/subscribe [:signal-value module name causality type])]
+    (if editable?
+      [variable-override-editor module variable value]
+      [:div value])))
 
 (defn tab-content [tabby]
-  (let [module @(rf/subscribe [:module])
-        current-module @(rf/subscribe [:current-module])
+  (let [current-module @(rf/subscribe [:current-module])
         module-signals @(rf/subscribe [:module-signals])
-        signals @(rf/subscribe [:signals])
         active @(rf/subscribe [:active-causality])]
     [:div.ui.bottom.attached.tab.segment {:data-tab tabby
                                           :class    (when (= tabby active) "active")}
@@ -55,7 +54,7 @@
         [:th "Value"]
         [:th "..."]]]
       [:tbody
-       (map (fn [{:keys [name value causality type] :as variable}]
+       (map (fn [{:keys [name causality type] :as variable}]
               [:tr {:key (str current-module "-" causality "-" name)}
                [:td name]
                [:td type]
@@ -67,7 +66,8 @@
 (defn module-listing []
   (let [causalities @(rf/subscribe [:causalities])
         active @(rf/subscribe [:active-causality])
-        module-active? @(rf/subscribe [:module-active?])]
+        module-active? @(rf/subscribe [:module-active?])
+        current-module @(rf/subscribe [:current-module])]
     [:div.ui.one.column.grid
      [:div.one.column.row
       (if module-active?
@@ -77,7 +77,7 @@
             ^{:key (str "tab-" causality)}
             [:a.item {:data-tab causality
                       :class    (when (= causality active) "active")
-                      :on-click #(rf/dispatch [::controller/causality-enter causality])}
+                      :href     (k/path-for [:module {:module current-module :causality causality}])}
              causality])]
          (for [causality causalities]
            ^{:key (str "tab-content-" causality)}
@@ -85,7 +85,7 @@
         [:div.preloader.loader])]]))
 
 (defn sidebar []
-  (let [modules @(rf/subscribe [:modules])
+  (let [module-routes @(rf/subscribe [:module-routes])
         route @(rf/subscribe [:kee-frame/route])
         route-name (-> route :data :name)
         route-module (-> route :path-params :module)
@@ -100,11 +100,11 @@
         "Trend"
         [:div.ui.teal.left.pointing.label trend-count]])
      [:div.ui.divider]
-     (map (fn [module]
-            [:a.item {:class (when (= route-module module) :active)
-                      :key   module
-                      :href  (k/path-for [:module {:module module}])} module])
-          modules)]))
+     (map (fn [{:keys [name causality]}]
+            [:a.item {:class (when (= route-module name) :active)
+                      :key   name
+                      :href  (k/path-for [:module {:module name :causality causality}])} name])
+          module-routes)]))
 
 (defn realtime-button []
   (if @(rf/subscribe [:realtime?])

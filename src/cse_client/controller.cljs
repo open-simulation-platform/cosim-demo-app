@@ -19,7 +19,7 @@
 (k/reg-controller :module
                   {:params (fn [route]
                              (when (-> route :data :name (= :module))
-                               (-> route :path-params :module)))
+                               (select-keys (-> route :path-params) [:module :causality])))
                    :start  [::module-enter]
                    :stop   [::module-leave]})
 
@@ -44,10 +44,6 @@
                     (s/assert ::module-data module-data))
                   (update db :state merge message)))
 
-(k/reg-event-db ::causality-enter
-                (fn [db [causality]]
-                  (assoc db :active-causality causality)))
-
 (defn socket-command [cmd]
   {:dispatch [::websocket/send socket-url {:command cmd}]})
 
@@ -56,9 +52,10 @@
                   (socket-command ["get-module-data"])))
 
 (k/reg-event-fx ::module-enter
-                (fn [{:keys [db]} [module]]
+                (fn [{:keys [db]} [{:keys [module causality]}]]
                   (merge
-                    {:db (assoc db :current-module module)}
+                    {:db (assoc db :current-module module
+                                   :active-causality causality)}
                     (socket-command ["module" module]))))
 
 (k/reg-event-fx ::module-leave

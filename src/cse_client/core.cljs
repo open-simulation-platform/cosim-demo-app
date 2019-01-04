@@ -9,7 +9,7 @@
 
 (def routes
   [["/" :index]
-   ["/modules/:module" :module]
+   ["/modules/:module/:causality" :module]
    ["/trend" :trend]])
 
 (def sort-order
@@ -19,23 +19,24 @@
 (defn by-order [s1 s2]
   (compare (sort-order s1) (sort-order s2)))
 
-(defn find-module [db]
+(defn find-module [db module]
   (some->> (get-in db [:state :module-data :fmus])
-           (filter #(= (:current-module db) (:name %)))
+           (filter #(= module (:name %)))
            first))
 
-(defn causalities [db]
-  (when-let [variables (some-> db find-module :variables)]
+(defn causalities [db module]
+  (when-let [variables (some-> db (find-module module) :variables)]
     (some->> variables
              (map :causality)
              distinct
              (sort by-order))))
 
 (defn active-causality [db]
-  (or ((set (causalities db)) (:active-causality db))
-      (-> db
-          causalities
-          first)))
+  (let [module (:current-module db)]
+    (or ((set (causalities db module)) (:active-causality db))
+        (-> db
+            (causalities module)
+            first))))
 
 (defn editable? [{:keys [type causality] :as variable}]
   (if (and (#{"input" "parameter"} causality)
@@ -67,45 +68,42 @@
 (rf/reg-sub :loaded? (comp :loaded :state))
 (rf/reg-sub :status (comp :status :state))
 (rf/reg-sub :realtime? (comp :isRealTime :state))
-(rf/reg-sub :module (comp :module :state))
-(rf/reg-sub :modules (fn [db]
-                       (->> db :state :module-data :fmus (map :name))))
+
+(rf/reg-sub :module-routes (fn [db]
+                             (let [modules (-> db :state :module-data :fmus)]
+                               (map (fn [module]
+                                      {:name      (:name module)
+                                       :causality (first (causalities db (:name module)))})
+                                    modules))))
 
 (rf/reg-sub :module-active? (fn [db]
                               (= (:current-module db) (->> db :state :module :name))))
 
 (rf/reg-sub :current-module #(:current-module %))
 
-(defn find-value [db {:keys [name causality type] :as variable}]
-  (let [signals (some->> db :state :module :signals)
-        value (some->> signals
-                       (filter #(and (= name (:name %))
-                                     (= causality (:causality %))
-                                     (= type (:type %))))
-                       first
-                       :value)]
-    (assoc variable :value value)))
-
 (rf/reg-sub :module-signals (fn [db]
-                              (some->> (find-module db)
+                              (some->> (find-module db (:current-module db))
                                        :variables
                                        (filter #(= (active-causality db)
                                                    (:causality %)))
-                                       (map (partial find-value db))
                                        (map editable?)
                                        (sort-by :name))))
-(rf/reg-sub :causalities causalities)
+
+(rf/reg-sub :causalities (fn [db] (causalities db (:current-module db))))
 (rf/reg-sub :active-causality active-causality)
-(rf/reg-sub :signals (fn [db]
-                       (some->> db
-                                :state
-                                :module
-                                :signals
-                                (filter (fn [signal]
-                                          (= (active-causality db)
-                                             (:causality signal))))
-                                (map editable?)
-                                (sort-by :name))))
+
+(rf/reg-sub :signal-value (fn [db [_ module name causality type]]
+                            (->> db
+                                 :state
+                                 :module
+                                 :signals
+                                 (filter (fn [var]
+                                           (and (= (:name var) name)
+                                                (= (:causality var) causality)
+                                                (= (:type var) type))))
+                                 first
+                                 :value)))
+
 (rf/reg-sub :trend-count #(-> % :state :trend-values count))
 
 (k/start! {:routes         routes
