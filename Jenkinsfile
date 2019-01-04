@@ -32,8 +32,7 @@ pipeline {
                         copyArtifacts(
                             projectName: 'open-simulation-platform/cse-core/bug/fix-archive-artifacts-after-conan-build',
                             filter: 'windows/debug/**/*',
-                            target: 'src',
-                            selector: "lastSuccessful"
+                            target: 'src'
                             )
                         
                         dir ("${GOBIN}") {
