@@ -42,6 +42,10 @@
                 (fn [db [causality]]
                   (assoc db :active-causality causality)))
 
+(k/reg-event-db ::guide-navigate
+                (fn [db [header]]
+                  (assoc db :active-guide-tab header)))
+
 (defn socket-command [db cmd]
   {:dispatch [::websocket/send socket-url (ws-request db {:command cmd})]})
 

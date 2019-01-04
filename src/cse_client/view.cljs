@@ -4,7 +4,8 @@
             [re-frame.core :as rf]
             [reagent.core :as r]
             [cse-client.controller :as controller]
-            [cse-client.config :refer [socket-url]]))
+            [cse-client.config :refer [socket-url]]
+            [cse-client.guide :as guide]))
 
 (goog-define default-load-dir "")
 (goog-define default-log-dir "")
@@ -190,7 +191,7 @@
        [:div.ui.simple.dropdown.item
         [:i.question.circle.icon]
         [:div.menu
-         [:a.item [:i.file.alternate.icon] "User guide"]
+         [:a.item {:href "/guide"} [:i.file.alternate.icon] "User guide"]
          [:a.item {:href "mailto:issue@opensimulationplatform.com?subject=Feedback to CSE Team"} [:i.mail.icon] "Provide feedback"]
          [:a.item {:href "https://meet.dnvgl.com/sites/open-simulation-platform-jip" :target "_blank"} [:i.icon.linkify] "JIP site"]]]]]
      [:div.ui.grid
@@ -203,12 +204,14 @@
           [:h1.ui.huge.header [k/switch-route (comp :name :data)
                                :module (if @module (@module :name) "")
                                :trend "Trend"
+                               :guide "User guide"
                                :index (if @loaded? "Simulation status" "Simulation setup")
                                nil [:div "Loading..."]]]]
          [:div.ui.divider]
          [:div.row
           [k/switch-route (comp :name :data)
            :trend [trend/trend-outer]
+           :guide [guide/form]
            :module [module-listing]
            :index [index-page]
            nil [:div "Loading..."]]]]]]]
