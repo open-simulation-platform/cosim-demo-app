@@ -45,14 +45,15 @@ type TrendSpec struct {
 }
 
 type SimulationStatus struct {
-	Mutex        sync.Mutex
-	Loaded       bool
-	ConfigDir    string
-	Module       Module
-	TrendSignals []TrendSignal
-	TrendSpec    TrendSpec
-	Status       string
-	MetaChan     chan *MetaData
+	Mutex               sync.Mutex
+	Loaded              bool
+	ConfigDir           string
+	Module              string
+	SignalSubscriptions []Variable
+	TrendSignals        []TrendSignal
+	TrendSpec           TrendSpec
+	Status              string
+	MetaChan            chan *MetaData
 }
 
 type Variable struct {
