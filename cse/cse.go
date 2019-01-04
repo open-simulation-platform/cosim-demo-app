@@ -66,8 +66,8 @@ func createFileObserver(logPath string) (observer *C.cse_observer) {
 	return
 }
 
-func executionAddObserver(execution *C.cse_execution, observer *C.cse_observer) (observerIndex C.cse_observer_index) {
-	observerIndex = C.cse_execution_add_observer(execution, observer)
+func executionAddObserver(execution *C.cse_execution, observer *C.cse_observer) (status C.int) {
+	status = C.cse_execution_add_observer(execution, observer)
 	return
 }
 
