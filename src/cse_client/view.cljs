@@ -96,11 +96,14 @@
         "Trend"
         [:div.ui.teal.left.pointing.label trend-count]])
      [:div.ui.divider]
-     (map (fn [module]
-            [:a.item {:class (when (= route-module module) :active)
-                      :key   module
-                      :href  (k/path-for [:module {:module module}])} module])
-          modules)]))
+     [:div.item
+      [:div.header "Models"]
+      [:div.menu
+       (map (fn [module]
+              [:a.item {:class (when (= route-module module) :active)
+                        :key   module
+                        :href  (k/path-for [:module {:module module}])} module])
+            modules)]]]))
 
 (defn realtime-button []
   (if @(rf/subscribe [:realtime?])
@@ -128,7 +131,7 @@
        [:tr
         [:td k]
         [:td v]])]]
-   [:div.header "Controls"]
+   [:h3 "Controls"]
    [:table.ui.basic.table.definition
     [:tbody
      [:tr [:td "Real time target"] [:td [realtime-button]]]
@@ -168,7 +171,8 @@
 (defn root-comp []
   (let [socket-state (rf/subscribe [:kee-frame.websocket/state socket-url])
         loaded? (rf/subscribe [:loaded?])
-        status (rf/subscribe [:status])]
+        status (rf/subscribe [:status])
+        module (rf/subscribe [:module])]
     [:div
      [:div.ui.inverted.huge.borderless.fixed.menu
       [:a.header.item {:href "/"} "Core Simulation Environment - demo application"]
@@ -197,7 +201,7 @@
         [:div.ui.grid
          [:div.row
           [:h1.ui.huge.header [k/switch-route (comp :name :data)
-                               :module "Model"
+                               :module (if @module (@module :name) "")
                                :trend "Trend"
                                :index (if @loaded? "Simulation status" "Simulation setup")
                                nil [:div "Loading..."]]]]
