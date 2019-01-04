@@ -23,10 +23,9 @@ type JsonResponse struct {
 	IsRealTimeSimulation bool          `json:"isRealTime"`
 	ConfigDir            string        `json:"configDir,omitempty"`
 	Status               string        `json:"status,omitempty"`
-	Modules              []string      `json:"modules"`
 	Module               Module        `json:"module,omitempty"`
 	TrendSignals         []TrendSignal `json:"trend-values"`
-	ModuleData           *MetaData      `json:"module-data,omitempty"`
+	ModuleData           *MetaData     `json:"module-data,omitempty"`
 }
 
 type TrendSignal struct {
@@ -71,5 +70,5 @@ type FMU struct {
 }
 
 type MetaData struct {
-	FMUs []FMU `json:"fmus,omitempty"`
+	FMUs []FMU `json:"fmus"`
 }

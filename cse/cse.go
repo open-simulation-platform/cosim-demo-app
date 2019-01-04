@@ -389,15 +389,6 @@ func findFmu(metaData *structs.MetaData, moduleName string) (foundFmu structs.FM
 	return
 }
 
-func getModuleNames(metaData *structs.MetaData) []string {
-	nModules := len(metaData.FMUs)
-	modules := make([]string, nModules)
-	for i := range metaData.FMUs {
-		modules[i] = metaData.FMUs[i].Name
-	}
-	return modules
-}
-
 func getModuleData(observer *C.cse_observer, fmu structs.FMU) (module structs.Module) {
 	realSignals := observerGetReals(observer, fmu)
 	intSignals := observerGetIntegers(observer, fmu)
@@ -424,9 +415,9 @@ func GetSignalValue(module string, cardinality string, signal string) int {
 	return 1
 }
 
-func maybeGetMetaData(simulationStatus *structs.SimulationStatus) *structs.MetaData {
+func maybeGetMetaData(metaChan <-chan *structs.MetaData) *structs.MetaData {
 	select {
-	case m := <-simulationStatus.MetaChan:
+	case m := <-metaChan:
 		return m
 	default:
 		return nil
@@ -442,18 +433,18 @@ func GenerateJsonResponse(simulationStatus *structs.SimulationStatus, sim *Simul
 			SimulationTime:       execStatus.time,
 			RealTimeFactor:       execStatus.realTimeFactor,
 			IsRealTimeSimulation: execStatus.isRealTimeSimulation,
-			Modules:              getModuleNames(sim.MetaData),
 			Module:               findModuleData(simulationStatus, sim.MetaData, sim.Observer),
 			Loaded:               simulationStatus.Loaded,
 			Status:               simulationStatus.Status,
 			ConfigDir:            simulationStatus.ConfigDir,
 			TrendSignals:         simulationStatus.TrendSignals,
-			ModuleData:           maybeGetMetaData(simulationStatus),
+			ModuleData:           maybeGetMetaData(simulationStatus.MetaChan),
 		}
 	} else {
 		return structs.JsonResponse{
-			Loaded: simulationStatus.Loaded,
-			Status: simulationStatus.Status,
+			Loaded:     simulationStatus.Loaded,
+			Status:     simulationStatus.Status,
+			ModuleData: maybeGetMetaData(simulationStatus.MetaChan),
 		}
 	}
 }
