@@ -17,8 +17,8 @@ pipeline {
                         GOPATH = "${WORKSPACE}"
                         GOBIN = "${WORKSPACE}/bin"
                         PATH = "${env.MINGW_HOME}/bin;${GOBIN};${env.PATH}"
-                        CGO_CFLAGS = "-I${WORKSPACE}/src/install/debug/include"
-                        CGO_LDFLAGS = "-L${WORKSPACE}/src/install/debug/bin -lcsecorec"
+                        CGO_CFLAGS = "-I${WORKSPACE}/src/windows/debug/include"
+                        CGO_LDFLAGS = "-L${WORKSPACE}/src/windows/debug/bin -lcsecorec"
                     }
 
                     tools {
@@ -31,7 +31,7 @@ pipeline {
 
                         copyArtifacts(
                             projectName: 'open-simulation-platform/cse-core/master',
-                            filter: 'install/debug/**/*',
+                            filter: 'windows/debug/**/*',
                             target: 'src')
                         
                         dir ("${GOBIN}") {
