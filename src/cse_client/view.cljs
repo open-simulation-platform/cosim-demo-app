@@ -41,12 +41,31 @@
       [variable-override-editor module variable value]
       [:div value])))
 
+(defn pages-menu []
+  (let [current-page @(rf/subscribe [:current-page])
+        pages @(rf/subscribe [:pages])]
+    [:div.ui.action.input.pull-right
+     [:button.ui.icon.button
+      {:disabled (= 1 current-page)
+       :on-click #(when (< 1 current-page)
+                    (rf/dispatch [::controller/set-page (dec current-page)]))}
+      [:i.chevron.left.icon]]
+     [:input {:type     :text
+              :readOnly true
+              :value    (str current-page " of " (count pages))}]
+     [:button.ui.icon.button
+      {:disabled (= (count pages) current-page)
+       :on-click #(when (< current-page (last pages))
+                    (rf/dispatch [::controller/set-page (inc current-page)]))}
+      [:i.chevron.right.icon]]]))
+
 (defn tab-content [tabby]
   (let [current-module @(rf/subscribe [:current-module])
         module-signals @(rf/subscribe [:module-signals])
         active @(rf/subscribe [:active-causality])]
     [:div.ui.bottom.attached.tab.segment {:data-tab tabby
                                           :class    (when (= tabby active) "active")}
+
      [:table.ui.single.line.striped.selectable.fixed.table
       [:thead
        [:tr
@@ -69,9 +88,12 @@
         active @(rf/subscribe [:active-causality])
         module-active? @(rf/subscribe [:module-active?])
         current-module @(rf/subscribe [:current-module])]
-    [:div.ui.one.column.grid
-     [:div.one.column.row
-      (if module-active?
+    (if module-active?
+      [:div.ui.one.column.grid
+       [:div.one.column.row
+        [:div.column
+         [pages-menu]]]
+       [:div.one.column.row
         [:div.column
          [:div.ui.top.attached.tabular.menu
           (for [causality causalities]
@@ -82,8 +104,8 @@
              causality])]
          (for [causality causalities]
            ^{:key (str "tab-content-" causality)}
-           [tab-content causality])]
-        [:div.preloader.loader])]]))
+           [tab-content causality])]]]
+      [:div.loader])))
 
 (defn sidebar []
   (let [module-routes @(rf/subscribe [:module-routes])

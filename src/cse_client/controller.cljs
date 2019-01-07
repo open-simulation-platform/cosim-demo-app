@@ -52,7 +52,11 @@
 (defn encode-variable [{:keys [name causality type value-reference]}]
   (str/join "," [name causality type value-reference]))
 
-(defn make-signals [db module causality]
+(defn page-size [db]
+  (or (:vars-per-page db)
+      10))
+
+(defn variable-groups [db module causality]
   (->> db
        :state
        :module-data
@@ -61,18 +65,33 @@
        first
        :variables
        (filter #(= causality (:causality %)))
-       (map encode-variable)))
+       (sort-by :name)
+       (partition-all (page-size db))))
+
+(defn filter-signals [groups page]
+  (->> (nth groups (dec page))))
 
 (k/reg-event-db ::guide-navigate
                 (fn [db [header]]
                   (assoc db :active-guide-tab header)))
 
+(k/reg-event-fx ::fetch-signals
+                (fn [{:keys [db]} _]
+                  (let [{:keys [current-module active-causality page]} db
+                        groups (variable-groups db current-module active-causality)
+                        viewing (filter-signals groups page)]
+                    (merge
+                      {:db (assoc db :viewing viewing
+                                     :page-count (count groups))}
+                      (socket-command (concat ["signals" current-module] (map encode-variable viewing)))))))
+
 (k/reg-event-fx ::module-enter
                 (fn [{:keys [db]} [{:keys [module causality]}]]
                   (merge
-                    {:db (assoc db :current-module module
-                                   :active-causality causality)}
-                    (socket-command (concat ["signals" module] (make-signals db module causality))))))
+                    {:db       (assoc db :current-module module
+                                         :active-causality causality
+                                         :page 1)
+                     :dispatch [::fetch-signals]})))
 
 (k/reg-event-fx ::module-leave
                 (fn [{:keys [db]} _]
@@ -128,3 +147,8 @@
                 (fn [{:keys [db]} [new-range]]
                   {:db       (assoc db :trend-range new-range)
                    :dispatch [::trend-zoom-reset]}))
+
+(k/reg-event-fx ::set-page
+                (fn [{:keys [db]} [page]]
+                  {:db       (assoc db :page page)
+                   :dispatch [::fetch-signals]}))

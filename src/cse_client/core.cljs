@@ -82,13 +82,14 @@
 
 (rf/reg-sub :current-module #(:current-module %))
 
+(rf/reg-sub :pages
+            (fn [db]
+              (let [page-count (:page-count db)
+                    all-pages (range 1 (inc page-count))]
+                all-pages)))
+
 (rf/reg-sub :module-signals (fn [db]
-                              (some->> (find-module db (:current-module db))
-                                       :variables
-                                       (filter #(= (active-causality db)
-                                                   (:causality %)))
-                                       (map editable?)
-                                       (sort-by :name))))
+                              (:viewing db)))
 
 (rf/reg-sub :causalities (fn [db] (causalities db (:current-module db))))
 (rf/reg-sub :active-causality active-causality)
@@ -109,9 +110,13 @@
 
 (rf/reg-sub :active-guide-tab :active-guide-tab)
 
+(rf/reg-sub :current-page #(:page %))
+
 (k/start! {:routes         routes
            :hash-routing?  true
            :debug?         {:blacklist #{::controller/socket-message-received}}
            :root-component [view/root-comp]
-           :initial-db     {:trend-range 10
-                            :active-guide-tab "About"}})
+           :initial-db     {:trend-range      10
+                            :active-guide-tab "About"
+                            :page             1
+                            :vars-per-page    10}})
