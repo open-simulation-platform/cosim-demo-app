@@ -10,7 +10,8 @@
 (def routes
   [["/" :index]
    ["/modules/:module/:causality" :module]
-   ["/trend" :trend]])
+   ["/trend" :trend]
+   ["/guide" :guide]])
 
 (def sort-order
   (let [order ["input" "independent" "parameter" "calculatedParameter" "local" "internal" "output"]]
@@ -106,8 +107,11 @@
 
 (rf/reg-sub :trend-count #(-> % :state :trend-values count))
 
+(rf/reg-sub :active-guide-tab :active-guide-tab)
+
 (k/start! {:routes         routes
            :hash-routing?  true
            :debug?         {:blacklist #{::controller/socket-message-received}}
            :root-component [view/root-comp]
-           :initial-db     {:trend-range 10}})
+           :initial-db     {:trend-range 10
+                            :active-guide-tab "About"}})

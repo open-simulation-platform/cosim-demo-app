@@ -75,7 +75,9 @@
       {:component-did-mount  (fn [comp]
                                (js/Plotly.plot (r/dom-node comp) (clj->js [{:x []
                                                                             :y []}])
-                                               (clj->js {:xaxis {:title "Time [s]"}}))
+                                               (clj->js {:xaxis              {:title "Time [s]"}
+                                                         :autosize           true
+                                                         :use-resize-handler true}))
                                (.on (r/dom-node comp) "plotly_relayout" relayout-callback))
        :component-did-update update
        :reagent-render       (fn []

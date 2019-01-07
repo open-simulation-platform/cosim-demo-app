@@ -64,6 +64,10 @@
        (filter #(= causality (:causality %)))
        (map encode-variable)))
 
+(k/reg-event-db ::guide-navigate
+                (fn [db [header]]
+                  (assoc db :active-guide-tab header)))
+
 (k/reg-event-fx ::module-enter
                 (fn [{:keys [db]} [{:keys [module causality]}]]
                   (merge

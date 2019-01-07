@@ -57,10 +57,6 @@ body {
     float: right !important;
 }
 
-#charty {
-    width: 1000px;
-}
-
 .loader,
 .loader:after {
     border-radius: 50%;
