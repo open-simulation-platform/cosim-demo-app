@@ -27,14 +27,13 @@
 (defn socket-command [cmd]
   {:dispatch [::websocket/send socket-url {:command cmd}]})
 
-(k/reg-chain :start-websockets
-             (fn [_ _]
-               {::websocket/open {:path         socket-url
-                                  :dispatch     ::socket-message-received
-                                  :format       :json-kw
-                                  :wrap-message identity}})
-             (fn [_ _ _]
-               (socket-command ["get-module-data"])))
+(k/reg-event-fx :start-websockets
+                (fn [_ _]
+                  (merge {::websocket/open {:path         socket-url
+                                            :dispatch     ::socket-message-received
+                                            :format       :json-kw
+                                            :wrap-message identity}}
+                         (socket-command ["get-module-data"]))))
 
 (s/def ::fmu (s/keys :req-un [::name ::index ::variables]))
 (s/def ::fmus (s/coll-of ::fmu))

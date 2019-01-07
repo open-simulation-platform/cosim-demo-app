@@ -178,7 +178,7 @@
   (let [socket-state (rf/subscribe [:kee-frame.websocket/state socket-url])
         loaded? (rf/subscribe [:loaded?])
         status (rf/subscribe [:status])
-        module (rf/subscribe [:module])]
+        module (rf/subscribe [:current-module])]
     [:div
      [:div.ui.inverted.huge.borderless.fixed.menu
       [:a.header.item {:href "/"} "Core Simulation Environment - demo application"]
@@ -207,7 +207,7 @@
         [:div.ui.grid
          [:div.row
           [:h1.ui.huge.header [k/switch-route (comp :name :data)
-                               :module (if @module (@module :name) "")
+                               :module (or @module "")
                                :trend "Trend"
                                :guide "User guide"
                                :index (if @loaded? "Simulation status" "Simulation setup")
