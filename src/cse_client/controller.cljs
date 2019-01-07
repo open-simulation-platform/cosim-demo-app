@@ -13,14 +13,10 @@
                          (re-find #"^Overwriting controller" (first args)))
              (apply js/console.warn args)))})
 
-(k/reg-controller :module-data
-                  {:params (constantly true)
-                   :start  [::fetch-module-data]})
-
 (k/reg-controller :module
                   {:params (fn [route]
                              (when (-> route :data :name (= :module))
-                               (select-keys (-> route :path-params) [:module :causality])))
+                               (-> route :path-params)))
                    :start  [::module-enter]
                    :stop   [::module-leave]})
 
@@ -28,12 +24,17 @@
                   {:params (constantly true)
                    :start  [:start-websockets]})
 
-(k/reg-event-fx :start-websockets
-                (fn [_ _]
-                  {::websocket/open {:path         socket-url
-                                     :dispatch     ::socket-message-received
-                                     :format       :json-kw
-                                     :wrap-message identity}}))
+(defn socket-command [cmd]
+  {:dispatch [::websocket/send socket-url {:command cmd}]})
+
+(k/reg-chain :start-websockets
+             (fn [_ _]
+               {::websocket/open {:path         socket-url
+                                  :dispatch     ::socket-message-received
+                                  :format       :json-kw
+                                  :wrap-message identity}})
+             (fn [_ _ _]
+               (socket-command ["get-module-data"])))
 
 (s/def ::fmu (s/keys :req-un [::name ::index ::variables]))
 (s/def ::fmus (s/coll-of ::fmu))
@@ -44,9 +45,6 @@
                   (when-let [module-data (:module-data message)]
                     (s/assert ::module-data module-data))
                   (update db :state merge message)))
-
-(defn socket-command [cmd]
-  {:dispatch [::websocket/send socket-url {:command cmd}]})
 
 (k/reg-event-fx ::fetch-module-data
                 (fn [_ _]
@@ -71,7 +69,6 @@
                   (merge
                     {:db (assoc db :current-module module
                                    :active-causality causality)}
-                    ;{:dispatch [::websocket/send socket-url {:signals (make-signals db module causality)}]}
                     (socket-command (concat ["signals" module] (make-signals db module causality))))))
 
 (k/reg-event-fx ::module-leave
