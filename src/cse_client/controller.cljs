@@ -69,7 +69,15 @@
        (partition-all (page-size db))))
 
 (defn filter-signals [groups page]
-  (->> (nth groups (dec page))))
+  (some-> groups
+          seq
+          (nth (dec page))))
+
+(defn editable? [{:keys [type causality] :as variable}]
+  (if (and (#{"input" "parameter"} causality)
+           (#{"Real" "Integer"} type))
+    (assoc variable :editable? true)
+    variable))
 
 (k/reg-event-db ::guide-navigate
                 (fn [db [header]]
@@ -81,7 +89,7 @@
                         groups (variable-groups db current-module active-causality)
                         viewing (filter-signals groups page)]
                     (merge
-                      {:db (assoc db :viewing viewing
+                      {:db (assoc db :viewing (map editable? viewing)
                                      :page-count (count groups))}
                       (socket-command (concat ["signals" current-module] (map encode-variable viewing)))))))
 
@@ -151,4 +159,10 @@
 (k/reg-event-fx ::set-page
                 (fn [{:keys [db]} [page]]
                   {:db       (assoc db :page page)
+                   :dispatch [::fetch-signals]}))
+
+(k/reg-event-fx ::set-vars-per-page
+                (fn [{:keys [db]} [n]]
+                  {:db       (assoc db :vars-per-page (max 1 n)
+                                       :page 1)
                    :dispatch [::fetch-signals]}))

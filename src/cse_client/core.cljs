@@ -39,12 +39,6 @@
             (causalities module)
             first))))
 
-(defn editable? [{:keys [type causality] :as variable}]
-  (if (and (#{"input" "parameter"} causality)
-           (#{"Real" "Integer"} type))
-    (assoc variable :editable? true)
-    variable))
-
 (defn simulation-time [db]
   (some-> db :state :time (.toFixed 3)))
 
@@ -111,6 +105,7 @@
 (rf/reg-sub :active-guide-tab :active-guide-tab)
 
 (rf/reg-sub :current-page #(:page %))
+(rf/reg-sub :vars-per-page #(:vars-per-page %))
 
 (k/start! {:routes         routes
            :hash-routing?  true
@@ -119,4 +114,4 @@
            :initial-db     {:trend-range      10
                             :active-guide-tab "About"
                             :page             1
-                            :vars-per-page    10}})
+                            :vars-per-page    20}})

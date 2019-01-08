@@ -43,21 +43,34 @@
 
 (defn pages-menu []
   (let [current-page @(rf/subscribe [:current-page])
-        pages @(rf/subscribe [:pages])]
-    [:div.ui.action.input.pull-right
-     [:button.ui.icon.button
-      {:disabled (= 1 current-page)
-       :on-click #(when (< 1 current-page)
-                    (rf/dispatch [::controller/set-page (dec current-page)]))}
-      [:i.chevron.left.icon]]
-     [:input {:type     :text
-              :readOnly true
-              :value    (str current-page " of " (count pages))}]
-     [:button.ui.icon.button
-      {:disabled (= (count pages) current-page)
-       :on-click #(when (< current-page (last pages))
-                    (rf/dispatch [::controller/set-page (inc current-page)]))}
-      [:i.chevron.right.icon]]]))
+        pages @(rf/subscribe [:pages])
+        vars-per-page @(rf/subscribe [:vars-per-page])]
+    [:div.right.menu
+     [:div.item
+      [:div.ui.transparent.input
+       [:button.ui.icon.button
+        {:disabled (= 1 current-page)
+         :on-click #(when (< 1 current-page)
+                      (rf/dispatch [::controller/set-page (dec current-page)]))}
+        [:i.chevron.left.icon]]
+       [:input {:type     :text
+                :readOnly true
+                :value    (str "Page " current-page " of " (last pages))}]
+       [:button.ui.icon.button
+        {:disabled (= (last pages) current-page)
+         :on-click #(when (< current-page (last pages))
+                      (rf/dispatch [::controller/set-page (inc current-page)]))}
+        [:i.chevron.right.icon]]]
+      [:div.ui.icon.button.simple.dropdown
+       [:i.sliders.horizontal.icon]
+       [:div.menu
+        [:div.header (str vars-per-page " variables per page")]
+        [:div.item
+         [:div.ui.icon.buttons
+          [:button.ui.button {:on-click #(rf/dispatch [::controller/set-vars-per-page (- vars-per-page 5)])} [:i.minus.icon] 5]
+          [:button.ui.button {:on-click #(rf/dispatch [::controller/set-vars-per-page (dec vars-per-page)])} [:i.minus.icon] 1]
+          [:button.ui.button {:on-click #(rf/dispatch [::controller/set-vars-per-page (inc vars-per-page)])} [:i.plus.icon] 1]
+          [:button.ui.button {:on-click #(rf/dispatch [::controller/set-vars-per-page (+ vars-per-page 5)])} [:i.plus.icon] 5]]]]]]]))
 
 (defn tab-content [tabby]
   (let [current-module @(rf/subscribe [:current-module])
@@ -65,14 +78,13 @@
         active @(rf/subscribe [:active-causality])]
     [:div.ui.bottom.attached.tab.segment {:data-tab tabby
                                           :class    (when (= tabby active) "active")}
-
-     [:table.ui.single.line.striped.selectable.fixed.table
+     [:table.ui.compact.single.line.striped.selectable.table
       [:thead
        [:tr
         [:th "Name"]
-        [:th "Type"]
+        [:th.one.wide "Type"]
         [:th "Value"]
-        [:th "..."]]]
+        [:th.two.wide "..."]]]
       [:tbody
        (map (fn [{:keys [name causality type] :as variable}]
               [:tr {:key (str current-module "-" causality "-" name)}
@@ -92,20 +104,20 @@
       [:div.ui.one.column.grid
        [:div.one.column.row
         [:div.column
-         [pages-menu]]]
-       [:div.one.column.row
-        [:div.column
          [:div.ui.top.attached.tabular.menu
           (for [causality causalities]
             ^{:key (str "tab-" causality)}
             [:a.item {:data-tab causality
                       :class    (when (= causality active) "active")
                       :href     (k/path-for [:module {:module current-module :causality causality}])}
-             causality])]
+             causality])
+          [pages-menu]]
          (for [causality causalities]
            ^{:key (str "tab-content-" causality)}
            [tab-content causality])]]]
-      [:div.loader])))
+      [:div.ui.active.centered.inline.text.massive.loader
+       {:style {:margin-top "20%"}}
+       "Loading"])))
 
 (defn sidebar []
   (let [module-routes @(rf/subscribe [:module-routes])
