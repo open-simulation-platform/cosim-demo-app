@@ -1,6 +1,6 @@
 (defproject cse-client "1.0-SNAPSHOT"
   :min-lein-version "2.0.0"
-  :dependencies [[kee-frame "0.3.1"]
+  :dependencies [[kee-frame "0.3.3-SNAPSHOT"]
                  [reagent "0.8.1"]
                  [re-frame "0.10.6" :exclusions [reagent]]
                  [cljsjs/plotly "1.36.1-0"]
