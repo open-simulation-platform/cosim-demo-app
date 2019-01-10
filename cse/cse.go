@@ -66,9 +66,8 @@ func createFileObserver(logPath string) (observer *C.cse_observer) {
 	return
 }
 
-func executionAddObserver(execution *C.cse_execution, observer *C.cse_observer) (status C.int) {
-	status = C.cse_execution_add_observer(execution, observer)
-	return
+func executionAddObserver(execution *C.cse_execution, observer *C.cse_observer) {
+	C.cse_execution_add_observer(execution, observer)
 }
 
 func executionAddSlave(execution *C.cse_execution, slave *C.cse_slave) int {
@@ -108,15 +107,19 @@ func uglyNanFix(value C.double) interface{} {
 	floatValue := float64(value)
 	if math.IsNaN(floatValue) {
 		return "NaN"
+	} else if math.IsInf(floatValue, 1) {
+		return "+Inf"
+	} else if math.IsInf(floatValue, -1) {
+		return "-Inf"
 	}
 	return floatValue
 }
 
-func observerGetReals(observer *C.cse_observer, fmu structs.FMU) (realSignals []structs.Signal) {
+func observerGetReals(observer *C.cse_observer, variables []structs.Variable, slaveIndex int) (realSignals []structs.Signal) {
 	var realValueRefs []C.cse_variable_index
 	var realVariables []structs.Variable
 	var numReals int
-	for _, variable := range fmu.Variables {
+	for _, variable := range variables {
 		if variable.Type == "Real" {
 			ref := C.cse_variable_index(variable.ValueReference)
 			realValueRefs = append(realValueRefs, ref)
@@ -127,7 +130,7 @@ func observerGetReals(observer *C.cse_observer, fmu structs.FMU) (realSignals []
 
 	if numReals > 0 {
 		realOutVal := make([]C.double, numReals)
-		C.cse_observer_slave_get_real(observer, C.cse_slave_index(fmu.ExecutionIndex), &realValueRefs[0], C.size_t(numReals), &realOutVal[0])
+		C.cse_observer_slave_get_real(observer, C.cse_slave_index(slaveIndex), &realValueRefs[0], C.size_t(numReals), &realOutVal[0])
 
 		realSignals = make([]structs.Signal, numReals)
 		for k := range realVariables {
@@ -142,11 +145,11 @@ func observerGetReals(observer *C.cse_observer, fmu structs.FMU) (realSignals []
 	return realSignals
 }
 
-func observerGetIntegers(observer *C.cse_observer, fmu structs.FMU) (intSignals []structs.Signal) {
+func observerGetIntegers(observer *C.cse_observer, variables []structs.Variable, slaveIndex int) (intSignals []structs.Signal) {
 	var intValueRefs []C.cse_variable_index
 	var intVariables []structs.Variable
 	var numIntegers int
-	for _, variable := range fmu.Variables {
+	for _, variable := range variables {
 		if variable.Type == "Integer" {
 			ref := C.cse_variable_index(variable.ValueReference)
 			intValueRefs = append(intValueRefs, ref)
@@ -157,7 +160,7 @@ func observerGetIntegers(observer *C.cse_observer, fmu structs.FMU) (intSignals 
 
 	if numIntegers > 0 {
 		intOutVal := make([]C.int, numIntegers)
-		C.cse_observer_slave_get_integer(observer, C.cse_slave_index(fmu.ExecutionIndex), &intValueRefs[0], C.size_t(numIntegers), &intOutVal[0])
+		C.cse_observer_slave_get_integer(observer, C.cse_slave_index(slaveIndex), &intValueRefs[0], C.size_t(numIntegers), &intOutVal[0])
 
 		intSignals = make([]structs.Signal, numIntegers)
 		for k := range intVariables {
@@ -335,13 +338,15 @@ func CommandLoop(sim *Simulation, command chan []string, status *structs.Simulat
 				status.Loaded = true
 				status.ConfigDir = cmd[1]
 				status.Status = "pause"
+				status.MetaChan <- sim.MetaData
 			case "teardown":
 				status.Loaded = false
 				status.Status = "stopped"
 				status.ConfigDir = ""
 				status.TrendSignals = []structs.TrendSignal{}
-				status.Module = structs.Module{}
+				status.Module = ""
 				simulationTeardown(sim)
+				status.MetaChan <- sim.MetaData
 			case "stop":
 				return
 			case "pause":
@@ -362,18 +367,43 @@ func CommandLoop(sim *Simulation, command chan []string, status *structs.Simulat
 				status.TrendSpec = structs.TrendSpec{Auto: false, Begin: parseFloat(cmd[1]), End: parseFloat(cmd[2])}
 			case "trend-zoom-reset":
 				status.TrendSpec = structs.TrendSpec{Auto: true, Range: parseFloat(cmd[1])}
-			case "module":
-				status.Module = structs.Module{
-					Name: cmd[1],
-				}
 			case "set-value":
 				setVariableValue(sim, cmd[1], cmd[2], cmd[3], cmd[4], cmd[5])
+			case "get-module-data":
+				status.MetaChan <- sim.MetaData
+			case "signals":
+				setSignalSubscriptions(status, cmd)
 			default:
 				fmt.Println("Unknown command, this is not good: ", cmd)
 			}
 			status.Mutex.Unlock()
 		}
 	}
+}
+
+func setSignalSubscriptions(status *structs.SimulationStatus, cmd []string) {
+	var variables []structs.Variable
+	if len(cmd) > 1 {
+		status.Module = cmd[1]
+		for i, signal := range cmd {
+			if i > 1 {
+				parts := strings.Split(signal, ",")
+				valRef, err := strconv.Atoi(parts[3])
+				if err != nil {
+					log.Println("Could not parse value reference", signal, err)
+				} else {
+					variables = append(variables,
+						structs.Variable{
+							Name:           parts[0],
+							Causality:      parts[1],
+							Type:           parts[2],
+							ValueReference: valRef,
+						})
+				}
+			}
+		}
+	}
+	status.SignalSubscriptions = variables
 }
 
 func findFmu(metaData *structs.MetaData, moduleName string) (foundFmu structs.FMU) {
@@ -385,33 +415,18 @@ func findFmu(metaData *structs.MetaData, moduleName string) (foundFmu structs.FM
 	return
 }
 
-func getModuleNames(metaData *structs.MetaData) []string {
-	nModules := len(metaData.FMUs)
-	modules := make([]string, nModules)
-	for i := range metaData.FMUs {
-		modules[i] = metaData.FMUs[i].Name
-	}
-	return modules
-}
-
-func getModuleData(observer *C.cse_observer, fmu structs.FMU) (module structs.Module) {
-	realSignals := observerGetReals(observer, fmu)
-	intSignals := observerGetIntegers(observer, fmu)
-	var signals []structs.Signal
-	signals = append(signals, realSignals...)
-	signals = append(signals, intSignals...)
-	module.Name = fmu.Name
-	module.Signals = signals
-	return
-}
-
 func findModuleData(status *structs.SimulationStatus, metaData *structs.MetaData, observer *C.cse_observer) (module structs.Module) {
-	if len(status.Module.Name) > 0 {
-		for _, fmu := range metaData.FMUs {
-			if fmu.Name == status.Module.Name {
-				module = getModuleData(observer, fmu)
-			}
-		}
+	if len(status.SignalSubscriptions) > 0 {
+
+		slaveIndex := findFmu(metaData, status.Module).ExecutionIndex
+		realSignals := observerGetReals(observer, status.SignalSubscriptions, slaveIndex)
+		intSignals := observerGetIntegers(observer, status.SignalSubscriptions, slaveIndex)
+		var signals []structs.Signal
+		signals = append(signals, realSignals...)
+		signals = append(signals, intSignals...)
+
+		module.Signals = signals
+		module.Name = status.Module
 	}
 	return
 }
@@ -420,7 +435,16 @@ func GetSignalValue(module string, cardinality string, signal string) int {
 	return 1
 }
 
-func SimulationStatus(simulationStatus *structs.SimulationStatus, sim *Simulation) structs.JsonResponse {
+func maybeGetMetaData(metaChan <-chan *structs.MetaData) *structs.MetaData {
+	select {
+	case m := <-metaChan:
+		return m
+	default:
+		return nil
+	}
+}
+
+func GenerateJsonResponse(simulationStatus *structs.SimulationStatus, sim *Simulation) structs.JsonResponse {
 	simulationStatus.Mutex.Lock()
 	defer simulationStatus.Mutex.Unlock()
 	if simulationStatus.Loaded {
@@ -429,25 +453,25 @@ func SimulationStatus(simulationStatus *structs.SimulationStatus, sim *Simulatio
 			SimulationTime:       execStatus.time,
 			RealTimeFactor:       execStatus.realTimeFactor,
 			IsRealTimeSimulation: execStatus.isRealTimeSimulation,
-			Modules:              getModuleNames(sim.MetaData),
 			Module:               findModuleData(simulationStatus, sim.MetaData, sim.Observer),
 			Loaded:               simulationStatus.Loaded,
 			Status:               simulationStatus.Status,
 			ConfigDir:            simulationStatus.ConfigDir,
 			TrendSignals:         simulationStatus.TrendSignals,
+			ModuleData:           maybeGetMetaData(simulationStatus.MetaChan),
 		}
 	} else {
 		return structs.JsonResponse{
-			Loaded: simulationStatus.Loaded,
-			Status: simulationStatus.Status,
+			Loaded:     simulationStatus.Loaded,
+			Status:     simulationStatus.Status,
+			ModuleData: maybeGetMetaData(simulationStatus.MetaChan),
 		}
 	}
 }
 
 func StateUpdateLoop(state chan structs.JsonResponse, simulationStatus *structs.SimulationStatus, sim *Simulation) {
-
 	for {
-		state <- SimulationStatus(simulationStatus, sim)
+		state <- GenerateJsonResponse(simulationStatus, sim)
 		time.Sleep(1000 * time.Millisecond)
 	}
 }
@@ -462,7 +486,7 @@ func addFmu(execution *C.cse_execution, metaData *structs.MetaData, fmuPath stri
 }
 
 func addFmuSsd(metaData *structs.MetaData, name string, index int, fmuPath string) {
-	log.Println("Parsing: " + fmuPath)
+	//log.Println("Parsing: " + fmuPath)
 	fmu := metadata.ReadModelDescription(fmuPath)
 	fmu.Name = name
 	fmu.ExecutionIndex = index

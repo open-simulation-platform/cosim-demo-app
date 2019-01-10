@@ -23,9 +23,9 @@ type JsonResponse struct {
 	IsRealTimeSimulation bool          `json:"isRealTime"`
 	ConfigDir            string        `json:"configDir,omitempty"`
 	Status               string        `json:"status,omitempty"`
-	Modules              []string      `json:"modules"`
 	Module               Module        `json:"module,omitempty"`
 	TrendSignals         []TrendSignal `json:"trend-values"`
+	ModuleData           *MetaData     `json:"module-data,omitempty"`
 }
 
 type TrendSignal struct {
@@ -45,29 +45,31 @@ type TrendSpec struct {
 }
 
 type SimulationStatus struct {
-	Mutex        sync.Mutex
-	Loaded       bool
-	ConfigDir    string
-	Module       Module
-	TrendSignals []TrendSignal
-	TrendSpec    TrendSpec
-	Status       string
+	Mutex               sync.Mutex
+	Loaded              bool
+	ConfigDir           string
+	Module              string
+	SignalSubscriptions []Variable
+	TrendSignals        []TrendSignal
+	TrendSpec           TrendSpec
+	Status              string
+	MetaChan            chan *MetaData
 }
 
 type Variable struct {
-	Name           string
-	ValueReference int
-	Causality      string
-	Variability    string
-	Type           string
+	Name           string `json:"name"`
+	ValueReference int    `json:"value-reference"`
+	Causality      string `json:"causality"`
+	Variability    string `json:"variability"`
+	Type           string `json:"type"`
 }
 
 type FMU struct {
-	Name           string
-	ExecutionIndex int
-	Variables      []Variable
+	Name           string     `json:"name"`
+	ExecutionIndex int        `json:"index"`
+	Variables      []Variable `json:"variables"`
 }
 
 type MetaData struct {
-	FMUs []FMU
+	FMUs []FMU `json:"fmus"`
 }

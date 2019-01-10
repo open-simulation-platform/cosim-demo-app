@@ -88,20 +88,15 @@ func ReadModelDescription(fmuPath string) (fmu structs.FMU) {
 			}
 			rc.Close()
 
-			nVar := len(modelDescription.ModelVariables.ScalarVariables)
-
 			var variables []structs.Variable
-			variables = make([]structs.Variable, nVar)
 			for _, scalarVariable := range modelDescription.ModelVariables.ScalarVariables {
-				if includeVariable(scalarVariable) {
-					variables = append(variables, structs.Variable{
-						Name:           scalarVariable.Name,
-						ValueReference: scalarVariable.ValueReference,
-						Causality:      scalarVariable.Causality,
-						Variability:    scalarVariable.Variability,
-						Type:           getValueType(scalarVariable),
-					})
-				}
+				variables = append(variables, structs.Variable{
+					Name:           scalarVariable.Name,
+					ValueReference: scalarVariable.ValueReference,
+					Causality:      scalarVariable.Causality,
+					Variability:    scalarVariable.Variability,
+					Type:           getValueType(scalarVariable),
+				})
 			}
 			fmu.Variables = variables
 			fmu.Name = modelDescription.ModelName
@@ -109,7 +104,4 @@ func ReadModelDescription(fmuPath string) (fmu structs.FMU) {
 		}
 	}
 	return
-}
-func includeVariable(variable ScalarVariable) bool {
-	return variable.Causality != "local" && variable.Causality != "internal"
 }
