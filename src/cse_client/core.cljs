@@ -9,7 +9,7 @@
 
 (def routes
   [["/" :index]
-   ["/modules/:module" :module]
+   ["/modules/:module/:causality" :module]
    ["/trend" :trend]
    ["/guide" :guide]])
 
@@ -20,26 +20,24 @@
 (defn by-order [s1 s2]
   (compare (sort-order s1) (sort-order s2)))
 
-(defn causalities [db]
-  (some->> db
-           :state
-           :module
-           :signals
-           (map :causality)
-           distinct
-           (sort by-order)))
+(defn find-module [db module]
+  (some->> (get-in db [:state :module-data :fmus])
+           (filter #(= module (:name %)))
+           first))
+
+(defn causalities [db module]
+  (when-let [variables (some-> db (find-module module) :variables)]
+    (some->> variables
+             (map :causality)
+             distinct
+             (sort by-order))))
 
 (defn active-causality [db]
-  (or ((set (causalities db)) (:active-causality db))
-      (-> db
-          causalities
-          first)))
-
-(defn editable? [{:keys [type causality] :as variable}]
-  (if (and (#{"input" "parameter"} causality)
-           (#{"Real" "Integer"} type))
-    (assoc variable :editable? true)
-    variable))
+  (let [module (:current-module db)]
+    (or ((set (causalities db module)) (:active-causality db))
+        (-> db
+            (causalities module)
+            first))))
 
 (defn simulation-time [db]
   (some-> db :state :time (.toFixed 3)))
@@ -65,26 +63,55 @@
 (rf/reg-sub :loaded? (comp :loaded :state))
 (rf/reg-sub :status (comp :status :state))
 (rf/reg-sub :realtime? (comp :isRealTime :state))
-(rf/reg-sub :module (comp :module :state))
-(rf/reg-sub :modules (comp :modules :state))
-(rf/reg-sub :causalities causalities)
+
+(rf/reg-sub :module-routes (fn [db]
+                             (let [modules (-> db :state :module-data :fmus)]
+                               (map (fn [module]
+                                      {:name      (:name module)
+                                       :causality (first (causalities db (:name module)))})
+                                    modules))))
+
+(rf/reg-sub :module-active? (fn [db]
+                              (= (:current-module db) (->> db :state :module :name))))
+
+(rf/reg-sub :current-module #(:current-module %))
+
+(rf/reg-sub :pages
+            (fn [db]
+              (let [page-count (:page-count db)
+                    all-pages (range 1 (inc page-count))]
+                all-pages)))
+
+(rf/reg-sub :module-signals (fn [db]
+                              (:viewing db)))
+
+(rf/reg-sub :causalities (fn [db] (causalities db (:current-module db))))
 (rf/reg-sub :active-causality active-causality)
-(rf/reg-sub :active-guide-tab :active-guide-tab)
-(rf/reg-sub :signals (fn [db]
-                       (some->> db
-                                :state
-                                :module
-                                :signals
-                                (filter (fn [signal]
-                                          (= (active-causality db)
-                                             (:causality signal))))
-                                (map editable?)
-                                (sort-by :name))))
+
+(rf/reg-sub :signal-value (fn [db [_ module name causality type]]
+                            (->> db
+                                 :state
+                                 :module
+                                 :signals
+                                 (filter (fn [var]
+                                           (and (= (:name var) name)
+                                                (= (:causality var) causality)
+                                                (= (:type var) type))))
+                                 first
+                                 :value)))
+
 (rf/reg-sub :trend-count #(-> % :state :trend-values count))
+
+(rf/reg-sub :active-guide-tab :active-guide-tab)
+
+(rf/reg-sub :current-page #(:page %))
+(rf/reg-sub :vars-per-page #(:vars-per-page %))
 
 (k/start! {:routes         routes
            :hash-routing?  true
            :debug?         {:blacklist #{::controller/socket-message-received}}
            :root-component [view/root-comp]
-           :initial-db     {:trend-range 10
-                            :active-guide-tab "About"}})
+           :initial-db     {:trend-range      10
+                            :active-guide-tab "About"
+                            :page             1
+                            :vars-per-page    20}})

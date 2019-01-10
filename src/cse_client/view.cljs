@@ -10,10 +10,10 @@
 (goog-define default-load-dir "")
 (goog-define default-log-dir "")
 
-(defn variable-override-editor [module {:keys [name causality type value]}]
+(defn variable-override-editor [module {:keys [name causality type]} value]
   (let [editing? (r/atom false)
         internal-value (r/atom value)]
-    (fn [_ {:keys [value]}]
+    (fn [_ _ value]
       (if @editing?
         [:div.ui.action.input.fluid
          [:input {:type      :text
@@ -35,53 +35,92 @@
                            (reset! internal-value value))}
          value]))))
 
-(defn variable-display [module {:keys [value editable?] :as variable}]
-  (if editable?
-    [variable-override-editor module variable]
-    [:div value]))
+(defn variable-display [module {:keys [name causality type editable?] :as variable}]
+  (let [value @(rf/subscribe [:signal-value module name causality type])]
+    (if editable?
+      [variable-override-editor module variable value]
+      [:div value])))
+
+(defn pages-menu []
+  (let [current-page @(rf/subscribe [:current-page])
+        pages @(rf/subscribe [:pages])
+        vars-per-page @(rf/subscribe [:vars-per-page])]
+    [:div.right.menu
+     [:div.item
+      [:div.ui.transparent.input
+       [:button.ui.icon.button
+        {:disabled (= 1 current-page)
+         :on-click #(when (< 1 current-page)
+                      (rf/dispatch [::controller/set-page (dec current-page)]))}
+        [:i.chevron.left.icon]]
+       [:input {:type     :text
+                :readOnly true
+                :value    (str "Page " current-page " of " (last pages))}]
+       [:button.ui.icon.button
+        {:disabled (= (last pages) current-page)
+         :on-click #(when (< current-page (last pages))
+                      (rf/dispatch [::controller/set-page (inc current-page)]))}
+        [:i.chevron.right.icon]]]
+      [:div.ui.icon.button.simple.dropdown
+       [:i.sliders.horizontal.icon]
+       [:div.menu
+        [:div.header (str vars-per-page " variables per page")]
+        [:div.item
+         [:div.ui.icon.buttons
+          [:button.ui.button {:on-click #(rf/dispatch [::controller/set-vars-per-page (- vars-per-page 5)])} [:i.minus.icon] 5]
+          [:button.ui.button {:on-click #(rf/dispatch [::controller/set-vars-per-page (dec vars-per-page)])} [:i.minus.icon] 1]
+          [:button.ui.button {:on-click #(rf/dispatch [::controller/set-vars-per-page (inc vars-per-page)])} [:i.plus.icon] 1]
+          [:button.ui.button {:on-click #(rf/dispatch [::controller/set-vars-per-page (+ vars-per-page 5)])} [:i.plus.icon] 5]]]]]]]))
 
 (defn tab-content [tabby]
-  (let [module @(rf/subscribe [:module])
-        signals @(rf/subscribe [:signals])
+  (let [current-module @(rf/subscribe [:current-module])
+        module-signals @(rf/subscribe [:module-signals])
         active @(rf/subscribe [:active-causality])]
     [:div.ui.bottom.attached.tab.segment {:data-tab tabby
                                           :class    (when (= tabby active) "active")}
-     [:table.ui.single.line.striped.selectable.fixed.table
+     [:table.ui.compact.single.line.striped.selectable.table
       [:thead
        [:tr
         [:th "Name"]
-        [:th "Type"]
+        [:th.one.wide "Type"]
         [:th "Value"]
-        [:th "..."]]]
+        [:th.two.wide "..."]]]
       [:tbody
-       (map (fn [{:keys [name value causality type] :as variable}]
-              [:tr {:key (str (:name module) "-" causality "-" name)}
+       (map (fn [{:keys [name causality type] :as variable}]
+              [:tr {:key (str current-module "-" causality "-" name)}
                [:td name]
                [:td type]
-               [:td [variable-display (:name module) variable]]
+               [:td [variable-display current-module variable]]
                [:td [:a {:style    {:cursor :pointer}
-                         :on-click #(rf/dispatch [::controller/add-to-trend (:name module) name causality type])} "Add to trend"]]])
-            signals)]]]))
+                         :on-click #(rf/dispatch [::controller/add-to-trend current-module name causality type])} "Add to trend"]]])
+            module-signals)]]]))
 
 (defn module-listing []
   (let [causalities @(rf/subscribe [:causalities])
-        active @(rf/subscribe [:active-causality])]
-    [:div.ui.one.column.grid
-     [:div.one.column.row
-      [:div.column
-       [:div.ui.top.attached.tabular.menu
-        (for [causality causalities]
-          ^{:key (str "tab-" causality)}
-          [:a.item {:data-tab causality
-                    :class    (when (= causality active) "active")
-                    :on-click #(rf/dispatch [::controller/causality-enter causality])}
-           causality])]
-       (for [causality causalities]
-         ^{:key (str "tab-content-" causality)}
-         [tab-content causality])]]]))
+        active @(rf/subscribe [:active-causality])
+        module-active? @(rf/subscribe [:module-active?])
+        current-module @(rf/subscribe [:current-module])]
+    (if module-active?
+      [:div.ui.one.column.grid
+       [:div.one.column.row
+        [:div.column
+         [:div.ui.top.attached.tabular.menu
+          (for [causality causalities]
+            ^{:key (str "tab-" causality)}
+            [:a.item {:data-tab causality
+                      :class    (when (= causality active) "active")
+                      :href     (k/path-for [:module {:module current-module :causality causality}])}
+             causality])
+          [pages-menu]]
+         (for [causality causalities]
+           ^{:key (str "tab-content-" causality)}
+           [tab-content causality])]]]
+      [:div.ui.active.centered.inline.text.massive.loader
+       {:style {:margin-top "20%"}}
+       "Loading"])))
 
 (defn sidebar []
-  (let [modules @(rf/subscribe [:modules])
+  (let [module-routes @(rf/subscribe [:module-routes])
         route @(rf/subscribe [:kee-frame/route])
         route-name (-> route :data :name)
         route-module (-> route :path-params :module)
@@ -100,11 +139,11 @@
      [:div.item
       [:div.header "Models"]
       [:div.menu
-       (map (fn [module]
-              [:a.item {:class (when (= route-module module) :active)
-                        :key   module
-                        :href  (k/path-for [:module {:module module}])} module])
-            modules)]]]))
+       (map (fn [{:keys [name causality]}]
+              [:a.item {:class (when (= route-module name) :active)
+                        :key   name
+                        :href  (k/path-for [:module {:module name :causality causality}])} name])
+            module-routes)]]]))
 
 (defn realtime-button []
   (if @(rf/subscribe [:realtime?])
@@ -173,7 +212,7 @@
   (let [socket-state (rf/subscribe [:kee-frame.websocket/state socket-url])
         loaded? (rf/subscribe [:loaded?])
         status (rf/subscribe [:status])
-        module (rf/subscribe [:module])]
+        module (rf/subscribe [:current-module])]
     [:div
      [:div.ui.inverted.huge.borderless.fixed.menu
       [:a.header.item {:href "/"} "Core Simulation Environment - demo application"]
@@ -202,7 +241,7 @@
         [:div.ui.grid
          [:div.row
           [:h1.ui.huge.header [k/switch-route (comp :name :data)
-                               :module (if @module (@module :name) "")
+                               :module (or @module "")
                                :trend "Trend"
                                :guide "User guide"
                                :index (if @loaded? "Simulation status" "Simulation setup")
