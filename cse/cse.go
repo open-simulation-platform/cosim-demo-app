@@ -376,6 +376,15 @@ func observerStartObserving(observer *C.cse_observer, slaveIndex int, valueType 
 	return nil
 }
 
+func observerStopObserving(observer *C.cse_observer, slaveIndex int, valueType string, varIndex int) (error) {
+	variableType, err := toVariableType(valueType)
+	if err != nil {
+		return err
+	}
+	C.cse_observer_stop_observing(observer, C.cse_slave_index(slaveIndex), variableType, C.cse_variable_index(varIndex));
+	return nil
+}
+
 func addToTrend(sim *Simulation, status *structs.SimulationStatus, module string, signal string, causality string, valueType string, valueReference string) {
 	fmu := findFmu(sim.MetaData, module)
 	varIndex, err := strconv.Atoi(valueReference)
@@ -390,10 +399,21 @@ func addToTrend(sim *Simulation, status *structs.SimulationStatus, module string
 	}
 	status.TrendSignals = append(status.TrendSignals, structs.TrendSignal{
 		Module:         module,
+		SlaveIndex:     fmu.ExecutionIndex,
 		Signal:         signal,
 		Causality:      causality,
 		Type:           valueType,
 		ValueReference: varIndex})
+}
+
+func removeAllFromTrend(sim *Simulation, status *structs.SimulationStatus) {
+	for _, trendSignal := range status.TrendSignals {
+		err := observerStopObserving(sim.TrendObserver, trendSignal.SlaveIndex, trendSignal.Type, trendSignal.ValueReference)
+		if err != nil {
+			log.Println("Cannot stop observing", err)
+		}
+	}
+	status.TrendSignals = []structs.TrendSignal{}
 }
 
 func CommandLoop(sim *Simulation, command chan []string, status *structs.SimulationStatus) {
@@ -431,7 +451,7 @@ func CommandLoop(sim *Simulation, command chan []string, status *structs.Simulat
 			case "trend":
 				addToTrend(sim, status, cmd[1], cmd[2], cmd[3], cmd[4], cmd[5])
 			case "untrend":
-				status.TrendSignals = []structs.TrendSignal{}
+				removeAllFromTrend(sim, status)
 			case "trend-zoom":
 				status.TrendSpec = structs.TrendSpec{Auto: false, Begin: parseFloat(cmd[1]), End: parseFloat(cmd[2])}
 			case "trend-zoom-reset":
@@ -541,7 +561,7 @@ func GenerateJsonResponse(simulationStatus *structs.SimulationStatus, sim *Simul
 func StateUpdateLoop(state chan structs.JsonResponse, simulationStatus *structs.SimulationStatus, sim *Simulation) {
 	for {
 		state <- GenerateJsonResponse(simulationStatus, sim)
-		time.Sleep(1000 * time.Millisecond)
+		time.Sleep(500 * time.Millisecond)
 	}
 }
 
