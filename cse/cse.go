@@ -181,9 +181,8 @@ func observerGetIntegers(observer *C.cse_observer, variables []structs.Variable,
 	return intSignals
 }
 
-func observerGetRealSamples(observer *C.cse_observer, metaData *structs.MetaData, signal *structs.TrendSignal, spec structs.TrendSpec) {
-	fmu := findFmu(metaData, signal.Module)
-	slaveIndex := C.cse_slave_index(fmu.ExecutionIndex)
+func observerGetRealSamples(observer *C.cse_observer, signal *structs.TrendSignal, spec structs.TrendSpec) {
+	slaveIndex := C.cse_slave_index(signal.SlaveIndex)
 	variableIndex := C.cse_variable_index(signal.ValueReference)
 
 	stepNumbers := make([]C.cse_step_number, 2)
@@ -278,7 +277,7 @@ func TrendLoop(sim *Simulation, status *structs.SimulationStatus) {
 				var trend = &status.TrendSignals[i]
 				switch trend.Type {
 				case "Real":
-					observerGetRealSamples(sim.TrendObserver, sim.MetaData, trend, status.TrendSpec)
+					observerGetRealSamples(sim.TrendObserver, trend, status.TrendSpec)
 				}
 			}
 		}
