@@ -86,13 +86,13 @@
         [:th "Value"]
         [:th.two.wide "..."]]]
       [:tbody
-       (map (fn [{:keys [name causality type] :as variable}]
+       (map (fn [{:keys [name causality type value-reference] :as variable}]
               [:tr {:key (str current-module "-" causality "-" name)}
                [:td name]
                [:td type]
                [:td [variable-display current-module variable]]
                [:td [:a {:style    {:cursor :pointer}
-                         :on-click #(rf/dispatch [::controller/add-to-trend current-module name causality type])} "Add to trend"]]])
+                         :on-click #(rf/dispatch [::controller/add-to-trend current-module name causality type value-reference])} "Add to trend"]]])
             module-signals)]]]))
 
 (defn module-listing []

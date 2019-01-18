@@ -136,8 +136,8 @@
                   (socket-command ["untrend"])))
 
 (k/reg-event-fx ::add-to-trend
-                (fn [_ [module signal causality type]]
-                  (socket-command ["trend" module signal causality type])))
+                (fn [_ [module signal causality type value-reference]]
+                  (socket-command ["trend" module signal causality type (str value-reference)])))
 
 (k/reg-event-fx ::set-value
                 (fn [_ [module signal causality type value]]
