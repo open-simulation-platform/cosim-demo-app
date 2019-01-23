@@ -85,8 +85,13 @@ func executionAddSlave(execution *C.cse_execution, slave *C.cse_slave) int {
 	return int(slaveIndex)
 }
 
-func executionStart(execution *C.cse_execution) {
-	C.cse_execution_start(execution)
+func executionStart(execution *C.cse_execution) (bool, string) {
+	success := C.cse_execution_start(execution)
+	if int(success) < 0 {
+		return false, "Unable to start simulation"
+	} else {
+		return true, ""
+	}
 }
 
 func executionDestroy(execution *C.cse_execution) {
@@ -271,7 +276,6 @@ func findVariableIndex(fmu structs.FMU, signalName string, causality string, val
 
 func TrendLoop(sim *Simulation, status *structs.SimulationStatus) {
 	for {
-		status.Mutex.Lock()
 		if len(status.TrendSignals) > 0 {
 			for i, _ := range status.TrendSignals {
 				var trend = &status.TrendSignals[i]
@@ -281,7 +285,6 @@ func TrendLoop(sim *Simulation, status *structs.SimulationStatus) {
 				}
 			}
 		}
-		status.Mutex.Unlock()
 		time.Sleep(1000 * time.Millisecond)
 	}
 }
@@ -309,7 +312,7 @@ func simulationTeardown(sim *Simulation) {
 	sim.MetaData = &structs.MetaData{}
 }
 
-func initializeSimulation(sim *Simulation, fmuDir string, logDir string) {
+func initializeSimulation(sim *Simulation, fmuDir string, logDir string) (success bool, message string) {
 	metaData := structs.MetaData{
 		FMUs: []structs.FMU{},
 	}
@@ -342,6 +345,7 @@ func initializeSimulation(sim *Simulation, fmuDir string, logDir string) {
 	sim.TrendObserver = trendObserver
 	sim.FileObserver = fileObserver
 	sim.MetaData = &metaData
+	return true, ""
 }
 
 func strCat(strs ...string) string {
@@ -415,56 +419,63 @@ func removeAllFromTrend(sim *Simulation, status *structs.SimulationStatus) {
 	status.TrendSignals = []structs.TrendSignal{}
 }
 
-func CommandLoop(sim *Simulation, command chan []string, status *structs.SimulationStatus) {
+func executeCommand(cmd []string, sim *Simulation, status *structs.SimulationStatus) (feedback structs.CommandFeedback) {
+	var success = false
+	var message = "No feedback implemented"
+	switch cmd[0] {
+	case "load":
+		success, message = initializeSimulation(sim, cmd[1], cmd[2])
+		status.Loaded = true
+		status.ConfigDir = cmd[1]
+		status.Status = "pause"
+		status.MetaChan <- sim.MetaData
+	case "teardown":
+		status.Loaded = false
+		status.Status = "stopped"
+		status.ConfigDir = ""
+		status.TrendSignals = []structs.TrendSignal{}
+		status.Module = ""
+		simulationTeardown(sim)
+		status.MetaChan <- sim.MetaData
+	case "stop":
+		return
+	case "pause":
+		executionStop(sim.Execution)
+		status.Status = "pause"
+	case "play":
+		success, message = executionStart(sim.Execution)
+		status.Status = "play"
+	case "enable-realtime":
+		executionEnableRealTime(sim.Execution)
+	case "disable-realtime":
+		executionDisableRealTime(sim.Execution)
+	case "trend":
+		addToTrend(sim, status, cmd[1], cmd[2], cmd[3], cmd[4], cmd[5])
+	case "untrend":
+		removeAllFromTrend(sim, status)
+	case "trend-zoom":
+		status.TrendSpec = structs.TrendSpec{Auto: false, Begin: parseFloat(cmd[1]), End: parseFloat(cmd[2])}
+	case "trend-zoom-reset":
+		status.TrendSpec = structs.TrendSpec{Auto: true, Range: parseFloat(cmd[1])}
+	case "set-value":
+		setVariableValue(sim, cmd[1], cmd[2], cmd[3], cmd[4], cmd[5])
+	case "get-module-data":
+		status.MetaChan <- sim.MetaData
+	case "signals":
+		setSignalSubscriptions(status, cmd)
+	default:
+		message = "Unknown command, this is not good"
+		fmt.Println(message, cmd)
+	}
+	return structs.CommandFeedback{Success: success, Message: message, Command: cmd[0]}
+}
+
+func CommandLoop(state chan structs.JsonResponse, sim *Simulation, command chan []string, status *structs.SimulationStatus) {
 	for {
 		select {
 		case cmd := <-command:
-			status.Mutex.Lock()
-			switch cmd[0] {
-			case "load":
-				initializeSimulation(sim, cmd[1], cmd[2])
-				status.Loaded = true
-				status.ConfigDir = cmd[1]
-				status.Status = "pause"
-				status.MetaChan <- sim.MetaData
-			case "teardown":
-				status.Loaded = false
-				status.Status = "stopped"
-				status.ConfigDir = ""
-				status.TrendSignals = []structs.TrendSignal{}
-				status.Module = ""
-				simulationTeardown(sim)
-				status.MetaChan <- sim.MetaData
-			case "stop":
-				return
-			case "pause":
-				executionStop(sim.Execution)
-				status.Status = "pause"
-			case "play":
-				executionStart(sim.Execution)
-				status.Status = "play"
-			case "enable-realtime":
-				executionEnableRealTime(sim.Execution)
-			case "disable-realtime":
-				executionDisableRealTime(sim.Execution)
-			case "trend":
-				addToTrend(sim, status, cmd[1], cmd[2], cmd[3], cmd[4], cmd[5])
-			case "untrend":
-				removeAllFromTrend(sim, status)
-			case "trend-zoom":
-				status.TrendSpec = structs.TrendSpec{Auto: false, Begin: parseFloat(cmd[1]), End: parseFloat(cmd[2])}
-			case "trend-zoom-reset":
-				status.TrendSpec = structs.TrendSpec{Auto: true, Range: parseFloat(cmd[1])}
-			case "set-value":
-				setVariableValue(sim, cmd[1], cmd[2], cmd[3], cmd[4], cmd[5])
-			case "get-module-data":
-				status.MetaChan <- sim.MetaData
-			case "signals":
-				setSignalSubscriptions(status, cmd)
-			default:
-				fmt.Println("Unknown command, this is not good: ", cmd)
-			}
-			status.Mutex.Unlock()
+			feedback := executeCommand(cmd, sim, status)
+			state <- GenerateJsonResponse(status, sim, feedback)
 		}
 	}
 }
@@ -532,35 +543,31 @@ func maybeGetMetaData(metaChan <-chan *structs.MetaData) *structs.MetaData {
 	}
 }
 
-func GenerateJsonResponse(simulationStatus *structs.SimulationStatus, sim *Simulation) structs.JsonResponse {
-	simulationStatus.Mutex.Lock()
-	defer simulationStatus.Mutex.Unlock()
-	if simulationStatus.Loaded {
-		execStatus := getExecutionStatus(sim.Execution)
-		return structs.JsonResponse{
-			SimulationTime:       execStatus.time,
-			RealTimeFactor:       execStatus.realTimeFactor,
-			IsRealTimeSimulation: execStatus.isRealTimeSimulation,
-			Module:               findModuleData(simulationStatus, sim.MetaData, sim.Observer),
-			Loaded:               simulationStatus.Loaded,
-			Status:               simulationStatus.Status,
-			ConfigDir:            simulationStatus.ConfigDir,
-			TrendSignals:         simulationStatus.TrendSignals,
-			ModuleData:           maybeGetMetaData(simulationStatus.MetaChan),
-		}
-	} else {
-		return structs.JsonResponse{
-			Loaded:     simulationStatus.Loaded,
-			Status:     simulationStatus.Status,
-			ModuleData: maybeGetMetaData(simulationStatus.MetaChan),
-		}
+func GenerateJsonResponse(status *structs.SimulationStatus, sim *Simulation, feedback structs.CommandFeedback) structs.JsonResponse {
+	var response = structs.JsonResponse{
+		Loaded:     status.Loaded,
+		Status:     status.Status,
+		ModuleData: maybeGetMetaData(status.MetaChan),
 	}
+	if status.Loaded {
+		execStatus := getExecutionStatus(sim.Execution)
+		response.SimulationTime = execStatus.time
+		response.RealTimeFactor = execStatus.realTimeFactor
+		response.IsRealTimeSimulation = execStatus.isRealTimeSimulation
+		response.Module = findModuleData(status, sim.MetaData, sim.Observer)
+		response.ConfigDir = status.ConfigDir
+		response.TrendSignals = status.TrendSignals
+	}
+	if (structs.CommandFeedback{}) != feedback {
+		response.Feedback = &feedback
+	}
+	return response
 }
 
 func StateUpdateLoop(state chan structs.JsonResponse, simulationStatus *structs.SimulationStatus, sim *Simulation) {
 	for {
-		state <- GenerateJsonResponse(simulationStatus, sim)
-		time.Sleep(500 * time.Millisecond)
+		state <- GenerateJsonResponse(simulationStatus, sim, structs.CommandFeedback{})
+		time.Sleep(1000 * time.Millisecond)
 	}
 }
 
