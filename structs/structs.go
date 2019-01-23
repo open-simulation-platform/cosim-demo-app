@@ -30,9 +30,11 @@ type JsonResponse struct {
 
 type TrendSignal struct {
 	Module          string    `json:"module"`
+	SlaveIndex      int       `json:"slave-index"`
 	Signal          string    `json:"signal"`
 	Causality       string    `json:"causality"`
 	Type            string    `json:"type"`
+	ValueReference  int       `json:"value-reference"`
 	TrendValues     []float64 `json:"values,omitempty"`
 	TrendTimestamps []float64 `json:"labels,omitempty"`
 }

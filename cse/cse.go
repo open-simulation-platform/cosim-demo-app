@@ -7,6 +7,7 @@ import "C"
 import (
 	"cse-server-go/metadata"
 	"cse-server-go/structs"
+	"errors"
 	"fmt"
 	"io/ioutil"
 	"log"
@@ -57,7 +58,12 @@ func createLocalSlave(fmuPath string) (slave *C.cse_slave) {
 }
 
 func createObserver() (observer *C.cse_observer) {
-	observer = C.cse_membuffer_observer_create()
+	observer = C.cse_buffered_membuffer_observer_create(C.size_t(1))
+	return
+}
+
+func createTrendObserver() (observer *C.cse_observer) {
+	observer = C.cse_time_series_observer_create()
 	return
 }
 
@@ -175,21 +181,23 @@ func observerGetIntegers(observer *C.cse_observer, variables []structs.Variable,
 	return intSignals
 }
 
-func observerGetRealSamples(observer *C.cse_observer, metaData *structs.MetaData, signal *structs.TrendSignal, spec structs.TrendSpec) {
-	fmu := findFmu(metaData, signal.Module)
-	slaveIndex := C.cse_slave_index(fmu.ExecutionIndex)
-	variableIndex := C.cse_variable_index(findVariableIndex(fmu, signal.Signal, signal.Causality, signal.Type))
+func observerGetRealSamples(observer *C.cse_observer, signal *structs.TrendSignal, spec structs.TrendSpec) {
+	slaveIndex := C.cse_slave_index(signal.SlaveIndex)
+	variableIndex := C.cse_variable_index(signal.ValueReference)
 
 	stepNumbers := make([]C.cse_step_number, 2)
+	var success C.int;
 	if spec.Auto {
 		duration := C.cse_duration(spec.Range * 1e9)
-		C.cse_observer_get_step_numbers_for_duration(observer, slaveIndex, duration, &stepNumbers[0])
+		success = C.cse_observer_get_step_numbers_for_duration(observer, slaveIndex, duration, &stepNumbers[0])
 	} else {
 		tBegin := C.cse_time_point(spec.Begin * 1e9)
 		tEnd := C.cse_time_point(spec.End * 1e9)
-		C.cse_observer_get_step_numbers(observer, slaveIndex, tBegin, tEnd, &stepNumbers[0])
+		success = C.cse_observer_get_step_numbers(observer, slaveIndex, tBegin, tEnd, &stepNumbers[0])
 	}
-
+	if int(success) < 0 {
+		return
+	}
 	first := stepNumbers[0]
 	last := stepNumbers[1]
 
@@ -199,10 +207,13 @@ func observerGetRealSamples(observer *C.cse_observer, metaData *structs.MetaData
 	timeVal := make([]C.cse_time_point, numSamples)
 	timeStamps := make([]C.cse_step_number, numSamples)
 	actualNumSamples := C.cse_observer_slave_get_real_samples(observer, slaveIndex, variableIndex, first, cnSamples, &realOutVal[0], &timeStamps[0], &timeVal[0])
-
-	trendVals := make([]float64, int(actualNumSamples))
-	times := make([]float64, int(actualNumSamples))
-	for i := 0; i < int(actualNumSamples); i++ {
+	ns := int(actualNumSamples)
+	if ns <= 0 {
+		return
+	}
+	trendVals := make([]float64, ns)
+	times := make([]float64, ns)
+	for i := 0; i < ns; i++ {
 		trendVals[i] = float64(realOutVal[i])
 		times[i] = 1e-9 * float64(timeVal[i])
 	}
@@ -266,12 +277,12 @@ func TrendLoop(sim *Simulation, status *structs.SimulationStatus) {
 				var trend = &status.TrendSignals[i]
 				switch trend.Type {
 				case "Real":
-					observerGetRealSamples(sim.Observer, sim.MetaData, trend, status.TrendSpec)
+					observerGetRealSamples(sim.TrendObserver, trend, status.TrendSpec)
 				}
 			}
 		}
 		status.Mutex.Unlock()
-		time.Sleep(500 * time.Millisecond)
+		time.Sleep(1000 * time.Millisecond)
 	}
 }
 
@@ -287,11 +298,13 @@ func parseFloat(argument string) float64 {
 func simulationTeardown(sim *Simulation) {
 	executionDestroy(sim.Execution)
 	observerDestroy(sim.Observer)
+	observerDestroy(sim.TrendObserver)
 	if nil != sim.FileObserver {
 		observerDestroy(sim.FileObserver)
 	}
 	sim.Execution = nil
 	sim.Observer = nil
+	sim.TrendObserver = nil
 	sim.FileObserver = nil
 	sim.MetaData = &structs.MetaData{}
 }
@@ -315,6 +328,9 @@ func initializeSimulation(sim *Simulation, fmuDir string, logDir string) {
 	observer := createObserver()
 	executionAddObserver(execution, observer)
 
+	trendObserver := createTrendObserver()
+	executionAddObserver(execution, trendObserver)
+
 	var fileObserver *C.cse_observer
 	if len(logDir) > 0 {
 		fileObserver := createFileObserver(logDir)
@@ -323,8 +339,80 @@ func initializeSimulation(sim *Simulation, fmuDir string, logDir string) {
 
 	sim.Execution = execution
 	sim.Observer = observer
+	sim.TrendObserver = trendObserver
 	sim.FileObserver = fileObserver
 	sim.MetaData = &metaData
+}
+
+func strCat(strs ...string) string {
+	var sb strings.Builder
+	for _, str := range strs {
+		sb.WriteString(str)
+	}
+	return sb.String()
+}
+
+func toVariableType(valueType string) (C.cse_variable_type, error) {
+	switch valueType {
+	case "Real":
+		return C.CSE_REAL, nil
+	case "Integer":
+		return C.CSE_INTEGER, nil
+	case "Boolean":
+		return C.CSE_BOOLEAN, nil
+	case "String":
+		return C.CSE_STRING, nil
+	}
+	return C.CSE_REAL, errors.New(strCat("Unknown variable type:", valueType));
+}
+
+func observerStartObserving(observer *C.cse_observer, slaveIndex int, valueType string, varIndex int) (error) {
+	variableType, err := toVariableType(valueType)
+	if err != nil {
+		return err
+	}
+	C.cse_observer_start_observing(observer, C.cse_slave_index(slaveIndex), variableType, C.cse_variable_index(varIndex));
+	return nil
+}
+
+func observerStopObserving(observer *C.cse_observer, slaveIndex int, valueType string, varIndex int) (error) {
+	variableType, err := toVariableType(valueType)
+	if err != nil {
+		return err
+	}
+	C.cse_observer_stop_observing(observer, C.cse_slave_index(slaveIndex), variableType, C.cse_variable_index(varIndex));
+	return nil
+}
+
+func addToTrend(sim *Simulation, status *structs.SimulationStatus, module string, signal string, causality string, valueType string, valueReference string) {
+	fmu := findFmu(sim.MetaData, module)
+	varIndex, err := strconv.Atoi(valueReference)
+	if err != nil {
+		log.Println("Cannot parse valueReference as integer", valueReference, err)
+		return
+	}
+	err = observerStartObserving(sim.TrendObserver, fmu.ExecutionIndex, valueType, varIndex)
+	if err != nil {
+		log.Println("Cannot start observing", valueReference, err)
+		return
+	}
+	status.TrendSignals = append(status.TrendSignals, structs.TrendSignal{
+		Module:         module,
+		SlaveIndex:     fmu.ExecutionIndex,
+		Signal:         signal,
+		Causality:      causality,
+		Type:           valueType,
+		ValueReference: varIndex})
+}
+
+func removeAllFromTrend(sim *Simulation, status *structs.SimulationStatus) {
+	for _, trendSignal := range status.TrendSignals {
+		err := observerStopObserving(sim.TrendObserver, trendSignal.SlaveIndex, trendSignal.Type, trendSignal.ValueReference)
+		if err != nil {
+			log.Println("Cannot stop observing", err)
+		}
+	}
+	status.TrendSignals = []structs.TrendSignal{}
 }
 
 func CommandLoop(sim *Simulation, command chan []string, status *structs.SimulationStatus) {
@@ -360,9 +448,9 @@ func CommandLoop(sim *Simulation, command chan []string, status *structs.Simulat
 			case "disable-realtime":
 				executionDisableRealTime(sim.Execution)
 			case "trend":
-				status.TrendSignals = append(status.TrendSignals, structs.TrendSignal{cmd[1], cmd[2], cmd[3], cmd[4], nil, nil})
+				addToTrend(sim, status, cmd[1], cmd[2], cmd[3], cmd[4], cmd[5])
 			case "untrend":
-				status.TrendSignals = []structs.TrendSignal{}
+				removeAllFromTrend(sim, status)
 			case "trend-zoom":
 				status.TrendSpec = structs.TrendSpec{Auto: false, Begin: parseFloat(cmd[1]), End: parseFloat(cmd[2])}
 			case "trend-zoom-reset":
@@ -472,7 +560,7 @@ func GenerateJsonResponse(simulationStatus *structs.SimulationStatus, sim *Simul
 func StateUpdateLoop(state chan structs.JsonResponse, simulationStatus *structs.SimulationStatus, sim *Simulation) {
 	for {
 		state <- GenerateJsonResponse(simulationStatus, sim)
-		time.Sleep(1000 * time.Millisecond)
+		time.Sleep(500 * time.Millisecond)
 	}
 }
 
@@ -551,10 +639,11 @@ func hasSsdFile(loadFolder string) bool {
 }
 
 type Simulation struct {
-	Execution    *C.cse_execution
-	Observer     *C.cse_observer
-	FileObserver *C.cse_observer
-	MetaData     *structs.MetaData
+	Execution     *C.cse_execution
+	Observer      *C.cse_observer
+	TrendObserver *C.cse_observer
+	FileObserver  *C.cse_observer
+	MetaData      *structs.MetaData
 }
 
 func CreateEmptySimulation() Simulation {
