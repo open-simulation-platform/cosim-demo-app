@@ -90,7 +90,7 @@ func executionStart(execution *C.cse_execution) (bool, string) {
 	if int(success) < 0 {
 		return false, "Unable to start simulation"
 	} else {
-		return true, ""
+		return true, "Simulation is running"
 	}
 }
 
@@ -102,16 +102,31 @@ func observerDestroy(observer *C.cse_observer) {
 	C.cse_observer_destroy(observer)
 }
 
-func executionStop(execution *C.cse_execution) {
-	C.cse_execution_stop(execution)
+func executionStop(execution *C.cse_execution) (bool, string) {
+	success := C.cse_execution_stop(execution)
+	if int(success) < 0 {
+		return false, "Unable to stop simulation"
+	} else {
+		return true, "Simulation is paused"
+	}
 }
 
-func executionEnableRealTime(execution *C.cse_execution) {
-	C.cse_execution_enable_real_time_simulation(execution)
+func executionEnableRealTime(execution *C.cse_execution) (bool, string) {
+	success := C.cse_execution_enable_real_time_simulation(execution)
+	if int(success) < 0 {
+		return false, "Unable to enable real time"
+	} else {
+		return true, "Real time execution enabled"
+	}
 }
 
-func executionDisableRealTime(execution *C.cse_execution) {
-	C.cse_execution_disable_real_time_simulation(execution)
+func executionDisableRealTime(execution *C.cse_execution) (bool, string) {
+	success := C.cse_execution_disable_real_time_simulation(execution)
+	if int(success) < 0 {
+		return false, "Unable to disable real time"
+	} else {
+		return true, "Real time execution disabled"
+	}
 }
 
 func uglyNanFix(value C.double) interface{} {
@@ -226,23 +241,33 @@ func observerGetRealSamples(observer *C.cse_observer, signal *structs.TrendSigna
 	signal.TrendValues = trendVals
 }
 
-func setReal(execution *C.cse_execution, slaveIndex int, variableIndex int, value float64) {
+func setReal(execution *C.cse_execution, slaveIndex int, variableIndex int, value float64) (bool, string) {
 	vi := make([]C.cse_variable_index, 1)
 	vi[0] = C.cse_variable_index(variableIndex)
 	v := make([]C.double, 1)
 	v[0] = C.double(value)
-	C.cse_execution_slave_set_real(execution, C.cse_slave_index(slaveIndex), &vi[0], C.size_t(1), &v[0])
+	success := C.cse_execution_slave_set_real(execution, C.cse_slave_index(slaveIndex), &vi[0], C.size_t(1), &v[0])
+	if int(success) < 0 {
+		return false, "Unable to set real variable value"
+	} else {
+		return true, "Successfully set real variable value"
+	}
 }
 
-func setInteger(execution *C.cse_execution, slaveIndex int, variableIndex int, value int) {
+func setInteger(execution *C.cse_execution, slaveIndex int, variableIndex int, value int) (bool, string) {
 	vi := make([]C.cse_variable_index, 1)
 	vi[0] = C.cse_variable_index(variableIndex)
 	v := make([]C.int, 1)
 	v[0] = C.int(value)
-	C.cse_execution_slave_set_integer(execution, C.cse_slave_index(slaveIndex), &vi[0], C.size_t(1), &v[0])
+	success := C.cse_execution_slave_set_integer(execution, C.cse_slave_index(slaveIndex), &vi[0], C.size_t(1), &v[0])
+	if int(success) < 0 {
+		return false, "Unable to set integer variable value"
+	} else {
+		return true, "Successfully set integer variable value"
+	}
 }
 
-func setVariableValue(sim *Simulation, module string, signal string, causality string, valueType string, value string) {
+func setVariableValue(sim *Simulation, module string, signal string, causality string, valueType string, value string) (bool, string) {
 	fmu := findFmu(sim.MetaData, module)
 	varIndex := findVariableIndex(fmu, signal, causality, valueType)
 	switch valueType {
@@ -250,18 +275,22 @@ func setVariableValue(sim *Simulation, module string, signal string, causality s
 		val, err := strconv.ParseFloat(value, 64)
 		if err != nil {
 			log.Println(err)
+			return false, err.Error()
 		} else {
-			setReal(sim.Execution, fmu.ExecutionIndex, varIndex, val)
+			return setReal(sim.Execution, fmu.ExecutionIndex, varIndex, val)
 		}
 	case "Integer":
 		val, err := strconv.Atoi(value)
 		if err != nil {
 			log.Println(err)
+			return false, err.Error()
 		} else {
-			setInteger(sim.Execution, fmu.ExecutionIndex, varIndex, val)
+			return setInteger(sim.Execution, fmu.ExecutionIndex, varIndex, val)
 		}
 	default:
-		fmt.Println("Can't set this value:", value)
+		message := strCat("Can't set this value: ", value)
+		fmt.Println(message)
+		return false, message
 	}
 }
 
@@ -298,7 +327,7 @@ func parseFloat(argument string) float64 {
 	return f
 }
 
-func simulationTeardown(sim *Simulation) {
+func simulationTeardown(sim *Simulation) (bool, string) {
 	executionDestroy(sim.Execution)
 	observerDestroy(sim.Observer)
 	observerDestroy(sim.TrendObserver)
@@ -310,9 +339,10 @@ func simulationTeardown(sim *Simulation) {
 	sim.TrendObserver = nil
 	sim.FileObserver = nil
 	sim.MetaData = &structs.MetaData{}
+	return true, "Simulation teardown successful"
 }
 
-func initializeSimulation(sim *Simulation, fmuDir string, logDir string) (success bool, message string) {
+func initializeSimulation(sim *Simulation, fmuDir string, logDir string) (bool, string) {
 	metaData := structs.MetaData{
 		FMUs: []structs.FMU{},
 	}
@@ -345,7 +375,7 @@ func initializeSimulation(sim *Simulation, fmuDir string, logDir string) (succes
 	sim.TrendObserver = trendObserver
 	sim.FileObserver = fileObserver
 	sim.MetaData = &metaData
-	return true, ""
+	return true, "Simulation loaded successfully"
 }
 
 func strCat(strs ...string) string {
@@ -388,17 +418,19 @@ func observerStopObserving(observer *C.cse_observer, slaveIndex int, valueType s
 	return nil
 }
 
-func addToTrend(sim *Simulation, status *structs.SimulationStatus, module string, signal string, causality string, valueType string, valueReference string) {
+func addToTrend(sim *Simulation, status *structs.SimulationStatus, module string, signal string, causality string, valueType string, valueReference string) (bool, string) {
 	fmu := findFmu(sim.MetaData, module)
 	varIndex, err := strconv.Atoi(valueReference)
 	if err != nil {
-		log.Println("Cannot parse valueReference as integer", valueReference, err)
-		return
+		message := strCat("Cannot parse valueReference as integer ", valueReference, ", ", err.Error())
+		log.Println(message)
+		return false, message
 	}
 	err = observerStartObserving(sim.TrendObserver, fmu.ExecutionIndex, valueType, varIndex)
 	if err != nil {
-		log.Println("Cannot start observing", valueReference, err)
-		return
+		message := strCat("Cannot start observing variable ", err.Error())
+		log.Println(message)
+		return false, message
 	}
 	status.TrendSignals = append(status.TrendSignals, structs.TrendSignal{
 		Module:         module,
@@ -407,21 +439,27 @@ func addToTrend(sim *Simulation, status *structs.SimulationStatus, module string
 		Causality:      causality,
 		Type:           valueType,
 		ValueReference: varIndex})
+	return true, "Added variable to trend"
 }
 
-func removeAllFromTrend(sim *Simulation, status *structs.SimulationStatus) {
+func removeAllFromTrend(sim *Simulation, status *structs.SimulationStatus) (bool, string) {
+	var success = true
+	var message = "Removed all variables from trend"
 	for _, trendSignal := range status.TrendSignals {
 		err := observerStopObserving(sim.TrendObserver, trendSignal.SlaveIndex, trendSignal.Type, trendSignal.ValueReference)
 		if err != nil {
+			message = strCat("Cannot stop observing variable: ", err.Error())
+			success = false
 			log.Println("Cannot stop observing", err)
 		}
 	}
 	status.TrendSignals = []structs.TrendSignal{}
+	return success, message
 }
 
 func executeCommand(cmd []string, sim *Simulation, status *structs.SimulationStatus) (feedback structs.CommandFeedback) {
 	var success = false
-	var message = "No feedback implemented"
+	var message = "No feedback implemented for this command"
 	switch cmd[0] {
 	case "load":
 		success, message = initializeSimulation(sim, cmd[1], cmd[2])
@@ -435,34 +473,38 @@ func executeCommand(cmd []string, sim *Simulation, status *structs.SimulationSta
 		status.ConfigDir = ""
 		status.TrendSignals = []structs.TrendSignal{}
 		status.Module = ""
-		simulationTeardown(sim)
+		success, message = simulationTeardown(sim)
 		status.MetaChan <- sim.MetaData
-	case "stop":
-		return
 	case "pause":
-		executionStop(sim.Execution)
+		success, message = executionStop(sim.Execution)
 		status.Status = "pause"
 	case "play":
 		success, message = executionStart(sim.Execution)
 		status.Status = "play"
 	case "enable-realtime":
-		executionEnableRealTime(sim.Execution)
+		success, message = executionEnableRealTime(sim.Execution)
 	case "disable-realtime":
-		executionDisableRealTime(sim.Execution)
+		success, message = executionDisableRealTime(sim.Execution)
 	case "trend":
-		addToTrend(sim, status, cmd[1], cmd[2], cmd[3], cmd[4], cmd[5])
+		success, message = addToTrend(sim, status, cmd[1], cmd[2], cmd[3], cmd[4], cmd[5])
 	case "untrend":
-		removeAllFromTrend(sim, status)
+		success, message = removeAllFromTrend(sim, status)
 	case "trend-zoom":
 		status.TrendSpec = structs.TrendSpec{Auto: false, Begin: parseFloat(cmd[1]), End: parseFloat(cmd[2])}
+		success = true
+		message = strCat("Trending values from ", cmd[1], " to ", cmd[2])
 	case "trend-zoom-reset":
 		status.TrendSpec = structs.TrendSpec{Auto: true, Range: parseFloat(cmd[1])}
+		success = true
+		message = strCat("Trending last ", cmd[1], " seconds")
 	case "set-value":
-		setVariableValue(sim, cmd[1], cmd[2], cmd[3], cmd[4], cmd[5])
+		success, message = setVariableValue(sim, cmd[1], cmd[2], cmd[3], cmd[4], cmd[5])
 	case "get-module-data":
 		status.MetaChan <- sim.MetaData
+		success = true
+		message = "Fetched metadata"
 	case "signals":
-		setSignalSubscriptions(status, cmd)
+		success, message = setSignalSubscriptions(status, cmd)
 	default:
 		message = "Unknown command, this is not good"
 		fmt.Println(message, cmd)
@@ -480,8 +522,10 @@ func CommandLoop(state chan structs.JsonResponse, sim *Simulation, command chan 
 	}
 }
 
-func setSignalSubscriptions(status *structs.SimulationStatus, cmd []string) {
+func setSignalSubscriptions(status *structs.SimulationStatus, cmd []string) (bool, string) {
 	var variables []structs.Variable
+	var message = "Successfully set signal subscriptions"
+	var success = true
 	if len(cmd) > 1 {
 		status.Module = cmd[1]
 		for i, signal := range cmd {
@@ -489,7 +533,9 @@ func setSignalSubscriptions(status *structs.SimulationStatus, cmd []string) {
 				parts := strings.Split(signal, ",")
 				valRef, err := strconv.Atoi(parts[3])
 				if err != nil {
-					log.Println("Could not parse value reference", signal, err)
+					message = strCat("Could not parse value reference from: ", signal, ", ", err.Error())
+					log.Println(message)
+					success = false
 				} else {
 					variables = append(variables,
 						structs.Variable{
@@ -501,8 +547,11 @@ func setSignalSubscriptions(status *structs.SimulationStatus, cmd []string) {
 				}
 			}
 		}
+	} else {
+		message = "Successfully reset signal subscriptions"
 	}
 	status.SignalSubscriptions = variables
+	return success, message
 }
 
 func findFmu(metaData *structs.MetaData, moduleName string) (foundFmu structs.FMU) {
