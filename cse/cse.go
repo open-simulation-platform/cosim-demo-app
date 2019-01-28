@@ -52,9 +52,8 @@ func getExecutionStatus(execution *C.cse_execution) (execStatus executionStatus)
 	return
 }
 
-func createLocalSlave(fmuPath string) (slave *C.cse_slave) {
-	slave = C.cse_local_slave_create(C.CString(fmuPath))
-	return
+func createLocalSlave(fmuPath string) (*C.cse_slave) {
+	return C.cse_local_slave_create(C.CString(fmuPath))
 }
 
 func createObserver() (observer *C.cse_observer) {
@@ -342,19 +341,51 @@ func simulationTeardown(sim *Simulation) (bool, string) {
 	return true, "Simulation teardown successful"
 }
 
+func validateConfigDir(fmuDir string) (bool, string) {
+	if _, err := os.Stat(fmuDir); os.IsNotExist(err) {
+		return false, strCat(fmuDir, " does not exist")
+	}
+	files, err := ioutil.ReadDir(fmuDir)
+	if err != nil {
+		return false, err.Error()
+	}
+	var hasFMUs = false
+	for _, f := range files {
+		if strings.HasSuffix(f.Name(), ".fmu") {
+			hasFMUs = true
+		}
+	}
+	if !hasFMUs {
+		return false, strCat(fmuDir, " does not contain any FMUs")
+	}
+	return true, ""
+}
+
 func initializeSimulation(sim *Simulation, fmuDir string, logDir string) (bool, string) {
+	if valid, message := validateConfigDir(fmuDir); !valid {
+		return false, message
+	}
 	metaData := structs.MetaData{
 		FMUs: []structs.FMU{},
 	}
 	var execution *C.cse_execution
 	if hasSsdFile(fmuDir) {
 		execution = createSsdExecution(fmuDir)
+		if execution == nil {
+			return false, "Could not create execution from SystemStructure.ssd file"
+		}
 		addSsdMetadata(execution, &metaData, fmuDir)
 	} else {
 		execution = createExecution()
+		if execution == nil {
+			return false, "Could not create execution"
+		}
 		paths := getFmuPaths(fmuDir)
 		for _, path := range paths {
-			addFmu(execution, &metaData, path)
+			success := addFmu(execution, &metaData, path)
+			if !success {
+				return false, strCat("Could not add FMU to execution: ", path)
+			}
 		}
 	}
 
@@ -463,10 +494,12 @@ func executeCommand(cmd []string, sim *Simulation, status *structs.SimulationSta
 	switch cmd[0] {
 	case "load":
 		success, message = initializeSimulation(sim, cmd[1], cmd[2])
-		status.Loaded = true
-		status.ConfigDir = cmd[1]
-		status.Status = "pause"
-		status.MetaChan <- sim.MetaData
+		if success {
+			status.Loaded = true
+			status.ConfigDir = cmd[1]
+			status.Status = "pause"
+			status.MetaChan <- sim.MetaData
+		}
 	case "teardown":
 		status.Loaded = false
 		status.Status = "stopped"
@@ -620,13 +653,20 @@ func StateUpdateLoop(state chan structs.JsonResponse, simulationStatus *structs.
 	}
 }
 
-func addFmu(execution *C.cse_execution, metaData *structs.MetaData, fmuPath string) {
+func addFmu(execution *C.cse_execution, metaData *structs.MetaData, fmuPath string) (bool) {
 	log.Println("Loading: " + fmuPath)
 	localSlave := createLocalSlave(fmuPath)
+	if localSlave == nil {
+		return false
+	}
 	fmu := metadata.ReadModelDescription(fmuPath)
-
-	fmu.ExecutionIndex = executionAddSlave(execution, localSlave)
+	index := executionAddSlave(execution, localSlave)
+	if index < 0 {
+		return false
+	}
+	fmu.ExecutionIndex = index;
 	metaData.FMUs = append(metaData.FMUs, fmu)
+	return true
 }
 
 func addFmuSsd(metaData *structs.MetaData, name string, index int, fmuPath string) {
