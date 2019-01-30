@@ -1,0 +1,5 @@
+[requires]
+cse-core/0.1.0@osp/feature_151-build-conan-linux-binaries
+
+[options]
+cse-core:ci=True

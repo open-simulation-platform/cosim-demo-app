@@ -17,5 +17,9 @@ cse-server-go
 .idea
 
 # Client build directory and artifact
-target/
 resources/public/js/compiled/app.js
+
+# Dep/packr
+Gopkg.lock
+resources/
+vendor/
