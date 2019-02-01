@@ -45,6 +45,8 @@
 (defn real-time-factor [db]
   (some-> db :state :realTimeFactor (.toFixed 3)))
 
+(rf/reg-sub :real-time-factor #(real-time-factor %))
+
 (defn real-time? [db]
   (if (some-> db :state :isRealTime)
     "true"
@@ -106,6 +108,8 @@
 
 (rf/reg-sub :current-page #(:page %))
 (rf/reg-sub :vars-per-page #(:vars-per-page %))
+
+(rf/reg-sub :feedback-message #(:feedback-message %))
 
 (k/start! {:routes         routes
            :hash-routing?  true

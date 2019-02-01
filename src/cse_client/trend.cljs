@@ -92,7 +92,7 @@
         [:div.column
          (doall (map (partial range-selector @trend-range) range-configs))]
         [:div.column
-         [:button.ui.button.pull-right {:on-click #(rf/dispatch [::controller/untrend])} "Remove all"]]]
+         [:button.ui.button.right.floated {:on-click #(rf/dispatch [::controller/untrend])} "Remove all"]]]
        [:div.one.column.row
         [trend-inner {:trend-values @trend-values}]]])))
 

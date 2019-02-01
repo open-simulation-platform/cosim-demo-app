@@ -1,10 +1,14 @@
 (ns cse-client.controller
+  (:require-macros
+    [cljs.core.async.macros :refer [go go-loop]])
   (:require [kee-frame.core :as k]
             [kee-frame.websocket :as websocket]
             [cse-client.config :refer [socket-url]]
             [re-frame.loggers :as re-frame-log]
             [cljs.spec.alpha :as s]
-            [clojure.string :as str]))
+            [cljs.core.async :refer [<! timeout]]
+            [clojure.string :as str]
+            [re-frame.core :as rf]))
 
 ;; Prevent handler overwriting warnings during cljs reload.
 (re-frame-log/set-loggers!
@@ -39,11 +43,26 @@
 (s/def ::fmus (s/coll-of ::fmu))
 (s/def ::module-data (s/keys :req-un [::fmus]))
 
-(k/reg-event-db ::socket-message-received
-                (fn [db [{message :message}]]
+(k/reg-event-fx ::feedback-message
+                (fn [{:keys [db]} [message]]
+                  (when (:success message)
+                    (go
+                      (<! (timeout 3000))
+                      (rf/dispatch [::close-feedback-message])))
+                  {:db (assoc db :feedback-message message)}))
+
+(k/reg-event-db ::close-feedback-message
+                (fn [db _]
+                  (dissoc db :feedback-message)))
+
+(k/reg-event-fx ::socket-message-received
+                (fn [{:keys [db]} [{message :message}]]
                   (when-let [module-data (:module-data message)]
                     (s/assert ::module-data module-data))
-                  (update db :state merge message)))
+                  (merge
+                    {:db (update db :state merge message)}
+                    (when-let [feedback (:feedback message)]
+                           {:dispatch [::feedback-message feedback]}))))
 
 (k/reg-event-fx ::fetch-module-data
                 (fn [_ _]

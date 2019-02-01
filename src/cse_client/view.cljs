@@ -5,7 +5,8 @@
             [reagent.core :as r]
             [cse-client.controller :as controller]
             [cse-client.config :refer [socket-url]]
-            [cse-client.guide :as guide]))
+            [cse-client.guide :as guide]
+            [clojure.string :as str]))
 
 (goog-define default-load-dir "")
 (goog-define default-log-dir "")
@@ -162,6 +163,21 @@
                       :data-tooltip "Tear down current simulation, allowing for a simulation restart. Simulation must be paused."}
    "Tear down"])
 
+(defn command-feedback-message []
+  (when-let [{:keys [command message success]} @(rf/subscribe [:feedback-message])]
+    [:div.ui.message
+     {:class (if success "positive" "negative")
+      :style {:position :absolute
+              :bottom   20
+              :right    20}}
+     [:i.close.icon {:on-click #(rf/dispatch [::controller/close-feedback-message])}]
+     [:div.header (if success
+                    "Command success"
+                    "Command failure")]
+     [:p (str "Command: " command)]
+     (when-not (str/blank? message)
+       [:p (str "Message: " message)])]))
+
 (defn dashboard []
   [:div
    [:table.ui.basic.table.definition
@@ -205,8 +221,8 @@
             [:div.ui.label "logs"]]]]
          [:div.two.column.row
           [:div.column
-           [:button.ui.button.pull-right {:disabled (empty? @load-dir)
-                                          :on-click #(rf/dispatch [::controller/load @load-dir @log-dir])} "Load simulation"]]]]))))
+           [:button.ui.button.right.floated {:disabled (empty? @load-dir)
+                                             :on-click #(rf/dispatch [::controller/load @load-dir @log-dir])} "Load simulation"]]]]))))
 
 (defn root-comp []
   (let [socket-state (rf/subscribe [:kee-frame.websocket/state socket-url])
@@ -220,6 +236,9 @@
        (when (= :disconnected (:state @socket-state))
          [:div.item
           [:div "Lost server connection!"]])
+       (when @loaded?
+         [:div.item
+          [:div "RTF: " @(rf/subscribe [:real-time-factor])]])
        (when @loaded?
          [:div.item
           [:div "Time: " @(rf/subscribe [:time])]])
@@ -262,4 +281,5 @@
           [:h2.ui.inverted.icon.header
            [:i.heartbeat.icon]
            "Lost server connection!"]
-          [:div.sub.header "It looks like the server is down. Try restarting the server and hit F5"]]]])]))
+          [:div.sub.header "It looks like the server is down. Try restarting the server and hit F5"]]]])
+     [command-feedback-message]]))

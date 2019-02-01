@@ -52,7 +52,3 @@ body {
 #content table.ui.table thead th {
     border-bottom: 2px solid #eee !important;
 }
-
-.pull-right {
-    float: right !important;
-}
