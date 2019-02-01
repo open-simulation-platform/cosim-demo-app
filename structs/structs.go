@@ -1,9 +1,5 @@
 package structs
 
-import (
-	"sync"
-)
-
 type Signal struct {
 	Name      string      `json:"name"`
 	Causality string      `json:"causality"`
@@ -17,15 +13,16 @@ type Module struct {
 }
 
 type JsonResponse struct {
-	Loaded               bool          `json:"loaded"`
-	SimulationTime       float64       `json:"time"`
-	RealTimeFactor       float64       `json:"realTimeFactor"`
-	IsRealTimeSimulation bool          `json:"isRealTime"`
-	ConfigDir            string        `json:"configDir,omitempty"`
-	Status               string        `json:"status,omitempty"`
-	Module               Module        `json:"module,omitempty"`
-	TrendSignals         []TrendSignal `json:"trend-values"`
-	ModuleData           *MetaData     `json:"module-data,omitempty"`
+	Loaded               bool            `json:"loaded"`
+	SimulationTime       float64         `json:"time"`
+	RealTimeFactor       float64         `json:"realTimeFactor"`
+	IsRealTimeSimulation bool            `json:"isRealTime"`
+	ConfigDir            string          `json:"configDir,omitempty"`
+	Status               string          `json:"status,omitempty"`
+	Module               Module          `json:"module,omitempty"`
+	TrendSignals         []TrendSignal   `json:"trend-values"`
+	ModuleData           *MetaData       `json:"module-data,omitempty"`
+	Feedback             *CommandFeedback `json:"feedback,omitempy"`
 }
 
 type TrendSignal struct {
@@ -47,7 +44,6 @@ type TrendSpec struct {
 }
 
 type SimulationStatus struct {
-	Mutex               sync.Mutex
 	Loaded              bool
 	ConfigDir           string
 	Module              string
@@ -74,4 +70,10 @@ type FMU struct {
 
 type MetaData struct {
 	FMUs []FMU `json:"fmus"`
+}
+
+type CommandFeedback struct {
+	Success bool   `json:"success"`
+	Message string `json:"message"`
+	Command string `json:"command"`
 }
