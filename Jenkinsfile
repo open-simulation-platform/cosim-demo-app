@@ -3,7 +3,7 @@ pipeline {
 
     triggers {
         upstream(
-            upstreamProjects: 'open-simulation-platform/cse-core/feature/151-build-conan-linux-binaries, open-simulation-platform/cse-server-go/master',
+            upstreamProjects: 'open-simulation-platform/cse-core/feature/151-build-conan-linux-binaries, open-simulation-platform/cse-client/master',
             threshold: hudson.model.Result.SUCCESS)
     }
 
@@ -69,9 +69,9 @@ pipeline {
                     }
 
                     environment {
-                        GOPATH = "${WORKSPACE}:${WORKSPACE}/src/cse-server-go/.deps/src"
-                        CGO_CFLAGS = "-I${WORKSPACE}/src/linux/release/include"
-                        CGO_LDFLAGS = "-L${WORKSPACE}/src/linux/release/lib -lcsecorec -lcsecorecpp -Wl,-rpath,$ORIGIN/../lib"
+                        GOPATH = "${WORKSPACE}"
+                        //CGO_CFLAGS = '${CPPFLAGS}'
+                        CGO_LDFLAGS = "-lcsecorec -lcsecorecpp -Wl,-rpath,$ORIGIN/../lib"
                         CONAN_USER_HOME = '/conan_repo'
                         CONAN_USER_HOME_SHORT = 'None'
                         OSP_CONAN_CREDS = credentials('jenkins-osp-conan-creds')
@@ -79,6 +79,8 @@ pipeline {
                     
                     steps {
                         sh 'echo building on Linux'
+
+                        sh 'env'
 
                         copyArtifacts(
                             projectName: 'open-simulation-platform/cse-core/master',
@@ -96,7 +98,7 @@ pipeline {
                             sh 'conan install . -s build_type=Release -s compiler.libcxx=libstdc++11'
                             sh 'go clean -cache'
                             sh 'dep ensure'
-                            sh 'packr build'
+                            sh '. ./activate_build.sh && CGO_CPPFLAGS=${CPPFLAGS} CGO_LDFLAGS="${LDFLAGS} ${CGO_LDFLAGS}" packr build -v'
                         }
 
                         dir ('src/cse-server-go/distribution/bin') {

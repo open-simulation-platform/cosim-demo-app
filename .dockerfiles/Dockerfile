@@ -13,5 +13,10 @@ RUN apt-get update && \
     go-dep \
     && rm -rf /var/lib/apt/lists/*
 
+# Install packr
+ENV GOPATH=/go
+ENV PATH=${GOPATH}/bin:${PATH}
+RUN go get -v -u github.com/gobuffalo/packr/packr
+
 # Install  Conan package manager
 RUN pip3 install conan
