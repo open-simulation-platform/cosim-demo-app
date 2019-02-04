@@ -6,7 +6,7 @@ RUN apt-get update && \
     apt-get install -y --no-install-recommends \
     build-essential \
     git \
-    python-dev \
+    python3-setuptools \
     python3-pip \
     golang-go \
     go-dep \
