@@ -7,6 +7,7 @@ RUN apt-get update && \
     build-essential \
     git \
     python3-setuptools \
+    python3-wheel \
     python3-pip \
     golang-go \
     go-dep \
