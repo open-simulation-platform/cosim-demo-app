@@ -71,7 +71,7 @@ pipeline {
                     environment {
                         GOPATH = "${WORKSPACE}"
                         //CGO_CFLAGS = '${CPPFLAGS}'
-                        CGO_LDFLAGS = "-lcsecorec -lcsecorecpp -Wl,-rpath,$ORIGIN/../lib"
+                        CGO_LDFLAGS = "-lcsecorec -lcsecorecpp -Wl,-rpath,\$ORIGIN/../lib"
                         CONAN_USER_HOME = '/conan_repo'
                         CONAN_USER_HOME_SHORT = 'None'
                         OSP_CONAN_CREDS = credentials('jenkins-osp-conan-creds')
@@ -98,7 +98,7 @@ pipeline {
                             sh 'conan install . -s build_type=Release -s compiler.libcxx=libstdc++11'
                             sh 'go clean -cache'
                             sh 'dep ensure'
-                            sh '. ./activate_build.sh && CGO_CPPFLAGS=${CPPFLAGS} CGO_LDFLAGS="${LDFLAGS} ${CGO_LDFLAGS}" packr build -v'
+                            sh '. ./activate_build.sh && CGO_CPPFLAGS=${CPPFLAGS} CGO_LDFLAGS="${LIBS} ${LDFLAGS} ${CGO_LDFLAGS}" packr build -v'
                         }
 
                         dir ('src/cse-server-go/distribution/bin') {
