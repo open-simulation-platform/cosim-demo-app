@@ -70,56 +70,74 @@ pipeline {
 
                     environment {
                         GOPATH = "${WORKSPACE}"
-                        //CGO_CFLAGS = '${CPPFLAGS}'
                         CGO_LDFLAGS = "-lcsecorec -lcsecorecpp -Wl,-rpath,\$ORIGIN/../lib"
                         CONAN_USER_HOME = '/conan_repo'
                         CONAN_USER_HOME_SHORT = 'None'
                         OSP_CONAN_CREDS = credentials('jenkins-osp-conan-creds')
                     }
-                    
-                    steps {
-                        sh 'echo building on Linux'
 
-                        sh 'env'
-
-                        copyArtifacts(
-                            projectName: 'open-simulation-platform/cse-core/master',
-                            filter: 'linux/release/**/*',
-                            target: 'src')
-                        
-                        copyArtifacts(
-                            projectName: 'open-simulation-platform/cse-client/master',
-                            filter: 'resources/public/**/*',
-                            target: 'src/cse-server-go')
-                        
-                        dir ('src/cse-server-go') {
-                            sh 'conan remote add osp https://osp-conan.azurewebsites.net/artifactory/api/conan/conan-local --force'
-                            sh 'conan user -p $OSP_CONAN_CREDS_PSW -r osp $OSP_CONAN_CREDS_USR'
-                            sh 'conan install . -s build_type=Release -s compiler.libcxx=libstdc++11'
-                            sh 'go clean -cache'
-                            sh 'dep ensure'
-                            sh '. ./activate_build.sh && CGO_CPPFLAGS=${CPPFLAGS} CGO_LDFLAGS="${LIBS} ${LDFLAGS} ${CGO_LDFLAGS}" packr build -v'
+                    stages {
+                        stage ('Get dependencies') {
+                            steps {
+                                copyArtifacts(
+                                    projectName: 'open-simulation-platform/cse-client/master',
+                                    filter: 'resources/public/**/*',
+                                    target: 'src/cse-server-go')
+                                
+                                dir ('src/cse-server-go') {
+                                    sh 'conan remote add osp https://osp-conan.azurewebsites.net/artifactory/api/conan/conan-local --force'
+                                    sh 'conan user -p $OSP_CONAN_CREDS_PSW -r osp $OSP_CONAN_CREDS_USR'
+                                    sh 'conan install . -s build_type=Release -s compiler.libcxx=libstdc++11'
+                                    sh 'dep ensure'
+                                }
+                            }
                         }
-
-                        dir ('src/cse-server-go/distribution/bin') {
-                            sh 'cp -rf ../../cse-server-go .'
+                        stage ('Packr') {
+                            steps {
+                                dir ('src/cse-server-go') {
+                                    sh 'go clean -cache'
+                                    sh '. ./activate_build.sh && CGO_CPPFLAGS=${CPPFLAGS} CGO_LDFLAGS="${LIBS} ${LDFLAGS} ${CGO_LDFLAGS}" packr build -v'
+                                }
+                            }
                         }
-                        
-                        dir ('src/cse-server-go/distribution/lib') {
-                            sh "cp -rf ${WORKSPACE}/src/linux/release/lib/* ."
+                        stage ('Prepare distribution') {
+                            steps {
+                                dir ('src/cse-server-go/distribution/bin') {
+                                    sh 'cp -rf ../../cse-server-go .'
+                                }
+                            }
                         }
-
-                        dir ('src/cse-server-go/distribution') {
-                            zip (
-                                zipFile: 'cse-server.zip',
-                                archive: true
-                            )
+                        stage ('Zip distribution') {
+                            when {
+                                not { buildingTag() }
+                                branch 'feature/add-client-build-artifacts-and-run-packr'
+                            }
+                            steps {
+                                dir ('src/cse-server-go/distribution') {
+                                    zip (
+                                        zipFile: "cse-server-go-linux.zip",
+                                        archive: true
+                                    )
+                                }
+                            }
+                        }
+                        stage ('Zip release') {
+                            when { buildingTag() }
+                            steps {
+                                dir ('src/cse-server-go/distribution') {
+                                    zip (
+                                        zipFile: "cse-server-go-${env.TAG_NAME}-linux.zip",
+                                        archive: true
+                                    )
+                                }
+                            }
                         }
                     }
-
                     post {
-                        success {
-                            archiveArtifacts artifacts: 'src/cse-server-go/cse-server-go',  fingerprint: true
+                        cleanup {
+                            dir('src/cse-server-go/distribution') {
+                                deleteDir();
+                            }
                         }
                     }
                 }
