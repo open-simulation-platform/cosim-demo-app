@@ -41,7 +41,7 @@ func Server(command chan []string, state chan structs.JsonResponse, simulationSt
 		body, _ := ioutil.ReadAll(r.Body)
 		commandRequest := []string{}
 		json.Unmarshal(body, &commandRequest)
-	command <- commandRequest
+		command <- commandRequest
 	}).Methods("PUT")
 
 	router.HandleFunc("/ws", WebsocketHandler(command, state))

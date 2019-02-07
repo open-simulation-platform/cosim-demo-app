@@ -52,7 +52,7 @@ func getExecutionStatus(execution *C.cse_execution) (execStatus executionStatus)
 	return
 }
 
-func createLocalSlave(fmuPath string) (*C.cse_slave) {
+func createLocalSlave(fmuPath string) *C.cse_slave {
 	return C.cse_local_slave_create(C.CString(fmuPath))
 }
 
@@ -205,7 +205,7 @@ func observerGetRealSamples(observer *C.cse_observer, signal *structs.TrendSigna
 	variableIndex := C.cse_variable_index(signal.ValueReference)
 
 	stepNumbers := make([]C.cse_step_number, 2)
-	var success C.int;
+	var success C.int
 	if spec.Auto {
 		duration := C.cse_duration(spec.Range * 1e9)
 		success = C.cse_observer_get_step_numbers_for_duration(observer, slaveIndex, duration, &stepNumbers[0])
@@ -428,28 +428,28 @@ func toVariableType(valueType string) (C.cse_variable_type, error) {
 	case "String":
 		return C.CSE_STRING, nil
 	}
-	return C.CSE_REAL, errors.New(strCat("Unknown variable type:", valueType));
+	return C.CSE_REAL, errors.New(strCat("Unknown variable type:", valueType))
 }
 
-func observerStartObserving(observer *C.cse_observer, slaveIndex int, valueType string, varIndex int) (error) {
+func observerStartObserving(observer *C.cse_observer, slaveIndex int, valueType string, varIndex int) error {
 	variableType, err := toVariableType(valueType)
 	if err != nil {
 		return err
 	}
-	C.cse_observer_start_observing(observer, C.cse_slave_index(slaveIndex), variableType, C.cse_variable_index(varIndex));
+	C.cse_observer_start_observing(observer, C.cse_slave_index(slaveIndex), variableType, C.cse_variable_index(varIndex))
 	return nil
 }
 
-func observerStopObserving(observer *C.cse_observer, slaveIndex int, valueType string, varIndex int) (error) {
+func observerStopObserving(observer *C.cse_observer, slaveIndex int, valueType string, varIndex int) error {
 	variableType, err := toVariableType(valueType)
 	if err != nil {
 		return err
 	}
-	C.cse_observer_stop_observing(observer, C.cse_slave_index(slaveIndex), variableType, C.cse_variable_index(varIndex));
+	C.cse_observer_stop_observing(observer, C.cse_slave_index(slaveIndex), variableType, C.cse_variable_index(varIndex))
 	return nil
 }
 
-func addToTrend(sim *Simulation, status *structs.SimulationStatus, module string, signal string, causality string, valueType string, valueReference string) (bool, string) {
+func addToTrend(sim *Simulation, status *structs.SimulationStatus, module string, signal string, causality string, valueType string, valueReference string, plotType string) (bool, string) {
 	fmu := findFmu(sim.MetaData, module)
 	varIndex, err := strconv.Atoi(valueReference)
 	if err != nil {
@@ -469,6 +469,7 @@ func addToTrend(sim *Simulation, status *structs.SimulationStatus, module string
 		Signal:         signal,
 		Causality:      causality,
 		Type:           valueType,
+		PlotType:       plotType,
 		ValueReference: varIndex})
 	return true, "Added variable to trend"
 }
@@ -519,7 +520,7 @@ func executeCommand(cmd []string, sim *Simulation, status *structs.SimulationSta
 	case "disable-realtime":
 		success, message = executionDisableRealTime(sim.Execution)
 	case "trend":
-		success, message = addToTrend(sim, status, cmd[1], cmd[2], cmd[3], cmd[4], cmd[5])
+		success, message = addToTrend(sim, status, cmd[1], cmd[2], cmd[3], cmd[4], cmd[5], cmd[6])
 	case "untrend":
 		success, message = removeAllFromTrend(sim, status)
 	case "trend-zoom":
@@ -653,7 +654,7 @@ func StateUpdateLoop(state chan structs.JsonResponse, simulationStatus *structs.
 	}
 }
 
-func addFmu(execution *C.cse_execution, metaData *structs.MetaData, fmuPath string) (bool) {
+func addFmu(execution *C.cse_execution, metaData *structs.MetaData, fmuPath string) bool {
 	log.Println("Loading: " + fmuPath)
 	localSlave := createLocalSlave(fmuPath)
 	if localSlave == nil {
@@ -664,7 +665,7 @@ func addFmu(execution *C.cse_execution, metaData *structs.MetaData, fmuPath stri
 	if index < 0 {
 		return false
 	}
-	fmu.ExecutionIndex = index;
+	fmu.ExecutionIndex = index
 	metaData.FMUs = append(metaData.FMUs, fmu)
 	return true
 }

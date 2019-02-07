@@ -13,15 +13,15 @@ type Module struct {
 }
 
 type JsonResponse struct {
-	Loaded               bool            `json:"loaded"`
-	SimulationTime       float64         `json:"time"`
-	RealTimeFactor       float64         `json:"realTimeFactor"`
-	IsRealTimeSimulation bool            `json:"isRealTime"`
-	ConfigDir            string          `json:"configDir,omitempty"`
-	Status               string          `json:"status,omitempty"`
-	Module               Module          `json:"module,omitempty"`
-	TrendSignals         []TrendSignal   `json:"trend-values"`
-	ModuleData           *MetaData       `json:"module-data,omitempty"`
+	Loaded               bool             `json:"loaded"`
+	SimulationTime       float64          `json:"time"`
+	RealTimeFactor       float64          `json:"realTimeFactor"`
+	IsRealTimeSimulation bool             `json:"isRealTime"`
+	ConfigDir            string           `json:"configDir,omitempty"`
+	Status               string           `json:"status,omitempty"`
+	Module               Module           `json:"module,omitempty"`
+	TrendSignals         []TrendSignal    `json:"trend-values"`
+	ModuleData           *MetaData        `json:"module-data,omitempty"`
 	Feedback             *CommandFeedback `json:"feedback,omitempy"`
 }
 
@@ -31,6 +31,7 @@ type TrendSignal struct {
 	Signal          string    `json:"signal"`
 	Causality       string    `json:"causality"`
 	Type            string    `json:"type"`
+	PlotType        string    `json:"plot-type"`
 	ValueReference  int       `json:"value-reference"`
 	TrendValues     []float64 `json:"values,omitempty"`
 	TrendTimestamps []float64 `json:"labels,omitempty"`
