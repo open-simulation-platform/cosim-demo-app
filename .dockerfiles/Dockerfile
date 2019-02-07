@@ -5,6 +5,7 @@ COPY sources-18.04-azure.list /etc/apt/sources.list
 RUN apt-get update && \
     apt-get install -y --no-install-recommends \
     build-essential \
+    patchelf \
     git \
     python3-setuptools \
     python3-wheel \

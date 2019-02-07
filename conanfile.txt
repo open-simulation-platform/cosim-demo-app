@@ -5,6 +5,7 @@ virtualbuildenv
 cse-core/0.1.0@osp/feature_151-build-conan-linux-binaries
 
 [imports]
+include, cse.h                  -> ./include
 bin, *.dll                      -> ./distribution/lib
 lib, libboost_context.so.*      -> ./distribution/lib
 lib, libboost_fiber.so.*        -> ./distribution/lib
