@@ -12,7 +12,7 @@ pipeline {
     stages {
         stage('Build server') {
             parallel {
-                stage('Build on Windows') {
+                stage('Windows') {
                     agent { label 'windows' }
 
                     environment {
@@ -58,7 +58,7 @@ pipeline {
                         }
                     }
                 }
-                stage ('Build on Linux') {
+                stage ('Linux') {
                     agent {
                         dockerfile {
                             filename 'Dockerfile'
@@ -70,7 +70,7 @@ pipeline {
 
                     environment {
                         GOPATH = "${WORKSPACE}"
-                        CGO_LDFLAGS = "-lcsecorec -lcsecorecpp -Wl,-rpath,\$ORIGIN/../lib"
+                        CGO_LDFLAGS = "-lcsecorec -lcsecorecpp -Ldistribution/lib -Wl,-rpath,\$ORIGIN/../lib"
                         CONAN_USER_HOME = '/conan_repo'
                         CONAN_USER_HOME_SHORT = 'None'
                         OSP_CONAN_CREDS = credentials('jenkins-osp-conan-creds')
@@ -88,6 +88,7 @@ pipeline {
                                     sh 'conan remote add osp https://osp-conan.azurewebsites.net/artifactory/api/conan/conan-local --force'
                                     sh 'conan user -p $OSP_CONAN_CREDS_PSW -r osp $OSP_CONAN_CREDS_USR'
                                     sh 'conan install . -s build_type=Release -s compiler.libcxx=libstdc++11'
+                                    sh 'patchelf --set-rpath \$ORIGIN/../lib distribution/lib/*'
                                     sh 'dep ensure'
                                 }
                             }
@@ -96,7 +97,7 @@ pipeline {
                             steps {
                                 dir ('src/cse-server-go') {
                                     sh 'go clean -cache'
-                                    sh '. ./activate_build.sh && CGO_CPPFLAGS=${CPPFLAGS} CGO_LDFLAGS="${LIBS} ${LDFLAGS} ${CGO_LDFLAGS}" packr build -v'
+                                    sh '. ./activate_build.sh && CGO_CPPFLAGS=${CPPFLAGS} CGO_LDFLAGS="${LDFLAGS} ${CGO_LDFLAGS}" packr build -v'
                                 }
                             }
                         }
