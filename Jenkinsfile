@@ -19,8 +19,8 @@ pipeline {
                         GOPATH = "${WORKSPACE}"
                         GOBIN = "${WORKSPACE}/bin"
                         PATH = "${env.MINGW_HOME}/bin;${GOBIN};${env.PATH}"
-                        CGO_CFLAGS = "-I${WORKSPACE}/include"
-                        CGO_LDFLAGS = "-L${WORKSPACE}/dist/bin -lcsecorec"
+                        CGO_CFLAGS = "-I${WORKSPACE}/src/cse-server-go/include"
+                        CGO_LDFLAGS = "-L${WORKSPACE}/src/cse-server-go/dist/bin -lcsecorec"
                         CONAN_USER_HOME = "${env.BASE}/conan-repositories/${env.EXECUTOR_NUMBER}"
                         CONAN_USER_HOME_SHORT = "${env.CONAN_USER_HOME}"
                         OSP_CONAN_CREDS = credentials('jenkins-osp-conan-creds')
@@ -32,24 +32,18 @@ pipeline {
                     }
 
                     stages {
-                        stage ('Get tools') {
+                        stage ('Get dependencies') {
                             steps {
-                                dir ('src/cse-server-go') {
-                                    sh 'go get github.com/gobuffalo/packr/packr'
-                                }
                                 dir ("${GOBIN}") {
                                     sh 'curl https://raw.githubusercontent.com/golang/dep/master/install.sh | sh'
                                 }
-                            }
-                        }
-                        stage ('Get dependencies') {
-                            steps {
                                 copyArtifacts(
                                     projectName: 'open-simulation-platform/cse-client/master',
                                     filter: 'resources/public/**/*',
                                     target: 'src/cse-server-go')
                                 
                                 dir ('src/cse-server-go') {
+                                    sh 'go get github.com/gobuffalo/packr/packr'
                                     sh 'conan remote add osp https://osp-conan.azurewebsites.net/artifactory/api/conan/conan-local --force'
                                     sh 'conan user -p $OSP_CONAN_CREDS_PSW -r osp $OSP_CONAN_CREDS_USR'
                                     sh 'conan install . -s build_type=Release'
