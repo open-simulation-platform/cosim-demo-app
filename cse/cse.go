@@ -498,6 +498,12 @@ func addToTrend(sim *Simulation, status *structs.SimulationStatus, module string
 	return true, "Added variable to trend"
 }
 
+func setTrendLabel(status *structs.SimulationStatus, trendIndex string, trendLabel string) (bool, string) {
+	idx, _ := strconv.Atoi(trendIndex)
+	status.Trends[idx].Label = trendLabel
+	return true, "Modified trend label"
+}
+
 func removeAllFromTrend(sim *Simulation, status *structs.SimulationStatus, trendIndex string) (bool, string) {
 	var success = true
 	var message = "Removed all variables from trend"
@@ -551,6 +557,8 @@ func executeCommand(cmd []string, sim *Simulation, status *structs.SimulationSta
 		success, message = addToTrend(sim, status, cmd[1], cmd[2], cmd[3], cmd[4], cmd[5], cmd[6])
 	case "untrend":
 		success, message = removeAllFromTrend(sim, status, cmd[1])
+	case "setlabel":
+		success, message = setTrendLabel(status, cmd[1], cmd[2])
 	case "trend-zoom":
 		status.TrendSpec = structs.TrendSpec{Auto: false, Begin: parseFloat(cmd[1]), End: parseFloat(cmd[2])}
 		success = true
