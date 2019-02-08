@@ -6,12 +6,21 @@ cse-core/0.1.0@osp/feature_151-build-conan-linux-binaries
 
 [imports]
 include, cse.h                  -> ./include
-bin, *.dll                      -> ./distribution/lib
-lib, libboost_context.so.*      -> ./distribution/lib
-lib, libboost_fiber.so.*        -> ./distribution/lib
-lib, libboost_filesystem.so.*   -> ./distribution/lib
-lib, libboost_log.so.*          -> ./distribution/lib
-lib, libboost_system.so.*       -> ./distribution/lib
-lib, libboost_thread.so*        -> ./distribution/lib
-lib, libcse*.so                 -> ./distribution/lib
-lib, libzip.so*                 -> ./distribution/lib
+
+bin, boost_context.dll          -> ./dist/bin
+bin, boost_fiber.dll            -> ./dist/bin
+bin, boost_filesystem.dll       -> ./dist/bin
+bin, boost_log.dll              -> ./dist/bin
+bin, boost_system.dll           -> ./dist/bin
+bin, boost_thread.dll           -> ./dist/bin
+bin, cse*.dll                   -> ./dist/bin
+bin, zip.dll                    -> ./dist/bin
+
+lib, libboost_context.so.*      -> ./dist/lib
+lib, libboost_fiber.so.*        -> ./dist/lib
+lib, libboost_filesystem.so.*   -> ./dist/lib
+lib, libboost_log.so.*          -> ./dist/lib
+lib, libboost_system.so.*       -> ./dist/lib
+lib, libboost_thread.so*        -> ./dist/lib
+lib, libcse*.so                 -> ./dist/lib
+lib, libzip.so*                 -> ./dist/lib
