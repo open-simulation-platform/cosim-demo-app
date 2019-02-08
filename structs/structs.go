@@ -20,7 +20,7 @@ type JsonResponse struct {
 	ConfigDir            string           `json:"configDir,omitempty"`
 	Status               string           `json:"status,omitempty"`
 	Module               Module           `json:"module,omitempty"`
-	TrendSignals         []TrendSignal    `json:"trend-values"`
+	Trends               []Trend          `json:"trends"`
 	ModuleData           *MetaData        `json:"module-data,omitempty"`
 	Feedback             *CommandFeedback `json:"feedback,omitempy"`
 }
@@ -35,6 +35,11 @@ type TrendSignal struct {
 	ValueReference  int       `json:"value-reference"`
 	TrendValues     []float64 `json:"values,omitempty"`
 	TrendTimestamps []float64 `json:"timestamps,omitempty"`
+}
+
+type Trend struct {
+	Id           int           `json:"id"`
+	TrendSignals []TrendSignal `json:"trend-values"`
 }
 
 type TrendSpec struct {
