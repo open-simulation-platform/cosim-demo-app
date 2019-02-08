@@ -34,7 +34,7 @@ type TrendSignal struct {
 	PlotType        string    `json:"plot-type"`
 	ValueReference  int       `json:"value-reference"`
 	TrendValues     []float64 `json:"values,omitempty"`
-	TrendTimestamps []float64 `json:"labels,omitempty"`
+	TrendTimestamps []float64 `json:"timestamps,omitempty"`
 }
 
 type TrendSpec struct {
