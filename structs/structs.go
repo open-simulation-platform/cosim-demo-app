@@ -31,7 +31,6 @@ type TrendSignal struct {
 	Signal          string    `json:"signal"`
 	Causality       string    `json:"causality"`
 	Type            string    `json:"type"`
-	PlotType        string    `json:"plot-type"`
 	ValueReference  int       `json:"value-reference"`
 	TrendValues     []float64 `json:"values,omitempty"`
 	TrendTimestamps []float64 `json:"timestamps,omitempty"`
@@ -39,6 +38,8 @@ type TrendSignal struct {
 
 type Trend struct {
 	Id           int           `json:"id"`
+	PlotType     string        `json:"plot-type"`
+	Label        string        `json:"label"`
 	TrendSignals []TrendSignal `json:"trend-values"`
 }
 
@@ -54,7 +55,7 @@ type SimulationStatus struct {
 	ConfigDir           string
 	Module              string
 	SignalSubscriptions []Variable
-	TrendSignals        []TrendSignal
+	Trends              []Trend
 	TrendSpec           TrendSpec
 	Status              string
 	MetaChan            chan *MetaData

@@ -14,10 +14,10 @@ func main() {
 	state := make(chan structs.JsonResponse, 10)
 
 	simulationStatus := structs.SimulationStatus{
-		Loaded:       false,
-		Status:       "stopped",
-		MetaChan:     make(chan *structs.MetaData, 5),
-		TrendSignals: []structs.TrendSignal{},
+		Loaded:   false,
+		Status:   "stopped",
+		MetaChan: make(chan *structs.MetaData, 5),
+		Trends:   []structs.Trend{},
 		TrendSpec: structs.TrendSpec{
 			Auto:  true,
 			Range: 10.0},

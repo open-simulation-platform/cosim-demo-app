@@ -304,12 +304,14 @@ func findVariableIndex(fmu structs.FMU, signalName string, causality string, val
 
 func TrendLoop(sim *Simulation, status *structs.SimulationStatus) {
 	for {
-		if len(status.TrendSignals) > 0 {
-			for i, _ := range status.TrendSignals {
-				var trend = &status.TrendSignals[i]
-				switch trend.Type {
-				case "Real":
-					observerGetRealSamples(sim.TrendObserver, trend, status.TrendSpec)
+		for _, trend := range status.Trends {
+			if len(trend.TrendSignals) > 0 {
+				for i, _ := range trend.TrendSignals {
+					var trend = &trend.TrendSignals[i]
+					switch trend.Type {
+					case "Real":
+						observerGetRealSamples(sim.TrendObserver, trend, status.TrendSpec)
+					}
 				}
 			}
 		}
@@ -417,6 +419,17 @@ func strCat(strs ...string) string {
 	return sb.String()
 }
 
+func generateNextTrendId(status *structs.SimulationStatus) int {
+	var maxId = 0
+	for _, trend := range status.Trends {
+		if trend.Id > maxId {
+			maxId = trend.Id
+		}
+	}
+
+	return maxId + 1
+}
+
 func toVariableType(valueType string) (C.cse_variable_type, error) {
 	switch valueType {
 	case "Real":
@@ -449,9 +462,21 @@ func observerStopObserving(observer *C.cse_observer, slaveIndex int, valueType s
 	return nil
 }
 
-func addToTrend(sim *Simulation, status *structs.SimulationStatus, module string, signal string, causality string, valueType string, valueReference string, plotType string) (bool, string) {
+func addNewTrend(status *structs.SimulationStatus, plotType string, label string) (bool, string) {
+	id := generateNextTrendId(status)
+
+	status.Trends = append(status.Trends, structs.Trend{
+		Id:           id,
+		PlotType:     plotType,
+		Label:        label,
+		TrendSignals: []structs.TrendSignal{}})
+	return true, "Added new trend"
+}
+
+func addToTrend(sim *Simulation, status *structs.SimulationStatus, module string, signal string, causality string, valueType string, valueReference string, plotIndex string) (bool, string) {
 	fmu := findFmu(sim.MetaData, module)
 	varIndex, err := strconv.Atoi(valueReference)
+	idx, _ := strconv.Atoi(plotIndex)
 	if err != nil {
 		message := strCat("Cannot parse valueReference as integer ", valueReference, ", ", err.Error())
 		log.Println(message)
@@ -463,21 +488,22 @@ func addToTrend(sim *Simulation, status *structs.SimulationStatus, module string
 		log.Println(message)
 		return false, message
 	}
-	status.TrendSignals = append(status.TrendSignals, structs.TrendSignal{
+	status.Trends[idx].TrendSignals = append(status.Trends[idx].TrendSignals, structs.TrendSignal{
 		Module:         module,
 		SlaveIndex:     fmu.ExecutionIndex,
 		Signal:         signal,
 		Causality:      causality,
 		Type:           valueType,
-		PlotType:       plotType,
 		ValueReference: varIndex})
 	return true, "Added variable to trend"
 }
 
-func removeAllFromTrend(sim *Simulation, status *structs.SimulationStatus) (bool, string) {
+func removeAllFromTrend(sim *Simulation, status *structs.SimulationStatus, trendIndex string) (bool, string) {
 	var success = true
 	var message = "Removed all variables from trend"
-	for _, trendSignal := range status.TrendSignals {
+
+	idx, _ := strconv.Atoi(trendIndex)
+	for _, trendSignal := range status.Trends[idx].TrendSignals {
 		err := observerStopObserving(sim.TrendObserver, trendSignal.SlaveIndex, trendSignal.Type, trendSignal.ValueReference)
 		if err != nil {
 			message = strCat("Cannot stop observing variable: ", err.Error())
@@ -485,7 +511,7 @@ func removeAllFromTrend(sim *Simulation, status *structs.SimulationStatus) (bool
 			log.Println("Cannot stop observing", err)
 		}
 	}
-	status.TrendSignals = []structs.TrendSignal{}
+	status.Trends[idx].TrendSignals = []structs.TrendSignal{}
 	return success, message
 }
 
@@ -505,7 +531,7 @@ func executeCommand(cmd []string, sim *Simulation, status *structs.SimulationSta
 		status.Loaded = false
 		status.Status = "stopped"
 		status.ConfigDir = ""
-		status.TrendSignals = []structs.TrendSignal{}
+		status.Trends = []structs.Trend{}
 		status.Module = ""
 		success, message = simulationTeardown(sim)
 		status.MetaChan <- sim.MetaData
@@ -519,10 +545,12 @@ func executeCommand(cmd []string, sim *Simulation, status *structs.SimulationSta
 		success, message = executionEnableRealTime(sim.Execution)
 	case "disable-realtime":
 		success, message = executionDisableRealTime(sim.Execution)
-	case "trend":
+	case "newtrend":
+		success, message = addNewTrend(status, cmd[1], cmd[2])
+	case "addtotrend":
 		success, message = addToTrend(sim, status, cmd[1], cmd[2], cmd[3], cmd[4], cmd[5], cmd[6])
 	case "untrend":
-		success, message = removeAllFromTrend(sim, status)
+		success, message = removeAllFromTrend(sim, status, cmd[1])
 	case "trend-zoom":
 		status.TrendSpec = structs.TrendSpec{Auto: false, Begin: parseFloat(cmd[1]), End: parseFloat(cmd[2])}
 		success = true
@@ -639,7 +667,7 @@ func GenerateJsonResponse(status *structs.SimulationStatus, sim *Simulation, fee
 		response.IsRealTimeSimulation = execStatus.isRealTimeSimulation
 		response.Module = findModuleData(status, sim.MetaData, sim.Observer)
 		response.ConfigDir = status.ConfigDir
-		response.TrendSignals = status.TrendSignals
+		response.Trends = status.Trends
 	}
 	if (structs.CommandFeedback{}) != feedback {
 		response.Feedback = &feedback
