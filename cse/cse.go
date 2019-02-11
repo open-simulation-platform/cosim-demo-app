@@ -57,7 +57,7 @@ func createLocalSlave(fmuPath string) (*C.cse_slave) {
 }
 
 func createObserver() (observer *C.cse_observer) {
-	observer = C.cse_buffered_membuffer_observer_create(C.size_t(1))
+	observer = C.cse_time_series_observer_create()
 	return
 }
 
