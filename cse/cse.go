@@ -521,6 +521,14 @@ func removeAllFromTrend(sim *Simulation, status *structs.SimulationStatus, trend
 	return success, message
 }
 
+func removeTrend(status *structs.SimulationStatus, trendIndex string) (bool, string) {
+	idx, _ := strconv.Atoi(trendIndex)
+
+	_ = append(status.Trends[:idx], status.Trends[idx+1:]...)
+
+	return true, "Removed trend"
+}
+
 func executeCommand(cmd []string, sim *Simulation, status *structs.SimulationStatus) (feedback structs.CommandFeedback) {
 	var success = false
 	var message = "No feedback implemented for this command"
@@ -557,6 +565,8 @@ func executeCommand(cmd []string, sim *Simulation, status *structs.SimulationSta
 		success, message = addToTrend(sim, status, cmd[1], cmd[2], cmd[3], cmd[4], cmd[5], cmd[6])
 	case "untrend":
 		success, message = removeAllFromTrend(sim, status, cmd[1])
+	case "removetrend":
+		success, message = removeTrend(status, cmd[1])
 	case "setlabel":
 		success, message = setTrendLabel(status, cmd[1], cmd[2])
 	case "trend-zoom":
