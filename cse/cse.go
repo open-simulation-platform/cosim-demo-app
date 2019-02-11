@@ -524,7 +524,11 @@ func removeAllFromTrend(sim *Simulation, status *structs.SimulationStatus, trend
 func removeTrend(status *structs.SimulationStatus, trendIndex string) (bool, string) {
 	idx, _ := strconv.Atoi(trendIndex)
 
-	_ = append(status.Trends[:idx], status.Trends[idx+1:]...)
+	if len(status.Trends) > 1 {
+		status.Trends = append(status.Trends[:idx], status.Trends[idx+1:]...)
+	} else {
+		status.Trends = []structs.Trend{}
+	}
 
 	return true, "Removed trend"
 }
