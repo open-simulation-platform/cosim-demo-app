@@ -236,8 +236,8 @@ func observerGetRealSamples(observer *C.cse_observer, signal *structs.TrendSigna
 		trendVals[i] = float64(realOutVal[i])
 		times[i] = 1e-9 * float64(timeVal[i])
 	}
-	signal.TrendTimestamps = times
-	signal.TrendValues = trendVals
+	signal.TrendXValues = times
+	signal.TrendYValues = trendVals
 }
 
 func setReal(execution *C.cse_execution, slaveIndex int, variableIndex int, value float64) (bool, string) {
@@ -475,13 +475,20 @@ func addNewTrend(status *structs.SimulationStatus, plotType string, label string
 
 func addToTrend(sim *Simulation, status *structs.SimulationStatus, module string, signal string, causality string, valueType string, valueReference string, plotIndex string) (bool, string) {
 	fmu := findFmu(sim.MetaData, module)
+	idx, err := strconv.Atoi(plotIndex)
+	if err != nil {
+		message := strCat("Cannot parse plotIndex as integer", plotIndex, ", ", err.Error())
+		log.Println(message)
+		return false, message
+	}
+
 	varIndex, err := strconv.Atoi(valueReference)
-	idx, _ := strconv.Atoi(plotIndex)
 	if err != nil {
 		message := strCat("Cannot parse valueReference as integer ", valueReference, ", ", err.Error())
 		log.Println(message)
 		return false, message
 	}
+
 	err = observerStartObserving(sim.TrendObserver, fmu.ExecutionIndex, valueType, varIndex)
 	if err != nil {
 		message := strCat("Cannot start observing variable ", err.Error())
