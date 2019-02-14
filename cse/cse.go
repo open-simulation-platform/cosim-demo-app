@@ -200,7 +200,7 @@ func observerGetIntegers(observer *C.cse_observer, variables []structs.Variable,
 	return intSignals
 }
 
-func observerGetRealSamples(observer *C.cse_observer, plotType string, signal *structs.TrendSignal, numSignals int, spec structs.TrendSpec) {
+func observerGetRealSamples(observer *C.cse_observer, plotType string, signal *structs.TrendSignal, spec structs.TrendSpec) {
 	slaveIndex := C.cse_slave_index(signal.SlaveIndex)
 	variableIndex := C.cse_variable_index(signal.ValueReference)
 
@@ -241,12 +241,10 @@ func observerGetRealSamples(observer *C.cse_observer, plotType string, signal *s
 	case "trend":
 		signal.TrendXValues = times
 		signal.TrendYValues = trendVals
-	case "scatter":
-		if numSignals == 1 {
-			signal.TrendXValues = trendVals
-		} else if numSignals == 2 {
-			signal.TrendYValues = trendVals
-		}
+	case "scatterx":
+		signal.TrendXValues = trendVals
+	case "scattery":
+		signal.TrendYValues = trendVals
 	}
 
 }
@@ -319,10 +317,9 @@ func TrendLoop(sim *Simulation, status *structs.SimulationStatus) {
 			if len(trend.TrendSignals) > 0 {
 				for i, _ := range trend.TrendSignals {
 					var signal = &trend.TrendSignals[i]
-					var numSignals = len(trend.TrendSignals)
 					switch signal.Type {
 					case "Real":
-						observerGetRealSamples(sim.TrendObserver, trend.PlotType, signal, numSignals, status.TrendSpec)
+						observerGetRealSamples(sim.TrendObserver, trend.PlotType, signal, status.TrendSpec)
 					}
 				}
 			}
@@ -488,13 +485,6 @@ func addNewTrend(status *structs.SimulationStatus, plotType string, label string
 func addToTrend(sim *Simulation, status *structs.SimulationStatus, module string, signal string, causality string, valueType string, valueReference string, plotIndex string, plotType string) (bool, string) {
 
 	idx, err := strconv.Atoi(plotIndex)
-
-	if plotType == "scatter" {
-		if len(status.Trends[idx].TrendSignals) > 1 {
-			return true, "Already two signals in scatter trend, not adding new signal"
-		}
-	}
-
 	fmu := findFmu(sim.MetaData, module)
 
 	if err != nil {
@@ -516,13 +506,20 @@ func addToTrend(sim *Simulation, status *structs.SimulationStatus, module string
 		log.Println(message)
 		return false, message
 	}
-	status.Trends[idx].TrendSignals = append(status.Trends[idx].TrendSignals, structs.TrendSignal{
-		Module:         module,
-		SlaveIndex:     fmu.ExecutionIndex,
-		Signal:         signal,
-		Causality:      causality,
-		Type:           valueType,
-		ValueReference: varIndex})
+
+	switch plotType {
+	case "trend":
+		status.Trends[idx].TrendSignals = append(status.Trends[idx].TrendSignals, structs.TrendSignal{
+			Module:         module,
+			SlaveIndex:     fmu.ExecutionIndex,
+			Signal:         signal,
+			Causality:      causality,
+			Type:           valueType,
+			ValueReference: varIndex})
+	case "scatter":
+
+	}
+
 	return true, "Added variable to trend"
 }
 
