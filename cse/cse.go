@@ -200,7 +200,7 @@ func observerGetIntegers(observer *C.cse_observer, variables []structs.Variable,
 	return intSignals
 }
 
-func observerGetRealSamples(observer *C.cse_observer, plotType string, signal *structs.TrendSignal, spec structs.TrendSpec) {
+func observerGetRealSamples(observer *C.cse_observer, plotType string, idx int, signal *structs.TrendSignal, spec structs.TrendSpec) {
 	slaveIndex := C.cse_slave_index(signal.SlaveIndex)
 	variableIndex := C.cse_variable_index(signal.ValueReference)
 
@@ -241,10 +241,12 @@ func observerGetRealSamples(observer *C.cse_observer, plotType string, signal *s
 	case "trend":
 		signal.TrendXValues = times
 		signal.TrendYValues = trendVals
-	case "scatterx":
-		signal.TrendXValues = trendVals
-	case "scattery":
-		signal.TrendYValues = trendVals
+	case "scatter":
+		if idx%2 == 0 {
+			signal.TrendXValues = trendVals
+		} else {
+			signal.TrendYValues = trendVals
+		}
 	}
 
 }
@@ -319,7 +321,7 @@ func TrendLoop(sim *Simulation, status *structs.SimulationStatus) {
 					var signal = &trend.TrendSignals[i]
 					switch signal.Type {
 					case "Real":
-						observerGetRealSamples(sim.TrendObserver, trend.PlotType, signal, status.TrendSpec)
+						observerGetRealSamples(sim.TrendObserver, trend.PlotType, i, signal, status.TrendSpec)
 					}
 				}
 			}
@@ -482,7 +484,7 @@ func addNewTrend(status *structs.SimulationStatus, plotType string, label string
 	return true, "Added new trend"
 }
 
-func addToTrend(sim *Simulation, status *structs.SimulationStatus, module string, signal string, causality string, valueType string, valueReference string, plotIndex string, plotType string) (bool, string) {
+func addToTrend(sim *Simulation, status *structs.SimulationStatus, module string, signal string, causality string, valueType string, valueReference string, plotIndex string) (bool, string) {
 
 	idx, err := strconv.Atoi(plotIndex)
 	fmu := findFmu(sim.MetaData, module)
@@ -507,18 +509,13 @@ func addToTrend(sim *Simulation, status *structs.SimulationStatus, module string
 		return false, message
 	}
 
-	switch plotType {
-	case "trend":
-		status.Trends[idx].TrendSignals = append(status.Trends[idx].TrendSignals, structs.TrendSignal{
-			Module:         module,
-			SlaveIndex:     fmu.ExecutionIndex,
-			Signal:         signal,
-			Causality:      causality,
-			Type:           valueType,
-			ValueReference: varIndex})
-	case "scatter":
-
-	}
+	status.Trends[idx].TrendSignals = append(status.Trends[idx].TrendSignals, structs.TrendSignal{
+		Module:         module,
+		SlaveIndex:     fmu.ExecutionIndex,
+		Signal:         signal,
+		Causality:      causality,
+		Type:           valueType,
+		ValueReference: varIndex})
 
 	return true, "Added variable to trend"
 }
@@ -591,7 +588,7 @@ func executeCommand(cmd []string, sim *Simulation, status *structs.SimulationSta
 	case "newtrend":
 		success, message = addNewTrend(status, cmd[1], cmd[2])
 	case "addtotrend":
-		success, message = addToTrend(sim, status, cmd[1], cmd[2], cmd[3], cmd[4], cmd[5], cmd[6], cmd[7])
+		success, message = addToTrend(sim, status, cmd[1], cmd[2], cmd[3], cmd[4], cmd[5], cmd[6])
 	case "untrend":
 		success, message = removeAllFromTrend(sim, status, cmd[1])
 	case "removetrend":
