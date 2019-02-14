@@ -236,6 +236,7 @@ func observerGetRealSamples(observer *C.cse_observer, plotType string, signal *s
 		trendVals[i] = float64(realOutVal[i])
 		times[i] = 1e-9 * float64(timeVal[i])
 	}
+
 	switch plotType {
 	case "trend":
 		signal.TrendXValues = times
@@ -484,9 +485,18 @@ func addNewTrend(status *structs.SimulationStatus, plotType string, label string
 	return true, "Added new trend"
 }
 
-func addToTrend(sim *Simulation, status *structs.SimulationStatus, module string, signal string, causality string, valueType string, valueReference string, plotIndex string) (bool, string) {
-	fmu := findFmu(sim.MetaData, module)
+func addToTrend(sim *Simulation, status *structs.SimulationStatus, module string, signal string, causality string, valueType string, valueReference string, plotIndex string, plotType string) (bool, string) {
+
 	idx, err := strconv.Atoi(plotIndex)
+
+	if plotType == "scatter" {
+		if len(status.Trends[idx].TrendSignals) > 1 {
+			return true, "Already two signals in scatter trend, not adding new signal"
+		}
+	}
+
+	fmu := findFmu(sim.MetaData, module)
+
 	if err != nil {
 		message := strCat("Cannot parse plotIndex as integer", plotIndex, ", ", err.Error())
 		log.Println(message)
@@ -584,7 +594,7 @@ func executeCommand(cmd []string, sim *Simulation, status *structs.SimulationSta
 	case "newtrend":
 		success, message = addNewTrend(status, cmd[1], cmd[2])
 	case "addtotrend":
-		success, message = addToTrend(sim, status, cmd[1], cmd[2], cmd[3], cmd[4], cmd[5], cmd[6])
+		success, message = addToTrend(sim, status, cmd[1], cmd[2], cmd[3], cmd[4], cmd[5], cmd[6], cmd[7])
 	case "untrend":
 		success, message = removeAllFromTrend(sim, status, cmd[1])
 	case "removetrend":
