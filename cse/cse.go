@@ -200,7 +200,7 @@ func observerGetIntegers(observer *C.cse_observer, variables []structs.Variable,
 	return intSignals
 }
 
-func observerGetRealSamples(observer *C.cse_observer, signal *structs.TrendSignal, spec structs.TrendSpec) {
+func observerGetRealSamples(observer *C.cse_observer, plotType string, signal *structs.TrendSignal, numSignals int, spec structs.TrendSpec) {
 	slaveIndex := C.cse_slave_index(signal.SlaveIndex)
 	variableIndex := C.cse_variable_index(signal.ValueReference)
 
@@ -236,8 +236,18 @@ func observerGetRealSamples(observer *C.cse_observer, signal *structs.TrendSigna
 		trendVals[i] = float64(realOutVal[i])
 		times[i] = 1e-9 * float64(timeVal[i])
 	}
-	signal.TrendXValues = times
-	signal.TrendYValues = trendVals
+	switch plotType {
+	case "trend":
+		signal.TrendXValues = times
+		signal.TrendYValues = trendVals
+	case "scatter":
+		if numSignals == 1 {
+			signal.TrendXValues = trendVals
+		} else if numSignals == 2 {
+			signal.TrendYValues = trendVals
+		}
+	}
+
 }
 
 func setReal(execution *C.cse_execution, slaveIndex int, variableIndex int, value float64) (bool, string) {
@@ -307,10 +317,11 @@ func TrendLoop(sim *Simulation, status *structs.SimulationStatus) {
 		for _, trend := range status.Trends {
 			if len(trend.TrendSignals) > 0 {
 				for i, _ := range trend.TrendSignals {
-					var trend = &trend.TrendSignals[i]
-					switch trend.Type {
+					var signal = &trend.TrendSignals[i]
+					var numSignals = len(trend.TrendSignals)
+					switch signal.Type {
 					case "Real":
-						observerGetRealSamples(sim.TrendObserver, trend, status.TrendSpec)
+						observerGetRealSamples(sim.TrendObserver, trend.PlotType, signal, numSignals, status.TrendSpec)
 					}
 				}
 			}
