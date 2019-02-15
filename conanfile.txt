@@ -7,7 +7,9 @@ cse-core/0.1.0@osp/feature_151-build-conan-linux-binaries
 [imports]
 include, cse.h                  -> ./include
 
+bin, boost_chrono*.dll          -> ./dist\bin
 bin, boost_context*.dll         -> ./dist\bin
+bin, boost_date_time*.dll       -> ./dist\bin
 bin, boost_fiber*.dll           -> ./dist\bin
 bin, boost_filesystem*.dll      -> ./dist\bin
 bin, boost_log*.dll             -> ./dist\bin
@@ -16,7 +18,9 @@ bin, boost_thread*.dll          -> ./dist\bin
 bin, cse*.dll                   -> ./dist\bin
 bin, zip.dll                    -> ./dist\bin
 
+lib, libboost_chrono.so.*       -> ./dist/lib
 lib, libboost_context.so.*      -> ./dist/lib
+lib, libboost_date_time.so.*    -> ./dist/lib
 lib, libboost_fiber.so.*        -> ./dist/lib
 lib, libboost_filesystem.so.*   -> ./dist/lib
 lib, libboost_log.so.*          -> ./dist/lib
