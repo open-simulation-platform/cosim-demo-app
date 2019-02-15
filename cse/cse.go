@@ -57,7 +57,7 @@ func createLocalSlave(fmuPath string) (*C.cse_slave) {
 }
 
 func createObserver() (observer *C.cse_observer) {
-	observer = C.cse_buffered_membuffer_observer_create(C.size_t(1))
+	observer = C.cse_last_value_observer_create()
 	return
 }
 
@@ -73,6 +73,15 @@ func createFileObserver(logPath string) (observer *C.cse_observer) {
 
 func executionAddObserver(execution *C.cse_execution, observer *C.cse_observer) {
 	C.cse_execution_add_observer(execution, observer)
+}
+
+func createOverrideManipulator() (manipulator *C.cse_manipulator) {
+	manipulator = C.cse_override_manipulator_create()
+	return
+}
+
+func executionAddManipulator(execution *C.cse_execution, manipulator *C.cse_manipulator) {
+	C.cse_execution_add_manipulator(execution, manipulator)
 }
 
 func executionAddSlave(execution *C.cse_execution, slave *C.cse_slave) int {
@@ -99,6 +108,10 @@ func executionDestroy(execution *C.cse_execution) {
 
 func observerDestroy(observer *C.cse_observer) {
 	C.cse_observer_destroy(observer)
+}
+
+func manipulatorDestroy(manipulator *C.cse_manipulator) {
+	C.cse_manipulator_destroy(manipulator)
 }
 
 func executionStop(execution *C.cse_execution) (bool, string) {
@@ -240,12 +253,12 @@ func observerGetRealSamples(observer *C.cse_observer, signal *structs.TrendSigna
 	signal.TrendValues = trendVals
 }
 
-func setReal(execution *C.cse_execution, slaveIndex int, variableIndex int, value float64) (bool, string) {
+func setReal(manipulator *C.cse_manipulator, slaveIndex int, variableIndex int, value float64) (bool, string) {
 	vi := make([]C.cse_variable_index, 1)
 	vi[0] = C.cse_variable_index(variableIndex)
 	v := make([]C.double, 1)
 	v[0] = C.double(value)
-	success := C.cse_execution_slave_set_real(execution, C.cse_slave_index(slaveIndex), &vi[0], C.size_t(1), &v[0])
+	success := C.cse_manipulator_slave_set_real(manipulator, C.cse_slave_index(slaveIndex), &vi[0], C.size_t(1), &v[0])
 	if int(success) < 0 {
 		return false, "Unable to set real variable value"
 	} else {
@@ -253,12 +266,12 @@ func setReal(execution *C.cse_execution, slaveIndex int, variableIndex int, valu
 	}
 }
 
-func setInteger(execution *C.cse_execution, slaveIndex int, variableIndex int, value int) (bool, string) {
+func setInteger(manipulator *C.cse_manipulator, slaveIndex int, variableIndex int, value int) (bool, string) {
 	vi := make([]C.cse_variable_index, 1)
 	vi[0] = C.cse_variable_index(variableIndex)
 	v := make([]C.int, 1)
 	v[0] = C.int(value)
-	success := C.cse_execution_slave_set_integer(execution, C.cse_slave_index(slaveIndex), &vi[0], C.size_t(1), &v[0])
+	success := C.cse_manipulator_slave_set_integer(manipulator, C.cse_slave_index(slaveIndex), &vi[0], C.size_t(1), &v[0])
 	if int(success) < 0 {
 		return false, "Unable to set integer variable value"
 	} else {
@@ -276,7 +289,7 @@ func setVariableValue(sim *Simulation, module string, signal string, causality s
 			log.Println(err)
 			return false, err.Error()
 		} else {
-			return setReal(sim.Execution, fmu.ExecutionIndex, varIndex, val)
+			return setReal(sim.OverrideManipulator, fmu.ExecutionIndex, varIndex, val)
 		}
 	case "Integer":
 		val, err := strconv.Atoi(value)
@@ -284,7 +297,7 @@ func setVariableValue(sim *Simulation, module string, signal string, causality s
 			log.Println(err)
 			return false, err.Error()
 		} else {
-			return setInteger(sim.Execution, fmu.ExecutionIndex, varIndex, val)
+			return setInteger(sim.OverrideManipulator, fmu.ExecutionIndex, varIndex, val)
 		}
 	default:
 		message := strCat("Can't set this value: ", value)
@@ -333,10 +346,13 @@ func simulationTeardown(sim *Simulation) (bool, string) {
 	if nil != sim.FileObserver {
 		observerDestroy(sim.FileObserver)
 	}
+	manipulatorDestroy(sim.OverrideManipulator)
+
 	sim.Execution = nil
 	sim.Observer = nil
 	sim.TrendObserver = nil
 	sim.FileObserver = nil
+	sim.OverrideManipulator = nil
 	sim.MetaData = &structs.MetaData{}
 	return true, "Simulation teardown successful"
 }
@@ -401,10 +417,15 @@ func initializeSimulation(sim *Simulation, fmuDir string, logDir string) (bool, 
 		executionAddObserver(execution, fileObserver)
 	}
 
+
+	manipulator := createOverrideManipulator()
+	executionAddManipulator(execution, manipulator)
+
 	sim.Execution = execution
 	sim.Observer = observer
 	sim.TrendObserver = trendObserver
 	sim.FileObserver = fileObserver
+	sim.OverrideManipulator = manipulator
 	sim.MetaData = &metaData
 	return true, "Simulation loaded successfully"
 }
@@ -735,11 +756,12 @@ func hasSsdFile(loadFolder string) bool {
 }
 
 type Simulation struct {
-	Execution     *C.cse_execution
-	Observer      *C.cse_observer
-	TrendObserver *C.cse_observer
-	FileObserver  *C.cse_observer
-	MetaData      *structs.MetaData
+	Execution           *C.cse_execution
+	Observer            *C.cse_observer
+	TrendObserver       *C.cse_observer
+	FileObserver        *C.cse_observer
+	OverrideManipulator *C.cse_manipulator
+	MetaData            *structs.MetaData
 }
 
 func CreateEmptySimulation() Simulation {
