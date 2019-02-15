@@ -38,7 +38,7 @@ pipeline {
                                     sh 'curl https://raw.githubusercontent.com/golang/dep/master/install.sh | sh'
                                 }
                                 copyArtifacts(
-                                    projectName: 'open-simulation-platform/cse-client/master',
+                                    projectName: 'open-simulation-platform/cse-client/static-resources',
                                     filter: 'resources/public/**/*',
                                     target: 'src/cse-server-go')
                                 
@@ -122,7 +122,7 @@ pipeline {
                         stage ('Get dependencies') {
                             steps {
                                 copyArtifacts(
-                                    projectName: 'open-simulation-platform/cse-client/master',
+                                    projectName: 'open-simulation-platform/cse-client/static-resources',
                                     filter: 'resources/public/**/*',
                                     target: 'src/cse-server-go')
                                 
