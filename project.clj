@@ -10,15 +10,15 @@
             [lein-cljsbuild "1.1.7"]
             [lein-count "1.0.9"]]
 
-  :clean-targets ^{:protect false} [:target-path :compile-path "resources/public/js/compiled"]
+  :clean-targets ^{:protect false} [:target-path :compile-path "resources/public/static/js/compiled"]
 
   :cljsbuild {:builds [{:id           "app"
                         :source-paths ["src"]
                         :figwheel     true
                         :compiler     {:main                 cse-client.core
-                                       :asset-path           "/js/compiled/out"
-                                       :output-to            "resources/public/js/compiled/app.js"
-                                       :output-dir           "resources/public/js/compiled/out"
+                                       :asset-path           "/static/js/compiled/out"
+                                       :output-to            "resources/public/static/js/compiled/app.js"
+                                       :output-dir           "resources/public/static/js/compiled/out"
                                        :source-map-timestamp true
                                        :parallel-build       true
                                        :closure-defines      {cse-client.core/debug                 true
@@ -29,7 +29,7 @@
                                        :external-config      {:devtools/config {:features-to-install [:formatters]}}}}
                        {:id           "min"
                         :source-paths ["src"]
-                        :compiler     {:output-to      "resources/public/js/compiled/app.js"
+                        :compiler     {:output-to      "resources/public/static/js/compiled/app.js"
                                        :optimizations  :advanced
                                        :parallel-build true}}]}
 
