@@ -13,27 +13,34 @@ type Module struct {
 }
 
 type JsonResponse struct {
-	Loaded               bool            `json:"loaded"`
-	SimulationTime       float64         `json:"time"`
-	RealTimeFactor       float64         `json:"realTimeFactor"`
-	IsRealTimeSimulation bool            `json:"isRealTime"`
-	ConfigDir            string          `json:"configDir,omitempty"`
-	Status               string          `json:"status,omitempty"`
-	Module               Module          `json:"module,omitempty"`
-	TrendSignals         []TrendSignal   `json:"trend-values"`
-	ModuleData           *MetaData       `json:"module-data,omitempty"`
+	Loaded               bool             `json:"loaded"`
+	SimulationTime       float64          `json:"time"`
+	RealTimeFactor       float64          `json:"realTimeFactor"`
+	IsRealTimeSimulation bool             `json:"isRealTime"`
+	ConfigDir            string           `json:"configDir,omitempty"`
+	Status               string           `json:"status,omitempty"`
+	Module               Module           `json:"module,omitempty"`
+	Trends               []Trend          `json:"trends"`
+	ModuleData           *MetaData        `json:"module-data,omitempty"`
 	Feedback             *CommandFeedback `json:"feedback,omitempy"`
 }
 
 type TrendSignal struct {
-	Module          string    `json:"module"`
-	SlaveIndex      int       `json:"slave-index"`
-	Signal          string    `json:"signal"`
-	Causality       string    `json:"causality"`
-	Type            string    `json:"type"`
-	ValueReference  int       `json:"value-reference"`
-	TrendValues     []float64 `json:"values,omitempty"`
-	TrendTimestamps []float64 `json:"labels,omitempty"`
+	Module         string    `json:"module"`
+	SlaveIndex     int       `json:"slave-index"`
+	Signal         string    `json:"signal"`
+	Causality      string    `json:"causality"`
+	Type           string    `json:"type"`
+	ValueReference int       `json:"value-reference"`
+	TrendXValues   []float64 `json:"xvals,omitempty"`
+	TrendYValues   []float64 `json:"yvals,omitempty"`
+}
+
+type Trend struct {
+	Id           int           `json:"id"`
+	PlotType     string        `json:"plot-type"`
+	Label        string        `json:"label"`
+	TrendSignals []TrendSignal `json:"trend-values"`
 }
 
 type TrendSpec struct {
@@ -48,7 +55,7 @@ type SimulationStatus struct {
 	ConfigDir           string
 	Module              string
 	SignalSubscriptions []Variable
-	TrendSignals        []TrendSignal
+	Trends              []Trend
 	TrendSpec           TrendSpec
 	Status              string
 	MetaChan            chan *MetaData
