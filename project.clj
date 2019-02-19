@@ -5,8 +5,12 @@
                  [re-frame "0.10.6" :exclusions [reagent]]
                  [cljsjs/plotly "1.36.1-0"]
                  [org.clojure/clojurescript "1.10.439"]
-                 [org.clojure/clojure "1.9.0"]]
+                 [org.clojure/clojure "1.9.0"]
+                 [fulcrologic/fulcro "2.8.0"]
+                 [fulcrologic/semantic-ui-react-wrappers "2.0.4"]
+                 [cljsjs/semantic-ui-react "0.84.0-0"]]
   :plugins [[lein-figwheel "0.5.16"]
+            [figwheel-sidecar "0.5.17"]
             [lein-cljsbuild "1.1.7"]
             [lein-count "1.0.9"]]
 

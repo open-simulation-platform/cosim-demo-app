@@ -10,7 +10,7 @@
 (def routes
   [["/" :index]
    ["/modules/:module/:causality" :module]
-   ["/trend" :trend]
+   ["/trend/:index" :trend]
    ["/guide" :guide]])
 
 (def sort-order
@@ -89,6 +89,7 @@
 
 (rf/reg-sub :causalities (fn [db] (causalities db (:current-module db))))
 (rf/reg-sub :active-causality active-causality)
+(rf/reg-sub :active-trend-index :active-trend-index)
 
 (rf/reg-sub :signal-value (fn [db [_ module name causality type]]
                             (->> db
@@ -102,7 +103,12 @@
                                  first
                                  :value)))
 
-(rf/reg-sub :trend-count #(-> % :state :trend-values count))
+(rf/reg-sub :trend-info (fn [db _]
+                          (map-indexed
+                            (fn [idx {:keys [trend-values] :as trend}]
+                              (-> (select-keys trend [:id :label :plot-type])
+                                  (assoc :index idx)
+                                  (assoc :count (count trend-values)))) (-> db :state :trends))))
 
 (rf/reg-sub :active-guide-tab :active-guide-tab)
 

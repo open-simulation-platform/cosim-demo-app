@@ -6,41 +6,64 @@
             [cse-client.controller :as controller]
             [cse-client.config :refer [socket-url]]
             [cse-client.guide :as guide]
-            [clojure.string :as str]))
+            [cse-client.components :as c]
+            [clojure.string :as str]
+            [fulcrologic.semantic-ui.factories :as semantic]
+            [fulcrologic.semantic-ui.icons :as icons]))
 
 (goog-define default-load-dir "")
 (goog-define default-log-dir "")
 
-(defn variable-override-editor [module {:keys [name causality type]} value]
-  (let [editing? (r/atom false)
-        internal-value (r/atom value)]
-    (fn [_ _ value]
-      (if @editing?
-        [:div.ui.action.input.fluid
-         [:input {:type      :text
-                  :autoFocus true
-                  :id        (str "input-" name)
-                  :value     (if @editing? @internal-value value)
-                  :on-change #(reset! internal-value (.. % -target -value))}]
-         [:button.ui.right.icon.button
-          {:on-click (fn [_]
-                       (rf/dispatch [::controller/set-value module name causality type @internal-value])
-                       (reset! editing? false))}
-          [:i.check.link.icon]]
-         [:button.ui.right.icon.button
-          {:on-click #(reset! editing? false)}
-          [:i.times.link.icon]]]
-        [:div {:style    {:cursor :pointer}
-               :on-click (fn [_]
-                           (reset! editing? true)
-                           (reset! internal-value value))}
-         value]))))
-
 (defn variable-display [module {:keys [name causality type editable?] :as variable}]
   (let [value @(rf/subscribe [:signal-value module name causality type])]
     (if editable?
-      [variable-override-editor module variable value]
+      [c/variable-override-editor module variable value]
       [:div value])))
+
+(defn trend-item [current-module name causality type value-reference {:keys [id index count label plot-type]}]
+  (case plot-type
+    "trend" (semantic/ui-dropdown-item
+              {:key     (str "trend-item-" id)
+               :text    label
+               :label   (str/capitalize plot-type)
+               :onClick #(rf/dispatch [::controller/add-to-trend current-module name causality type value-reference index])})
+    "scatter"
+    #_(semantic/ui-dropdown-item
+        nil
+        (semantic/ui-dropdown
+          {:text  label
+           :label (str/capitalize plot-type)}
+          (semantic/ui-dropdown-menu
+            nil
+            (semantic/ui-dropdown-header nil "Add signal")
+            (semantic/ui-dropdown-item {:text "Add to x"})
+            (semantic/ui-dropdown-item {:text "Add to y"}))))
+    (semantic/ui-dropdown-item
+      {:key     (str "trend-item-" id)
+       :text    label
+       :label   (str/capitalize plot-type)
+       :onClick #(rf/dispatch [::controller/add-to-trend current-module name causality type value-reference index])})))
+
+(defn action-dropdown [current-module name causality type value-reference trend-info]
+  (let [default-label (str "Trend #" (-> trend-info count inc))]
+    (semantic/ui-dropdown
+      {:icon   "chart line icon"
+       :button true}
+      (semantic/ui-dropdown-menu
+        nil
+        (semantic/ui-dropdown-header nil "Create new trend")
+        (semantic/ui-dropdown-divider)
+        (semantic/ui-dropdown-item
+          {:text    "New time series"
+           :onClick #(rf/dispatch [::controller/new-trend "trend" default-label])})
+        (semantic/ui-dropdown-item
+          {:text    "New scatter plot"
+           :onClick #(rf/dispatch [::controller/new-trend "scatter" default-label])})
+        (when-not (empty? trend-info)
+          [(semantic/ui-dropdown-divider {:key "divider-1"})
+           (semantic/ui-dropdown-header {:key (gensym "dropdown-trend-header")} "Add to trend")
+           (semantic/ui-dropdown-divider {:key "divider-2"})
+           (map (partial trend-item current-module name causality type value-reference) trend-info)])))))
 
 (defn pages-menu []
   (let [current-page @(rf/subscribe [:current-page])
@@ -76,7 +99,8 @@
 (defn tab-content [tabby]
   (let [current-module @(rf/subscribe [:current-module])
         module-signals @(rf/subscribe [:module-signals])
-        active @(rf/subscribe [:active-causality])]
+        active @(rf/subscribe [:active-causality])
+        trend-info @(rf/subscribe [:trend-info])]
     [:div.ui.bottom.attached.tab.segment {:data-tab tabby
                                           :class    (when (= tabby active) "active")}
      [:table.ui.compact.single.line.striped.selectable.table
@@ -85,15 +109,14 @@
         [:th "Name"]
         [:th.one.wide "Type"]
         [:th "Value"]
-        [:th.two.wide "..."]]]
+        [:th.two.wide "Actions"]]]
       [:tbody
        (map (fn [{:keys [name causality type value-reference] :as variable}]
               [:tr {:key (str current-module "-" causality "-" name)}
                [:td name]
                [:td type]
                [:td [variable-display current-module variable]]
-               [:td [:a {:style    {:cursor :pointer}
-                         :on-click #(rf/dispatch [::controller/add-to-trend current-module name causality type value-reference])} "Add to trend"]]])
+               [:td (action-dropdown current-module name causality type value-reference trend-info)]])
             module-signals)]]]))
 
 (defn module-listing []
@@ -126,16 +149,21 @@
         route-name (-> route :data :name)
         route-module (-> route :path-params :module)
         loaded? @(rf/subscribe [:loaded?])
-        trend-count @(rf/subscribe [:trend-count])]
+        trend-info @(rf/subscribe [:trend-info])
+        active-trend-index @(rf/subscribe [:active-trend-index])]
     [:div.ui.secondary.vertical.fluid.menu
      [:a.item {:href  (k/path-for [:index])
                :class (when (= route-name :index) :active)}
       "Overview"]
-     (when loaded?
-       [:a.item {:href  (k/path-for [:trend])
-                 :class (when (= route-name :trend) :active)}
-        "Trend"
-        [:div.ui.teal.left.pointing.label trend-count]])
+     (when (and loaded? (> (count trend-info) 0))
+       [:div.item
+        [:div.header "Trends"]
+        [:div.menu
+         (map (fn [{:keys [index label]}]
+                [:a.item {:class (when (= index (int active-trend-index)) :active)
+                          :key   label
+                          :href  (k/path-for [:trend {:index index}])} label
+                 [:div.ui.teal.left.pointing.label (-> trend-info (nth index) :count)]]) trend-info)]])
      [:div.ui.divider]
      [:div.item
       [:div.header "Models"]

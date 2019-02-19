@@ -24,6 +24,13 @@
                    :start  [::module-enter]
                    :stop   [::module-leave]})
 
+(k/reg-controller :trend
+                  {:params (fn [route]
+                             (when (-> route :data :name (= :trend))
+                               (-> route :path-params)))
+                   :start  [::trend-enter]
+                   :stop   [::trend-leave]})
+
 (k/reg-controller :websocket-controller
                   {:params (constantly true)
                    :start  [:start-websockets]})
@@ -62,7 +69,7 @@
                   (merge
                     {:db (update db :state merge message)}
                     (when-let [feedback (:feedback message)]
-                           {:dispatch [::feedback-message feedback]}))))
+                      {:dispatch [::feedback-message feedback]}))))
 
 (k/reg-event-fx ::fetch-module-data
                 (fn [_ _]
@@ -112,6 +119,14 @@
                                      :page-count (count groups))}
                       (socket-command (concat ["signals" current-module] (map encode-variable viewing)))))))
 
+(k/reg-event-db ::trend-enter
+                (fn [db [{:keys [index]}]]
+                  (assoc db :active-trend-index index)))
+
+(k/reg-event-db ::trend-leave
+                (fn [db _]
+                  (dissoc db :active-trend-index)))
+
 (k/reg-event-fx ::module-enter
                 (fn [{:keys [db]} [{:keys [module causality]}]]
                   (merge
@@ -151,12 +166,25 @@
                   (socket-command ["disable-realtime"])))
 
 (k/reg-event-fx ::untrend
-                (fn [_ _]
-                  (socket-command ["untrend"])))
+                (fn [{:keys [db]} _]
+                  (socket-command ["untrend" (:active-trend-index db)])))
+
+(k/reg-event-fx ::removetrend
+                (fn [{:keys [db]} _]
+                  (merge {:navigate-to [:index]}
+                         (socket-command ["removetrend" (:active-trend-index db)]))))
+
+(k/reg-event-fx ::new-trend
+                (fn [_ [type label]]
+                  (socket-command ["newtrend" type label])))
 
 (k/reg-event-fx ::add-to-trend
-                (fn [_ [module signal causality type value-reference]]
-                  (socket-command ["trend" module signal causality type (str value-reference)])))
+                (fn [_ [module signal causality type value-reference plot-index]]
+                  (socket-command ["addtotrend" module signal causality type (str value-reference) (str plot-index)])))
+
+(k/reg-event-fx ::set-label
+                (fn [{:keys [db]} [label]]
+                  (socket-command ["setlabel" (:active-trend-index db) label])))
 
 (k/reg-event-fx ::set-value
                 (fn [_ [module signal causality type value]]

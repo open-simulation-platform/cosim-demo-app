@@ -4,7 +4,10 @@
             [cljsjs.plotly]
             [re-frame.core :as rf]
             [cljs.spec.alpha :as s]
+            [cse-client.components :as c]
             [clojure.string :as str]))
+
+(def id-store (atom nil))
 
 (def range-configs
   [{:seconds 10
@@ -19,6 +22,26 @@
     :text    "10m"}
    {:seconds (* 60 20)
     :text    "20m"}])
+
+(defn trend-layout []
+  {:autosize           true
+   :use-resize-handler true})
+
+(defn scatter-layout []
+  {:xaxis {:autorange true
+           :autotick  true
+           :ticks     ""}})
+
+(defn layout-selector [plot-type]
+  (case plot-type
+    "trend" (trend-layout)
+    "scatter" (scatter-layout)))
+
+(defn create-traces [plot-type trend-values]
+  (case plot-type
+    "trend" trend-values
+    "scatter" (map (fn [[xvals yvals]]
+                     (merge xvals yvals)) (partition 2 trend-values))))
 
 (defn range-selector [trend-range {:keys [text seconds]}]
   ^{:key text}
@@ -35,6 +58,11 @@
    :x    []
    :y    []})
 
+(defn delete-series [dom-node]
+  (let [num-series (-> dom-node .-data .-length)]
+    (doseq [_ (range num-series)]
+      (js/Plotly.deleteTraces dom-node 0))))
+
 (defn maybe-update-series [dom-node trend-values]
   (let [num-series (-> dom-node .-data .-length)]
     (when (not= num-series (count trend-values))
@@ -43,14 +71,16 @@
       (doseq [trend-variable trend-values]
         (js/Plotly.addTraces dom-node (clj->js (new-series trend-variable)))))))
 
-
-(defn update-chart-data [dom-node trend-values]
+(defn update-chart-data [dom-node trend-values trend-id]
+  (when-not (= trend-id @id-store)
+    (reset! id-store trend-id)
+    (delete-series dom-node))
   (s/assert ::trend-values trend-values)
   (let [init-data {:x [] :y []}
-        data (reduce (fn [data {:keys [labels values]}]
+        data (reduce (fn [data {:keys [xvals yvals]}]
                        (-> data
-                           (update :x conj labels)
-                           (update :y conj values)))
+                           (update :x conj xvals)
+                           (update :y conj yvals)))
                      init-data trend-values)]
     (maybe-update-series dom-node trend-values)
     (js/Plotly.update dom-node (clj->js data))))
@@ -63,41 +93,49 @@
     (cond
       auto?
       (rf/dispatch [::controller/trend-zoom-reset])
-
       (and begin end)
       (rf/dispatch [::controller/trend-zoom begin end]))))
 
 (defn trend-inner []
   (let [update (fn [comp]
-                 (let [{:keys [trend-values]} (r/props comp)]
-                   (update-chart-data (r/dom-node comp) trend-values)))]
+                 (let [{:keys [trend-values trend-id]} (r/props comp)]
+                   (update-chart-data (r/dom-node comp) trend-values trend-id)))]
     (r/create-class
       {:component-did-mount  (fn [comp]
-                               (js/Plotly.plot (r/dom-node comp) (clj->js [{:x []
-                                                                            :y []}])
-                                               (clj->js {:xaxis              {:title "Time [s]"}
-                                                         :autosize           true
-                                                         :use-resize-handler true}))
-                               (.on (r/dom-node comp) "plotly_relayout" relayout-callback))
+                               (let [{:keys [trend-layout]} (r/props comp)]
+                                 (js/Plotly.plot (r/dom-node comp)
+                                                 (clj->js [{:x    []
+                                                            :y    []
+                                                            :mode "lines"
+                                                            :type "scatter"}])
+                                                 (clj->js trend-layout))
+                                 (.on (r/dom-node comp) "plotly_relayout" relayout-callback)))
        :component-did-update update
        :reagent-render       (fn []
                                [:div.column])})))
 
 (defn trend-outer []
-  (let [trend-values (rf/subscribe [::trend-values])
-        trend-range (rf/subscribe [::trend-range])]
+  (let [trend-range (rf/subscribe [::trend-range])
+        active-trend (rf/subscribe [::active-trend])]
     (fn []
-      [:div.ui.one.column.grid
-       [:div.two.column.row
-        [:div.column
-         (doall (map (partial range-selector @trend-range) range-configs))]
-        [:div.column
-         [:button.ui.button.right.floated {:on-click #(rf/dispatch [::controller/untrend])} "Remove all"]]]
-       [:div.one.column.row
-        [trend-inner {:trend-values @trend-values}]]])))
+      (let [{:keys [id plot-type label trend-values]} @active-trend]
+        [:div.ui.one.column.grid
+         [c/variable-override-editor nil nil label [::controller/set-label]]
+         [:div.two.column.row
+          (if-not (= "scatter" plot-type)
+            [:div.column
+             (doall (map (partial range-selector @trend-range) range-configs))]
+            [:div.column])
+          [:div.column
+           [:button.ui.button.right.floated {:on-click #(rf/dispatch [::controller/removetrend])} "Remove trend"]
+           [:button.ui.button.right.floated {:on-click #(rf/dispatch [::controller/untrend])} "Untrend all"]]]
+         [:div.one.column.row
+          [trend-inner {:trend-values (create-traces plot-type trend-values)
+                        :trend-layout (layout-selector plot-type)
+                        :trend-id     id}]]]))))
 
-(rf/reg-sub ::trend-values #(-> % :state :trend-values))
 (rf/reg-sub ::trend-range :trend-range)
+(rf/reg-sub ::active-trend #(get-in % [:state :trends (-> % :active-trend-index int)]))
 
 (defn ascending-points? [tuples]
   (= tuples
