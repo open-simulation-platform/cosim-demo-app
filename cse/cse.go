@@ -80,6 +80,11 @@ func createOverrideManipulator() (manipulator *C.cse_manipulator) {
 	return
 }
 
+func createScenarioManager() (manipulator *C.cse_manipulator) {
+	manipulator = C.cse_scenario_manager_create()
+	return
+}
+
 func executionAddManipulator(execution *C.cse_execution, manipulator *C.cse_manipulator) {
 	C.cse_execution_add_manipulator(execution, manipulator)
 }
@@ -360,12 +365,14 @@ func simulationTeardown(sim *Simulation) (bool, string) {
 		observerDestroy(sim.FileObserver)
 	}
 	manipulatorDestroy(sim.OverrideManipulator)
+	manipulatorDestroy(sim.ScenarioManager)
 
 	sim.Execution = nil
 	sim.Observer = nil
 	sim.TrendObserver = nil
 	sim.FileObserver = nil
 	sim.OverrideManipulator = nil
+	sim.ScenarioManager = nil
 	sim.MetaData = &structs.MetaData{}
 	return true, "Simulation teardown successful"
 }
@@ -398,7 +405,7 @@ func initializeSimulation(sim *Simulation, fmuDir string, logDir string) (bool, 
 		FMUs: []structs.FMU{},
 	}
 	var execution *C.cse_execution
-	if hasSsdFile(fmuDir) {
+	if hasFile(fmuDir, "SystemStructure.ssd") {
 		execution = createSsdExecution(fmuDir)
 		if execution == nil {
 			return false, "Could not create execution from SystemStructure.ssd file"
@@ -430,15 +437,18 @@ func initializeSimulation(sim *Simulation, fmuDir string, logDir string) (bool, 
 		executionAddObserver(execution, fileObserver)
 	}
 
-
 	manipulator := createOverrideManipulator()
 	executionAddManipulator(execution, manipulator)
+
+	scenarioManager := createScenarioManager()
+	executionAddManipulator(execution, scenarioManager)
 
 	sim.Execution = execution
 	sim.Observer = observer
 	sim.TrendObserver = trendObserver
 	sim.FileObserver = fileObserver
 	sim.OverrideManipulator = manipulator
+	sim.ScenarioManager = scenarioManager
 	sim.MetaData = &metaData
 	return true, "Simulation loaded successfully"
 }
@@ -576,6 +586,26 @@ func removeTrend(status *structs.SimulationStatus, trendIndex string) (bool, str
 	return true, "Removed trend"
 }
 
+func lastErrorMessage() string {
+	msg := C.cse_last_error_message();
+	return C.GoString(msg)
+}
+
+func loadScenario(sim *Simulation, status *structs.SimulationStatus, fileName string) (bool, string) {
+	if !strings.HasSuffix(fileName, "json") {
+		return false, "Scenario file must be of type *.json"
+	}
+	if !hasFile(status.ConfigDir, fileName) {
+		return false, strCat("Can't find file ", fileName, " in ", status.ConfigDir)
+	}
+	absolutePath := filepath.Join(status.ConfigDir, fileName)
+	success := C.cse_execution_load_scenario(sim.Execution, sim.ScenarioManager, C.CString(absolutePath))
+	if success < 0 {
+		return false, strCat("Problem loading scenario file: ", lastErrorMessage())
+	}
+	return true, strCat("Successfully loaded scenario ", absolutePath)
+}
+
 func executeCommand(cmd []string, sim *Simulation, status *structs.SimulationStatus) (feedback structs.CommandFeedback) {
 	var success = false
 	var message = "No feedback implemented for this command"
@@ -632,6 +662,8 @@ func executeCommand(cmd []string, sim *Simulation, status *structs.SimulationSta
 		message = "Fetched metadata"
 	case "signals":
 		success, message = setSignalSubscriptions(status, cmd)
+	case "load-scenario":
+		success, message = loadScenario(sim, status, cmd[1])
 	default:
 		message = "Unknown command, this is not good"
 		fmt.Println(message, cmd)
@@ -806,25 +838,26 @@ func getFmuPaths(loadFolder string) (paths []string) {
 	return paths
 }
 
-func hasSsdFile(loadFolder string) bool {
-	info, e := os.Stat(loadFolder)
+func hasFile(folder string, fileName string) bool {
+	info, e := os.Stat(folder)
 	if os.IsNotExist(e) {
-		fmt.Println("Load folder does not exist!")
+		fmt.Println("Folder does not exist: ", folder)
 		return false
 	} else if !info.IsDir() {
-		fmt.Println("Load folder is not a directory!")
+		fmt.Println("Folder is not a directory: ", folder)
 		return false
 	} else {
-		files, err := ioutil.ReadDir(loadFolder)
+		files, err := ioutil.ReadDir(folder)
 		if err != nil {
 			log.Fatal(err)
 		}
 		for _, f := range files {
-			if f.Name() == "SystemStructure.ssd" {
+			if f.Name() == fileName {
 				return true
 			}
 		}
 	}
+	fmt.Println("Folder does not contain file: ", fileName, folder)
 	return false
 }
 
@@ -834,6 +867,7 @@ type Simulation struct {
 	TrendObserver       *C.cse_observer
 	FileObserver        *C.cse_observer
 	OverrideManipulator *C.cse_manipulator
+	ScenarioManager     *C.cse_manipulator
 	MetaData            *structs.MetaData
 }
 
