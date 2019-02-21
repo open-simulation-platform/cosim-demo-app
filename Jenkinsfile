@@ -96,6 +96,9 @@ pipeline {
                             dir('src/cse-server-go/dist') {
                                 deleteDir();
                             }
+                            dir('src/cse-server-go/resources/public') {
+                                deleteDir();
+                            }
                         }
                     }
                 }
@@ -178,6 +181,9 @@ pipeline {
                     post {
                         cleanup {
                             dir('src/cse-server-go/dist') {
+                                deleteDir();
+                            }
+                            dir('src/cse-server-go/resources/public') {
                                 deleteDir();
                             }
                         }

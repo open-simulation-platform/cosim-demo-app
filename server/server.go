@@ -15,9 +15,6 @@ func Server(command chan []string, state chan structs.JsonResponse, simulationSt
 	router := mux.NewRouter()
 	box := packr.NewBox("../resources/public")
 
-	router.Handle("/", http.FileServer(box))
-	router.PathPrefix("/static/").Handler(http.StripPrefix("/static/", http.FileServer(box)))
-
 	router.HandleFunc("/status", func(w http.ResponseWriter, r *http.Request) {
 		w.Header().Set("Content-Type", "application/json")
 		json.NewEncoder(w).Encode(cse.GenerateJsonResponse(simulationStatus, sim, structs.CommandFeedback{}))
@@ -41,10 +38,13 @@ func Server(command chan []string, state chan structs.JsonResponse, simulationSt
 		body, _ := ioutil.ReadAll(r.Body)
 		commandRequest := []string{}
 		json.Unmarshal(body, &commandRequest)
-	command <- commandRequest
+		command <- commandRequest
 	}).Methods("PUT")
 
 	router.HandleFunc("/ws", WebsocketHandler(command, state))
+
+	//Default handler
+	router.PathPrefix("/").Handler(http.FileServer(box))
 
 	log.Fatal(http.ListenAndServe(":8000", router))
 }
