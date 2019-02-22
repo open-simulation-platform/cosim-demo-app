@@ -16,44 +16,37 @@ pipeline {
                     agent { label 'windows' }
 
                     environment {
-                        GOPATH = "${WORKSPACE}"
-                        GOBIN = "${WORKSPACE}/bin"
-                        PATH = "${env.MINGW_HOME}/bin;${GOBIN};${env.PATH}"
-                        CGO_CFLAGS = "-I${WORKSPACE}/src/cse-server-go/include"
-                        CGO_LDFLAGS = "-L${WORKSPACE}/src/cse-server-go/dist/bin -lcsecorec"
+                        GOPATH = "${env.BASE}/gopath/${env.EXECUTOR_NUMBER}"
+                        PATH = "${env.MINGW_HOME}/bin;${GOPATH}/bin;${env.PATH}"
                         CONAN_USER_HOME = "${env.BASE}/conan-repositories/${env.EXECUTOR_NUMBER}"
                         CONAN_USER_HOME_SHORT = "${env.CONAN_USER_HOME}"
                         OSP_CONAN_CREDS = credentials('jenkins-osp-conan-creds')
                     }
                     
                     tools {
-                        go 'go-1.11'
+                        go 'go-1.11.5'
                         //'com.cloudbees.jenkins.plugins.customtools.CustomTool' 'mingw-w64' awaiting fix in customToolsPlugin
                     }
 
                     stages {
                         stage ('Get dependencies') {
                             steps {
-                                dir ("${GOBIN}") {
-                                    sh 'curl https://raw.githubusercontent.com/golang/dep/master/install.sh | sh'
-                                }
                                 copyArtifacts(
                                     projectName: 'open-simulation-platform/cse-client/master',
                                     filter: 'resources/public/**/*',
                                     target: 'src/cse-server-go')
                                 
                                 dir ('src/cse-server-go') {
-                                    sh 'go get github.com/gobuffalo/packr/packr'
                                     sh 'conan remote add osp https://osp-conan.azurewebsites.net/artifactory/api/conan/conan-local --force'
                                     sh 'conan user -p $OSP_CONAN_CREDS_PSW -r osp $OSP_CONAN_CREDS_USR'
                                     sh 'conan install . -s build_type=Release'
-                                    sh 'dep ensure'
                                 }
                             }
                         }
                         stage ('Packr') {
                             steps {
                                 dir ('src/cse-server-go') {
+                                    sh 'go get -v github.com/gobuffalo/packr/packr'
                                     sh 'go clean -cache'
                                     sh 'packr build -v'
                                 }
@@ -110,9 +103,8 @@ pipeline {
                     }
 
                     environment {
-                        GOPATH = "${WORKSPACE}"
-                        CGO_CFLAGS = "-I${WORKSPACE}/src/cse-server-go/include" 
-                        CGO_LDFLAGS = "-L${WORKSPACE}/src/cse-server-go/dist/lib -lcsecorec -Wl,-rpath,\$ORIGIN/../lib"
+                        GOCACHE = "/tmp/.gocache"
+                        CGO_LDFLAGS = "-Wl,-rpath,\$ORIGIN/../lib"
                         CONAN_USER_HOME = '/conan_repo'
                         CONAN_USER_HOME_SHORT = 'None'
                         OSP_CONAN_CREDS = credentials('jenkins-osp-conan-creds')
@@ -131,7 +123,6 @@ pipeline {
                                     sh 'conan user -p $OSP_CONAN_CREDS_PSW -r osp $OSP_CONAN_CREDS_USR'
                                     sh 'conan install . -s build_type=Release -s compiler.libcxx=libstdc++11'
                                     sh 'patchelf --set-rpath \'$ORIGIN/../lib\' dist/lib/*'
-                                    sh 'dep ensure'
                                 }
                             }
                         }

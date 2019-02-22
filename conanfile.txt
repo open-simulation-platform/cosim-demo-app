@@ -1,5 +1,4 @@
 [generators]
-virtualbuildenv
 
 [requires]
 cse-core/0.1.0@osp/master

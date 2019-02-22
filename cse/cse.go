@@ -1,6 +1,8 @@
 package cse
 
 /*
+	#cgo CFLAGS: -I${SRCDIR}/../include
+	#cgo LDFLAGS: -L${SRCDIR}/../dist/bin -L${SRCDIR}/../dist/lib -lcsecorec -lstdc++
 	#include <cse.h>
 */
 import "C"
@@ -52,7 +54,7 @@ func getExecutionStatus(execution *C.cse_execution) (execStatus executionStatus)
 	return
 }
 
-func createLocalSlave(fmuPath string) (*C.cse_slave) {
+func createLocalSlave(fmuPath string) *C.cse_slave {
 	return C.cse_local_slave_create(C.CString(fmuPath))
 }
 
@@ -218,7 +220,7 @@ func observerGetRealSamples(observer *C.cse_observer, signal *structs.TrendSigna
 	variableIndex := C.cse_variable_index(signal.ValueReference)
 
 	stepNumbers := make([]C.cse_step_number, 2)
-	var success C.int;
+	var success C.int
 	if spec.Auto {
 		duration := C.cse_duration(spec.Range * 1e9)
 		success = C.cse_observer_get_step_numbers_for_duration(observer, slaveIndex, duration, &stepNumbers[0])
@@ -417,7 +419,6 @@ func initializeSimulation(sim *Simulation, fmuDir string, logDir string) (bool, 
 		executionAddObserver(execution, fileObserver)
 	}
 
-
 	manipulator := createOverrideManipulator()
 	executionAddManipulator(execution, manipulator)
 
@@ -449,24 +450,24 @@ func toVariableType(valueType string) (C.cse_variable_type, error) {
 	case "String":
 		return C.CSE_STRING, nil
 	}
-	return C.CSE_REAL, errors.New(strCat("Unknown variable type:", valueType));
+	return C.CSE_REAL, errors.New(strCat("Unknown variable type:", valueType))
 }
 
-func observerStartObserving(observer *C.cse_observer, slaveIndex int, valueType string, varIndex int) (error) {
+func observerStartObserving(observer *C.cse_observer, slaveIndex int, valueType string, varIndex int) error {
 	variableType, err := toVariableType(valueType)
 	if err != nil {
 		return err
 	}
-	C.cse_observer_start_observing(observer, C.cse_slave_index(slaveIndex), variableType, C.cse_variable_index(varIndex));
+	C.cse_observer_start_observing(observer, C.cse_slave_index(slaveIndex), variableType, C.cse_variable_index(varIndex))
 	return nil
 }
 
-func observerStopObserving(observer *C.cse_observer, slaveIndex int, valueType string, varIndex int) (error) {
+func observerStopObserving(observer *C.cse_observer, slaveIndex int, valueType string, varIndex int) error {
 	variableType, err := toVariableType(valueType)
 	if err != nil {
 		return err
 	}
-	C.cse_observer_stop_observing(observer, C.cse_slave_index(slaveIndex), variableType, C.cse_variable_index(varIndex));
+	C.cse_observer_stop_observing(observer, C.cse_slave_index(slaveIndex), variableType, C.cse_variable_index(varIndex))
 	return nil
 }
 
@@ -674,7 +675,7 @@ func StateUpdateLoop(state chan structs.JsonResponse, simulationStatus *structs.
 	}
 }
 
-func addFmu(execution *C.cse_execution, metaData *structs.MetaData, fmuPath string) (bool) {
+func addFmu(execution *C.cse_execution, metaData *structs.MetaData, fmuPath string) bool {
 	log.Println("Loading: " + fmuPath)
 	localSlave := createLocalSlave(fmuPath)
 	if localSlave == nil {
@@ -685,7 +686,7 @@ func addFmu(execution *C.cse_execution, metaData *structs.MetaData, fmuPath stri
 	if index < 0 {
 		return false
 	}
-	fmu.ExecutionIndex = index;
+	fmu.ExecutionIndex = index
 	metaData.FMUs = append(metaData.FMUs, fmu)
 	return true
 }
