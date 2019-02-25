@@ -80,11 +80,6 @@ func createOverrideManipulator() (manipulator *C.cse_manipulator) {
 	return
 }
 
-func createScenarioManager() (manipulator *C.cse_manipulator) {
-	manipulator = C.cse_scenario_manager_create()
-	return
-}
-
 func executionAddManipulator(execution *C.cse_execution, manipulator *C.cse_manipulator) {
 	C.cse_execution_add_manipulator(execution, manipulator)
 }
@@ -591,22 +586,7 @@ func lastErrorMessage() string {
 	return C.GoString(msg)
 }
 
-func loadScenario(sim *Simulation, status *structs.SimulationStatus, fileName string) (bool, string) {
-	if !strings.HasSuffix(fileName, "json") {
-		return false, "Scenario file must be of type *.json"
-	}
-	if !hasFile(status.ConfigDir, fileName) {
-		return false, strCat("Can't find file ", fileName, " in ", status.ConfigDir)
-	}
-	absolutePath := filepath.Join(status.ConfigDir, fileName)
-	success := C.cse_execution_load_scenario(sim.Execution, sim.ScenarioManager, C.CString(absolutePath))
-	if success < 0 {
-		return false, strCat("Problem loading scenario file: ", lastErrorMessage())
-	}
-	return true, strCat("Successfully loaded scenario ", absolutePath)
-}
-
-func executeCommand(cmd []string, sim *Simulation, status *structs.SimulationStatus) (feedback structs.CommandFeedback) {
+func executeCommand(cmd []string, sim *Simulation, status *structs.SimulationStatus) (shorty structs.ShortLivedData, feedback structs.CommandFeedback) {
 	var success = false
 	var message = "No feedback implemented for this command"
 	switch cmd[0] {
@@ -616,7 +596,9 @@ func executeCommand(cmd []string, sim *Simulation, status *structs.SimulationSta
 			status.Loaded = true
 			status.ConfigDir = cmd[1]
 			status.Status = "pause"
-			status.MetaChan <- sim.MetaData
+			shorty.ModuleData = sim.MetaData
+			scenarios := findScenarios(status)
+			shorty.Scenarios = &scenarios
 		}
 	case "teardown":
 		status.Loaded = false
@@ -625,7 +607,7 @@ func executeCommand(cmd []string, sim *Simulation, status *structs.SimulationSta
 		status.Trends = []structs.Trend{}
 		status.Module = ""
 		success, message = simulationTeardown(sim)
-		status.MetaChan <- sim.MetaData
+		shorty.ModuleData = sim.MetaData
 	case "pause":
 		success, message = executionStop(sim.Execution)
 		status.Status = "pause"
@@ -657,26 +639,38 @@ func executeCommand(cmd []string, sim *Simulation, status *structs.SimulationSta
 	case "set-value":
 		success, message = setVariableValue(sim, cmd[1], cmd[2], cmd[3], cmd[4], cmd[5])
 	case "get-module-data":
-		status.MetaChan <- sim.MetaData
+		shorty.ModuleData = sim.MetaData
+		scenarios := findScenarios(status)
+		shorty.Scenarios = &scenarios
 		success = true
 		message = "Fetched metadata"
 	case "signals":
 		success, message = setSignalSubscriptions(status, cmd)
 	case "load-scenario":
 		success, message = loadScenario(sim, status, cmd[1])
+	case "parse-scenario":
+		scenario, err := parseScenario(status, cmd[1])
+		if err != nil {
+			success = false
+			message = err.Error()
+		} else {
+			success = true
+			message = "Successfully parsed scenario"
+			shorty.Scenario = &scenario
+		}
 	default:
 		message = "Unknown command, this is not good"
 		fmt.Println(message, cmd)
 	}
-	return structs.CommandFeedback{Success: success, Message: message, Command: cmd[0]}
+	return shorty, structs.CommandFeedback{Success: success, Message: message, Command: cmd[0]}
 }
 
 func CommandLoop(state chan structs.JsonResponse, sim *Simulation, command chan []string, status *structs.SimulationStatus) {
 	for {
 		select {
 		case cmd := <-command:
-			feedback := executeCommand(cmd, sim, status)
-			state <- GenerateJsonResponse(status, sim, feedback)
+			shorty, feedback := executeCommand(cmd, sim, status)
+			state <- GenerateJsonResponse(status, sim, feedback, shorty)
 		}
 	}
 }
@@ -742,20 +736,10 @@ func GetSignalValue(module string, cardinality string, signal string) int {
 	return 1
 }
 
-func maybeGetMetaData(metaChan <-chan *structs.MetaData) *structs.MetaData {
-	select {
-	case m := <-metaChan:
-		return m
-	default:
-		return nil
-	}
-}
-
-func GenerateJsonResponse(status *structs.SimulationStatus, sim *Simulation, feedback structs.CommandFeedback) structs.JsonResponse {
+func GenerateJsonResponse(status *structs.SimulationStatus, sim *Simulation, feedback structs.CommandFeedback, shorty structs.ShortLivedData) structs.JsonResponse {
 	var response = structs.JsonResponse{
 		Loaded:     status.Loaded,
 		Status:     status.Status,
-		ModuleData: maybeGetMetaData(status.MetaChan),
 	}
 	if status.Loaded {
 		execStatus := getExecutionStatus(sim.Execution)
@@ -769,12 +753,23 @@ func GenerateJsonResponse(status *structs.SimulationStatus, sim *Simulation, fee
 	if (structs.CommandFeedback{}) != feedback {
 		response.Feedback = &feedback
 	}
+	if (structs.ShortLivedData{} != shorty) {
+		if shorty.Scenarios != nil {
+			response.Scenarios = shorty.Scenarios
+		}
+		if shorty.Scenario != nil {
+			response.Scenario = shorty.Scenario
+		}
+		if shorty.ModuleData != nil {
+			response.ModuleData = shorty.ModuleData
+		}
+	}
 	return response
 }
 
 func StateUpdateLoop(state chan structs.JsonResponse, simulationStatus *structs.SimulationStatus, sim *Simulation) {
 	for {
-		state <- GenerateJsonResponse(simulationStatus, sim, structs.CommandFeedback{})
+		state <- GenerateJsonResponse(simulationStatus, sim, structs.CommandFeedback{}, structs.ShortLivedData{})
 		time.Sleep(1000 * time.Millisecond)
 	}
 }

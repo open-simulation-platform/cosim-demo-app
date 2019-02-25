@@ -20,7 +20,7 @@ func Server(command chan []string, state chan structs.JsonResponse, simulationSt
 
 	router.HandleFunc("/status", func(w http.ResponseWriter, r *http.Request) {
 		w.Header().Set("Content-Type", "application/json")
-		json.NewEncoder(w).Encode(cse.GenerateJsonResponse(simulationStatus, sim, structs.CommandFeedback{}))
+		json.NewEncoder(w).Encode(cse.GenerateJsonResponse(simulationStatus, sim, structs.CommandFeedback{}, structs.ShortLivedData{}))
 	})
 
 	router.HandleFunc("/modules", func(w http.ResponseWriter, r *http.Request) {
