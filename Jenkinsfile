@@ -3,7 +3,7 @@ pipeline {
 
     triggers {
         upstream(
-            upstreamProjects: 'open-simulation-platform/cse-core/master, open-simulation-platform/cse-client/master',
+            upstreamProjects: 'open-simulation-platform/cse-core/feature%2F174-scenarios-in-c-api, open-simulation-platform/cse-client/feature%2F44-run-scenarios',
             threshold: hudson.model.Result.SUCCESS)
     }
 
@@ -38,7 +38,7 @@ pipeline {
                                     sh 'curl https://raw.githubusercontent.com/golang/dep/master/install.sh | sh'
                                 }
                                 copyArtifacts(
-                                    projectName: 'open-simulation-platform/cse-client/master',
+                                    projectName: 'open-simulation-platform/cse-client/feature%2F44-run-scenarios',
                                     filter: 'resources/public/**/*',
                                     target: 'src/cse-server-go')
                                 
@@ -122,7 +122,7 @@ pipeline {
                         stage ('Get dependencies') {
                             steps {
                                 copyArtifacts(
-                                    projectName: 'open-simulation-platform/cse-client/master',
+                                    projectName: 'open-simulation-platform/cse-client/feature%2F44-run-scenarios',
                                     filter: 'resources/public/**/*',
                                     target: 'src/cse-server-go')
                                 
