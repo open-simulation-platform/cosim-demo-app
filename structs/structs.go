@@ -25,6 +25,7 @@ type JsonResponse struct {
 	Feedback             *CommandFeedback `json:"feedback,omitempy"`
 	Scenarios            *[]string        `json:"scenarios,omitempty"`
 	Scenario             *interface{}     `json:"scenario,omitempty"`
+	RunningScenario      string           `json:"running-scenario"`
 }
 
 type TrendSignal struct {
@@ -66,6 +67,7 @@ type SimulationStatus struct {
 	Trends              []Trend
 	TrendSpec           TrendSpec
 	Status              string
+	CurrentScenario     string
 }
 
 type Variable struct {

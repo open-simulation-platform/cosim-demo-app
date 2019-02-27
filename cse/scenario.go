@@ -20,6 +20,11 @@ func createScenarioManager() (manipulator *C.cse_manipulator) {
 	return
 }
 
+func isScenarioRunning(manipulator *C.cse_manipulator) bool {
+	intVal := C.cse_scenario_is_running(manipulator)
+	return intVal > 0
+}
+
 func doesFileExist(path string) bool {
 	if _, err := os.Stat(path); err == nil {
 		return true
@@ -33,7 +38,7 @@ func doesFileExist(path string) bool {
 }
 
 func loadScenario(sim *Simulation, status *structs.SimulationStatus, filename string) (bool, string) {
-	pathToFile := filepath.Join(status.ConfigDir, "scenarios", filename);
+	pathToFile := filepath.Join(status.ConfigDir, "scenarios", filename)
 	if !strings.HasSuffix(pathToFile, "json") {
 		return false, "Scenario file must be of type *.json"
 	}
@@ -44,11 +49,12 @@ func loadScenario(sim *Simulation, status *structs.SimulationStatus, filename st
 	if success < 0 {
 		return false, strCat("Problem loading scenario file: ", lastErrorMessage())
 	}
+	status.CurrentScenario = filename
 	return true, strCat("Successfully loaded scenario ", pathToFile)
 }
 
 func parseScenario(status *structs.SimulationStatus, filename string) (interface{}, error) {
-	pathToFile := filepath.Join(status.ConfigDir, "scenarios", filename);
+	pathToFile := filepath.Join(status.ConfigDir, "scenarios", filename)
 	jsonFile, err := os.Open(pathToFile)
 
 	if (err != nil) {
@@ -71,7 +77,7 @@ func parseScenario(status *structs.SimulationStatus, filename string) (interface
 }
 
 func findScenarios(status *structs.SimulationStatus) (scenarios []string) {
-	folder := filepath.Join(status.ConfigDir, "scenarios");
+	folder := filepath.Join(status.ConfigDir, "scenarios")
 	info, e := os.Stat(folder)
 	if os.IsNotExist(e) {
 		fmt.Println("Scenario folder does not exist: ", folder)

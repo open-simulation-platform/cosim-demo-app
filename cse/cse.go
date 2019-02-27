@@ -738,8 +738,8 @@ func GetSignalValue(module string, cardinality string, signal string) int {
 
 func GenerateJsonResponse(status *structs.SimulationStatus, sim *Simulation, feedback structs.CommandFeedback, shorty structs.ShortLivedData) structs.JsonResponse {
 	var response = structs.JsonResponse{
-		Loaded:     status.Loaded,
-		Status:     status.Status,
+		Loaded: status.Loaded,
+		Status: status.Status,
 	}
 	if status.Loaded {
 		execStatus := getExecutionStatus(sim.Execution)
@@ -749,6 +749,10 @@ func GenerateJsonResponse(status *structs.SimulationStatus, sim *Simulation, fee
 		response.Module = findModuleData(status, sim.MetaData, sim.Observer)
 		response.ConfigDir = status.ConfigDir
 		response.Trends = status.Trends
+		if sim.ScenarioManager != nil && isScenarioRunning(sim.ScenarioManager) {
+			response.RunningScenario = status.CurrentScenario;
+		}
+
 	}
 	if (structs.CommandFeedback{}) != feedback {
 		response.Feedback = &feedback
