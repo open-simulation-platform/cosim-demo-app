@@ -53,6 +53,15 @@ func loadScenario(sim *Simulation, status *structs.SimulationStatus, filename st
 	return true, strCat("Successfully loaded scenario ", pathToFile)
 }
 
+func abortScenario(manipulator *C.cse_manipulator) (bool, string) {
+	intVal := C.cse_scenario_abort(manipulator)
+	if int(intVal) < 0 {
+		return false, "Failed to abort scenario"
+	} else {
+		return true, "Scenario aborted"
+	}
+}
+
 func parseScenario(status *structs.SimulationStatus, filename string) (interface{}, error) {
 	pathToFile := filepath.Join(status.ConfigDir, "scenarios", filename)
 	jsonFile, err := os.Open(pathToFile)

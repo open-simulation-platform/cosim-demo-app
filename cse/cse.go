@@ -648,6 +648,8 @@ func executeCommand(cmd []string, sim *Simulation, status *structs.SimulationSta
 		success, message = setSignalSubscriptions(status, cmd)
 	case "load-scenario":
 		success, message = loadScenario(sim, status, cmd[1])
+		case "abort-scenario":
+		success, message = abortScenario(sim.ScenarioManager)
 	case "parse-scenario":
 		scenario, err := parseScenario(status, cmd[1])
 		if err != nil {
