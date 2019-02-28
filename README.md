@@ -1,66 +1,88 @@
-# cse-server-go
-playground for testing go as an alternative for the cse-server
+CSE demo application in Go
+==========================
 
-# Get going (windows)
-- install [go](https://golang.org/dl/)
-- environmental variables must be defined
-    - [GOROOT](https://golang.org/doc/install#tarball_non_standard) - directory where go is installed
-    - [GOPATH](https://golang.org/cmd/go/#hdr-GOPATH_environment_variable) - where to look for Go files
-- install [MinGW-w64](https://sourceforge.net/projects/mingw-w64/?source=typ_redirect) (TODO: Should investigate using VS)
-- csecorec.dll and csecorecpp.dll must be manually copied into cse-server-go root folder
-- go build will compile executable
+ This repository contains demo application for CSE written in Go
 
-# Dependencies
-- Install the dep tool https://golang.github.io/dep/
-- Type `dep ensure` in your shell to download deps to your disk.
-- Install packr:`go get -u github.com/gobuffalo/packr/...`
 
-# Interactive web development (client)
-- Install https://leiningen.org/ (and possibly a Java JDK)
-- cd /client
-- lein figwheel
+How to build
+------------
 
-# Interactive web development (server)
-- Install https://github.com/codegangsta/gin
-- Did not get any further on this, but should be the way to go.
+### Required tools
+  * Go dev tools: [Golang](https://golang.org/dl/) >= 1.11
+  * Compiler: [MinGW-w64](https://sourceforge.net/projects/mingw-w64/?source=typ_redirect) (Windows), GCC >= 7 (Linux)
+  * Package managers: [Conan](https://conan.io/) and [Go Modules](https://github.com/golang/go/wiki/Modules)
 
-# Building binary distribution
-- In client folder: Run `lein cljsbuild once min`
-- In server root folder: Run `packr build`
+Throughout this guide, we will use Conan to manage C++ dependencies. However, you can also install the C++ dependencies manually.
 
-# Build and run on Ubuntu
+### Step 1: Configure Conan
 
-Tested on Ubuntu 16.04, but will most likely work on Ubuntu 18.04 and other Linux distributions as well.
+First, add the OSP Conan repository as a remote and configure the username and
+password to access it:
 
-Download archive and install [Go](https://golang.org/doc/install#install) (Tested with 1.11.2)  
+    conan remote add osp https://osp-conan.azurewebsites.net/artifactory/api/conan/conan-local
+    conan user -p "Open Simulation Platform" -r osp osp
 
-Add \<install path\>/bin to PATH variable in /etc/environment.
+### Step 2: Cse Client
 
-In case you want to change the default Go workspace path (\<home path\>/go) you can set it with GOPATH in `/etc/environment`.
+If you want to include the cse-client in the server you will have to manually copy in the client app. Latest build of 
+the client is available here: https://osp-jenkins.azurewebsites.net/job/open-simulation-platform/job/cse-client/job/master/lastSuccessfulBuild/artifact/
 
-And to be able to run installed Go packages like e.g. packr without providing the full path, you might also want to add \<workspace path\>/bin to PATH variable in /etc/environment.
+Extract the files into:
+    
+    ./resources/public
+    
+Alternatively you can run the client using figwheel as described in https://github.com/open-simulation-platform/cse-client
 
-https://help.ubuntu.com/community/EnvironmentVariables#A.2Fetc.2Fenvironment  
-_Note: Variable expansion does not work in this file, and you have to log out and in again to apply changes._
+### Step 3: Build and run
 
-Clone this repository to \<workspace path\>/src
+You can do this in two ways:
 
-Change directory to \<workspace path\>/src/cse-server-go  
-Download all imported packages  
-`go get -d -v ./...`
+#### Alternative 1: Using Conan
 
-The next step is to pull and build the latest version of cse-core and then tell Go where to look for cse-core headers and shared libraries.
-That can be done with the environment variables `CGO_CFLAGS` and `CGO_LDFLAGS`, and you can either add them permanently to e.g. `/etc/environment`, ~/.profile or just set them on the command line before calling go build, like shown below.
+From the cse-server-go source directory, get C/C++ dependencies using Conan:
 
-```
-CGO_CFLAGS="-I\<cse-core path\>/include" CGO_LDFLAGS="-L\<cse-core path\>/build/output/release/lib -lcsecorec -Wl,-rpath=\<cse-core path\>/build/output/release/lib" go build
-```
+    conan install . -s build_type=Release -g virtualrunenv
+    go build
 
-_Note: It also sets the rpath (runtime search path) so that you don't have to provide it via e.g. `LD_LIBRARY_PATH` when you run it._
+To run the application on Windows:
+    
+    activate_run.bat
+    cse-server-go.exe
+    deactivate_run.bat when done
+    
+To run the application on Linux:
 
-Run it  
-```
-./cse-server-go
-```
+    source activate_run.sh
+    ./cse-server-go
+    ./deactivate_run.sh when done
+    
+Open a browser at http://localhost:8000/status to verify that it's running (you should see some JSON).
 
-And then open a browser at e.g. http://localhost:8000/status to verify that it's running (you should see some JSON).
+#### Alternative 2: Manually handle cse-core dependencies
+
+You will have to define CGO environment variables with arguments pointing to your cse-core headers and libraries. An 
+example for Windows can be:
+
+    set CGO_CFLAGS=-IC:\dev\cse-core\include
+    set CGO_LDFLAGS=-LC:\dev\cse-core\bin -lcsecorec -lcsecorecpp
+    go build
+    
+To run the application on Windows you need to also update the path to point to your libraries:
+    
+    set PATH=C:\cse-core\bin;%PATH%
+    cse-server-go.exe
+    
+To run the application on Linux you need to update the LD_LIBRARY_PATH:
+    
+    LD_LIBRARY_PATH=~dev/cse-core/lib:$LD_LIBRARY_PATH
+    export LD_LIBRARY_PATH
+    ./cse-server-go
+    
+Open a browser at http://localhost:8000/status to verify that it's running (you should see some JSON).
+ 
+### Create distribution with built-in client
+
+To package the application with the client you can use packr. You can install packr and build distributable with:
+
+    go get -u github.com/gobuffalo/packr/packr
+    packr build

@@ -1,6 +1,8 @@
 package cse
 
 /*
+	#cgo CFLAGS: -I${SRCDIR}/../include
+	#cgo LDFLAGS: -L${SRCDIR}/../dist/bin -L${SRCDIR}/../dist/lib -lcsecorec -lstdc++
 	#include <cse.h>
 */
 import "C"
@@ -429,7 +431,6 @@ func initializeSimulation(sim *Simulation, fmuDir string, logDir string) (bool, 
 		fileObserver := createFileObserver(logDir)
 		executionAddObserver(execution, fileObserver)
 	}
-
 
 	manipulator := createOverrideManipulator()
 	executionAddManipulator(execution, manipulator)
