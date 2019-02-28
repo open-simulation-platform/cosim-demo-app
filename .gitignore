@@ -17,7 +17,7 @@ cse-server-go
 .idea
 
 # Client build directory and artifact
-resources/public/js/compiled/app.js
+resources/public/
 
 # Conan output
 include/

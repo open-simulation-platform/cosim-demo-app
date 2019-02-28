@@ -13,6 +13,7 @@ RUN apt-get update && \
     python3-pip \
     && rm -rf /var/lib/apt/lists/*
 
+# Install Go
 RUN curl "https://dl.google.com/go/go1.11.5.linux-amd64.tar.gz" | tar xvz -C /usr/local; \
     export PATH="/usr/local/go/bin:$PATH"; \
     go version
@@ -23,8 +24,6 @@ ENV PATH $GOPATH/bin:/usr/local/go/bin:$PATH
 RUN mkdir -p "$GOPATH/src" "$GOPATH/bin" && chmod -R 777 "$GOPATH"
 WORKDIR $GOPATH
 
-# Install packr
+# Install additional build tools
 RUN go get -v -u github.com/gobuffalo/packr/packr && go clean -cache
-
-# Install  Conan package manager
 RUN pip3 install conan cmake
