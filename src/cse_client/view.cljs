@@ -223,6 +223,7 @@
 
 (defn index-page []
   (let [loaded? (rf/subscribe [:loaded?])
+        prev-paths (rf/subscribe [:prev-paths])
         load-dir (r/atom default-load-dir)
         log-dir (r/atom default-log-dir)]
     (fn []
@@ -250,7 +251,21 @@
          [:div.two.column.row
           [:div.column
            [:button.ui.button.right.floated {:disabled (empty? @load-dir)
-                                             :on-click #(rf/dispatch [::controller/load @load-dir @log-dir])} "Load simulation"]]]]))))
+                                             :on-click #(rf/dispatch [::controller/load @load-dir @log-dir])} "Load simulation"]]]
+         [:div.two.column.row
+          [:div.column
+           [:h3 "Previously used configurations"]
+           [:div.ui.relaxed.divided.list
+            (map (fn [path]
+                   [:div.item {:key path}
+                    [:i.large.folder.open.middle.aligned.icon]
+                    [:div.content
+                     [:a.header {:on-click #(reset! load-dir path)}
+                      path]
+                     [:div.description
+                      [:a.right.floated {:on-click #(rf/dispatch [::controller/delete-prev path])}
+                       [:i.delete.icon]]]]])
+                 @prev-paths)]]]]))))
 
 (defn root-comp []
   (let [socket-state (rf/subscribe [:kee-frame.websocket/state socket-url])

@@ -8,7 +8,8 @@
             [cljs.spec.alpha :as s]
             [cljs.core.async :refer [<! timeout]]
             [clojure.string :as str]
-            [re-frame.core :as rf]))
+            [re-frame.core :as rf]
+            [cse-client.localstorage :as storage]))
 
 ;; Prevent handler overwriting warnings during cljs reload.
 (re-frame-log/set-loggers!
@@ -142,8 +143,18 @@
                     (socket-command ["signals"]))))
 
 (k/reg-event-fx ::load
-                (fn [_ [folder log-folder]]
-                  (socket-command ["load" folder (or log-folder "")])))
+                (fn [{:keys [db]} [folder log-folder]]
+                  (let [paths (distinct (conj (:prev-paths db) folder))]
+                    (storage/set-item! "cse-paths" (pr-str paths))
+                    (merge
+                      {:db (assoc db :prev-paths paths)}
+                      (socket-command ["load" folder (or log-folder "")])))))
+
+(k/reg-event-fx ::delete-prev
+                (fn [{:keys [db]} [path]]
+                  (let [paths (remove #(= path %) (:prev-paths db))]
+                    (storage/set-item! "cse-paths" (pr-str paths))
+                    {:db (assoc db :prev-paths paths)})))
 
 (k/reg-event-fx ::teardown
                 (fn [_ _]

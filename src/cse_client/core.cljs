@@ -3,7 +3,9 @@
             [re-frame.core :as rf]
             [cse-client.view :as view]
             [cse-client.controller :as controller]
-            [cse-client.config :refer [socket-url]]))
+            [cse-client.config :refer [socket-url]]
+            [cljs.reader :as reader]
+            [cse-client.localstorage :as storage]))
 
 (enable-console-print!)
 
@@ -63,6 +65,8 @@
 (rf/reg-sub :overview status-data)
 (rf/reg-sub :time simulation-time)
 (rf/reg-sub :loaded? (comp :loaded :state))
+(rf/reg-sub :prev-paths (fn [db]
+                          (:prev-paths db)))
 (rf/reg-sub :status (comp :status :state))
 (rf/reg-sub :realtime? (comp :isRealTime :state))
 
@@ -124,4 +128,5 @@
            :initial-db     {:trend-range      10
                             :active-guide-tab "About"
                             :page             1
-                            :vars-per-page    20}})
+                            :vars-per-page    20
+                            :prev-paths       (reader/read-string (storage/get-item "cse-paths"))}})
