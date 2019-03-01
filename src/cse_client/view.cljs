@@ -7,6 +7,7 @@
             [cse-client.config :refer [socket-url]]
             [cse-client.guide :as guide]
             [cse-client.components :as c]
+            [cse-client.scenario :as scenario]
             [clojure.string :as str]
             [fulcrologic.semantic-ui.factories :as semantic]
             [fulcrologic.semantic-ui.icons :as icons]))
@@ -106,10 +107,10 @@
      [:table.ui.compact.single.line.striped.selectable.table
       [:thead
        [:tr
-        [:th "Name"]
+        [:th.five.wide "Name"]
         [:th.one.wide "Type"]
         [:th "Value"]
-        [:th.two.wide "Actions"]]]
+        [:th.one.wide "Actions"]]]
       [:tbody
        (map (fn [{:keys [name causality type value-reference] :as variable}]
               [:tr {:key (str current-module "-" causality "-" name)}
@@ -150,26 +151,41 @@
         route-module (-> route :path-params :module)
         loaded? @(rf/subscribe [:loaded?])
         trend-info @(rf/subscribe [:trend-info])
-        active-trend-index @(rf/subscribe [:active-trend-index])]
+        active-trend-index @(rf/subscribe [:active-trend-index])
+        scenarios @(rf/subscribe [:scenarios])]
     [:div.ui.secondary.vertical.fluid.menu
-     [:a.item {:href  (k/path-for [:index])
-               :class (when (= route-name :index) :active)}
-      "Overview"]
+     [:div.item
+      [:a.header {:href  (k/path-for [:index])
+                  :class (when (= route-name :index) "active")}
+       "Overview"]]
      (when (and loaded? (> (count trend-info) 0))
        [:div.item
         [:div.header "Trends"]
         [:div.menu
          (map (fn [{:keys [index label]}]
-                [:a.item {:class (when (= index (int active-trend-index)) :active)
+                [:a.item {:class (when (= index (int active-trend-index)) "active")
                           :key   label
                           :href  (k/path-for [:trend {:index index}])} label
                  [:div.ui.teal.left.pointing.label (-> trend-info (nth index) :count)]]) trend-info)]])
+     (when loaded?
+       [:div.item
+        [:a.header
+         {:href  (k/path-for [:scenarios])
+          :class (when (= route-name :scenarios) "active")}
+         "Scenarios"]
+        [:div.menu
+         (map (fn [{:keys [id running?]}]
+                [:a.item {:class (when (= (-> route :path-params :id) id) "active")
+                          :key   id
+                          :href  (k/path-for [:scenario {:id id}])} id
+                 (when running? [:i.green.play.icon])])
+              scenarios)]])
      [:div.ui.divider]
      [:div.item
       [:div.header "Models"]
       [:div.menu
        (map (fn [{:keys [name causality]}]
-              [:a.item {:class (when (= route-module name) :active)
+              [:a.item {:class (when (= route-module name) "active")
                         :key   name
                         :href  (k/path-for [:module {:module name :causality causality}])} name])
             module-routes)]]]))
@@ -307,6 +323,8 @@
                                :trend "Trend"
                                :guide "User guide"
                                :index (if @loaded? "Simulation status" "Simulation setup")
+                               :scenarios "Scenarios"
+                               :scenario "Scenario"
                                nil [:div "Loading..."]]]]
          [:div.ui.divider]
          [:div.row
@@ -315,6 +333,8 @@
            :guide [guide/form]
            :module [module-listing]
            :index [index-page]
+           :scenarios [scenario/overview]
+           :scenario [scenario/one]
            nil [:div "Loading..."]]]]]]]
      (when (= :disconnected (:state @socket-state))
        [:div.ui.page.dimmer.transition.active

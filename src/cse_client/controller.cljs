@@ -32,6 +32,13 @@
                    :start  [::trend-enter]
                    :stop   [::trend-leave]})
 
+(k/reg-controller :scenario
+                  {:params (fn [route]
+                             (when (-> route :data :name (= :scenario))
+                               (-> route :path-params)))
+                   :start  [::scenario-enter]
+                   :stop   [::scenario-leave]})
+
 (k/reg-controller :websocket-controller
                   {:params (constantly true)
                    :start  [:start-websockets]})
@@ -120,14 +127,6 @@
                                      :page-count (count groups))}
                       (socket-command (concat ["signals" current-module] (map encode-variable viewing)))))))
 
-(k/reg-event-db ::trend-enter
-                (fn [db [{:keys [index]}]]
-                  (assoc db :active-trend-index index)))
-
-(k/reg-event-db ::trend-leave
-                (fn [db _]
-                  (dissoc db :active-trend-index)))
-
 (k/reg-event-fx ::module-enter
                 (fn [{:keys [db]} [{:keys [module causality]}]]
                   (merge
@@ -141,6 +140,23 @@
                   (merge
                     {:db (dissoc db :current-module)}
                     (socket-command ["signals"]))))
+
+(k/reg-event-db ::trend-enter
+                (fn [db [{:keys [index]}]]
+                  (assoc db :active-trend-index index)))
+
+(k/reg-event-db ::trend-leave
+                (fn [db _]
+                  (dissoc db :active-trend-index)))
+
+(k/reg-event-fx ::scenario-enter
+                (fn [{:keys [db]} [{:keys [id]}]]
+                  (merge {:db (assoc db :scenario-id id)}
+                         (socket-command ["parse-scenario" id]))))
+
+(k/reg-event-db ::scenario-leave
+                (fn [db _]
+                  (dissoc db :scenario-id)))
 
 (k/reg-event-fx ::load
                 (fn [{:keys [db]} [folder log-folder]]
@@ -224,3 +240,11 @@
                   {:db       (assoc db :vars-per-page (max 1 n)
                                        :page 1)
                    :dispatch [::fetch-signals]}))
+
+(k/reg-event-fx ::load-scenario
+                (fn [_ [file-name]]
+                  (socket-command ["load-scenario" file-name])))
+
+(k/reg-event-fx ::abort-scenario
+                (fn [_ [file-name]]
+                  (socket-command ["abort-scenario" file-name])))

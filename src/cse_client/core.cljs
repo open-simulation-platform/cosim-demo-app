@@ -5,7 +5,9 @@
             [cse-client.controller :as controller]
             [cse-client.config :refer [socket-url]]
             [cljs.reader :as reader]
-            [cse-client.localstorage :as storage]))
+            [cse-client.localstorage :as storage]
+            [cse-client.config :refer [socket-url]]
+            [clojure.string :as str]))
 
 (enable-console-print!)
 
@@ -13,7 +15,9 @@
   [["/" :index]
    ["/modules/:module/:causality" :module]
    ["/trend/:index" :trend]
-   ["/guide" :guide]])
+   ["/guide" :guide]
+   ["/scenarios" :scenarios]
+   ["/scenarios/:id" :scenario]])
 
 (def sort-order
   (let [order ["input" "independent" "parameter" "calculatedParameter" "local" "internal" "output"]]
@@ -120,6 +124,64 @@
 (rf/reg-sub :vars-per-page #(:vars-per-page %))
 
 (rf/reg-sub :feedback-message #(:feedback-message %))
+
+(defn validate-event [db event]
+  (let [module-tree (-> db :state :module-data :fmus)
+        model-valid? (->> module-tree (map :name) (filter #(= (:model event) %)) seq boolean)
+        variable-valid? (some->> module-tree
+                                 (filter #(= (:model event) (:name %)))
+                                 first
+                                 :variables
+                                 (filter (fn [{:keys [name causality type]}]
+                                           (and (= name (:variable event))
+                                                (= causality (:causality event))
+                                                (= (str/lower-case type) (str/lower-case (:type event))))))
+                                 seq
+                                 boolean)]
+    (-> event
+        (assoc :model-valid? model-valid? :variable-valid? variable-valid? :valid? (and model-valid? variable-valid?))
+        (assoc :validation-message (cond
+                                     (not model-valid?) "Can't find a model with this name"
+                                     (not variable-valid?) "Can't find a variable with this name, type and causality")))))
+
+(defn merge-defaults [db scenario]
+  (let [new-events (->> scenario
+                        :events
+                        (mapv (fn [event]
+                                (merge (:defaults scenario) event)))
+                        (mapv (fn [event]
+                                (validate-event db event)))
+                        (sort-by :time))]
+    (-> scenario
+        (assoc :events new-events)
+        (assoc :valid? (every? :valid? new-events)))))
+
+(rf/reg-sub :scenarios (fn [db]
+                         (let [running (-> db :state :running-scenario)]
+                           (->> (get-in db [:state :scenarios])
+                                (map (fn [filename]
+                                       {:id       filename
+                                        :running? (= filename running)}))))))
+
+(rf/reg-sub :scenario-running?
+            (fn [db [_ id]]
+              (-> db
+                  :state
+                  :running-scenario
+                  (= id))))
+
+(rf/reg-sub :any-scenario-running?
+            (fn [db]
+              (-> db :state :running-scenario seq)))
+
+
+(rf/reg-sub :scenario (fn [db]
+                        (->> db
+                             :state
+                             :scenario
+                             (merge-defaults db))))
+
+(rf/reg-sub :scenario-id #(:scenario-id %))
 
 (k/start! {:routes         routes
            :hash-routing?  true
