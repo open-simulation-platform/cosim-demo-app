@@ -23,6 +23,9 @@ type JsonResponse struct {
 	Trends               []Trend          `json:"trends"`
 	ModuleData           *MetaData        `json:"module-data,omitempty"`
 	Feedback             *CommandFeedback `json:"feedback,omitempy"`
+	Scenarios            *[]string        `json:"scenarios,omitempty"`
+	Scenario             *interface{}     `json:"scenario,omitempty"`
+	RunningScenario      string           `json:"running-scenario"`
 }
 
 type TrendSignal struct {
@@ -50,6 +53,12 @@ type TrendSpec struct {
 	Auto  bool
 }
 
+type ShortLivedData struct {
+	Scenarios  *[]string
+	Scenario   *interface{}
+	ModuleData *MetaData
+}
+
 type SimulationStatus struct {
 	Loaded              bool
 	ConfigDir           string
@@ -58,7 +67,7 @@ type SimulationStatus struct {
 	Trends              []Trend
 	TrendSpec           TrendSpec
 	Status              string
-	MetaChan            chan *MetaData
+	CurrentScenario     string
 }
 
 type Variable struct {

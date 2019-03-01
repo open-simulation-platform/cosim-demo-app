@@ -362,12 +362,14 @@ func simulationTeardown(sim *Simulation) (bool, string) {
 		observerDestroy(sim.FileObserver)
 	}
 	manipulatorDestroy(sim.OverrideManipulator)
+	manipulatorDestroy(sim.ScenarioManager)
 
 	sim.Execution = nil
 	sim.Observer = nil
 	sim.TrendObserver = nil
 	sim.FileObserver = nil
 	sim.OverrideManipulator = nil
+	sim.ScenarioManager = nil
 	sim.MetaData = &structs.MetaData{}
 	return true, "Simulation teardown successful"
 }
@@ -400,7 +402,7 @@ func initializeSimulation(sim *Simulation, fmuDir string, logDir string) (bool, 
 		FMUs: []structs.FMU{},
 	}
 	var execution *C.cse_execution
-	if hasSsdFile(fmuDir) {
+	if hasFile(fmuDir, "SystemStructure.ssd") {
 		execution = createSsdExecution(fmuDir)
 		if execution == nil {
 			return false, "Could not create execution from SystemStructure.ssd file"
@@ -435,11 +437,15 @@ func initializeSimulation(sim *Simulation, fmuDir string, logDir string) (bool, 
 	manipulator := createOverrideManipulator()
 	executionAddManipulator(execution, manipulator)
 
+	scenarioManager := createScenarioManager()
+	executionAddManipulator(execution, scenarioManager)
+
 	sim.Execution = execution
 	sim.Observer = observer
 	sim.TrendObserver = trendObserver
 	sim.FileObserver = fileObserver
 	sim.OverrideManipulator = manipulator
+	sim.ScenarioManager = scenarioManager
 	sim.MetaData = &metaData
 	return true, "Simulation loaded successfully"
 }
@@ -577,7 +583,12 @@ func removeTrend(status *structs.SimulationStatus, trendIndex string) (bool, str
 	return true, "Removed trend"
 }
 
-func executeCommand(cmd []string, sim *Simulation, status *structs.SimulationStatus) (feedback structs.CommandFeedback) {
+func lastErrorMessage() string {
+	msg := C.cse_last_error_message();
+	return C.GoString(msg)
+}
+
+func executeCommand(cmd []string, sim *Simulation, status *structs.SimulationStatus) (shorty structs.ShortLivedData, feedback structs.CommandFeedback) {
 	var success = false
 	var message = "No feedback implemented for this command"
 	switch cmd[0] {
@@ -587,7 +598,9 @@ func executeCommand(cmd []string, sim *Simulation, status *structs.SimulationSta
 			status.Loaded = true
 			status.ConfigDir = cmd[1]
 			status.Status = "pause"
-			status.MetaChan <- sim.MetaData
+			shorty.ModuleData = sim.MetaData
+			scenarios := findScenarios(status)
+			shorty.Scenarios = &scenarios
 		}
 	case "teardown":
 		status.Loaded = false
@@ -596,7 +609,7 @@ func executeCommand(cmd []string, sim *Simulation, status *structs.SimulationSta
 		status.Trends = []structs.Trend{}
 		status.Module = ""
 		success, message = simulationTeardown(sim)
-		status.MetaChan <- sim.MetaData
+		shorty.ModuleData = sim.MetaData
 	case "pause":
 		success, message = executionStop(sim.Execution)
 		status.Status = "pause"
@@ -628,24 +641,40 @@ func executeCommand(cmd []string, sim *Simulation, status *structs.SimulationSta
 	case "set-value":
 		success, message = setVariableValue(sim, cmd[1], cmd[2], cmd[3], cmd[4], cmd[5])
 	case "get-module-data":
-		status.MetaChan <- sim.MetaData
+		shorty.ModuleData = sim.MetaData
+		scenarios := findScenarios(status)
+		shorty.Scenarios = &scenarios
 		success = true
 		message = "Fetched metadata"
 	case "signals":
 		success, message = setSignalSubscriptions(status, cmd)
+	case "load-scenario":
+		success, message = loadScenario(sim, status, cmd[1])
+		case "abort-scenario":
+		success, message = abortScenario(sim.ScenarioManager)
+	case "parse-scenario":
+		scenario, err := parseScenario(status, cmd[1])
+		if err != nil {
+			success = false
+			message = err.Error()
+		} else {
+			success = true
+			message = "Successfully parsed scenario"
+			shorty.Scenario = &scenario
+		}
 	default:
 		message = "Unknown command, this is not good"
 		fmt.Println(message, cmd)
 	}
-	return structs.CommandFeedback{Success: success, Message: message, Command: cmd[0]}
+	return shorty, structs.CommandFeedback{Success: success, Message: message, Command: cmd[0]}
 }
 
 func CommandLoop(state chan structs.JsonResponse, sim *Simulation, command chan []string, status *structs.SimulationStatus) {
 	for {
 		select {
 		case cmd := <-command:
-			feedback := executeCommand(cmd, sim, status)
-			state <- GenerateJsonResponse(status, sim, feedback)
+			shorty, feedback := executeCommand(cmd, sim, status)
+			state <- GenerateJsonResponse(status, sim, feedback, shorty)
 		}
 	}
 }
@@ -711,20 +740,10 @@ func GetSignalValue(module string, cardinality string, signal string) int {
 	return 1
 }
 
-func maybeGetMetaData(metaChan <-chan *structs.MetaData) *structs.MetaData {
-	select {
-	case m := <-metaChan:
-		return m
-	default:
-		return nil
-	}
-}
-
-func GenerateJsonResponse(status *structs.SimulationStatus, sim *Simulation, feedback structs.CommandFeedback) structs.JsonResponse {
+func GenerateJsonResponse(status *structs.SimulationStatus, sim *Simulation, feedback structs.CommandFeedback, shorty structs.ShortLivedData) structs.JsonResponse {
 	var response = structs.JsonResponse{
-		Loaded:     status.Loaded,
-		Status:     status.Status,
-		ModuleData: maybeGetMetaData(status.MetaChan),
+		Loaded: status.Loaded,
+		Status: status.Status,
 	}
 	if status.Loaded {
 		execStatus := getExecutionStatus(sim.Execution)
@@ -734,16 +753,31 @@ func GenerateJsonResponse(status *structs.SimulationStatus, sim *Simulation, fee
 		response.Module = findModuleData(status, sim.MetaData, sim.Observer)
 		response.ConfigDir = status.ConfigDir
 		response.Trends = status.Trends
+		if sim.ScenarioManager != nil && isScenarioRunning(sim.ScenarioManager) {
+			response.RunningScenario = status.CurrentScenario;
+		}
+
 	}
 	if (structs.CommandFeedback{}) != feedback {
 		response.Feedback = &feedback
+	}
+	if (structs.ShortLivedData{} != shorty) {
+		if shorty.Scenarios != nil {
+			response.Scenarios = shorty.Scenarios
+		}
+		if shorty.Scenario != nil {
+			response.Scenario = shorty.Scenario
+		}
+		if shorty.ModuleData != nil {
+			response.ModuleData = shorty.ModuleData
+		}
 	}
 	return response
 }
 
 func StateUpdateLoop(state chan structs.JsonResponse, simulationStatus *structs.SimulationStatus, sim *Simulation) {
 	for {
-		state <- GenerateJsonResponse(simulationStatus, sim, structs.CommandFeedback{})
+		state <- GenerateJsonResponse(simulationStatus, sim, structs.CommandFeedback{}, structs.ShortLivedData{})
 		time.Sleep(1000 * time.Millisecond)
 	}
 }
@@ -807,25 +841,26 @@ func getFmuPaths(loadFolder string) (paths []string) {
 	return paths
 }
 
-func hasSsdFile(loadFolder string) bool {
-	info, e := os.Stat(loadFolder)
+func hasFile(folder string, fileName string) bool {
+	info, e := os.Stat(folder)
 	if os.IsNotExist(e) {
-		fmt.Println("Load folder does not exist!")
+		fmt.Println("Folder does not exist: ", folder)
 		return false
 	} else if !info.IsDir() {
-		fmt.Println("Load folder is not a directory!")
+		fmt.Println("Folder is not a directory: ", folder)
 		return false
 	} else {
-		files, err := ioutil.ReadDir(loadFolder)
+		files, err := ioutil.ReadDir(folder)
 		if err != nil {
 			log.Fatal(err)
 		}
 		for _, f := range files {
-			if f.Name() == "SystemStructure.ssd" {
+			if f.Name() == fileName {
 				return true
 			}
 		}
 	}
+	fmt.Println("Folder does not contain file: ", fileName, folder)
 	return false
 }
 
@@ -835,6 +870,7 @@ type Simulation struct {
 	TrendObserver       *C.cse_observer
 	FileObserver        *C.cse_observer
 	OverrideManipulator *C.cse_manipulator
+	ScenarioManager     *C.cse_manipulator
 	MetaData            *structs.MetaData
 }
 
