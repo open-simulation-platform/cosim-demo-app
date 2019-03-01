@@ -2,7 +2,7 @@
 virtualbuildenv
 
 [requires]
-cse-core/0.1.0@osp/feature_174-scenarios-in-c-api
+cse-core/0.1.0@osp/master
 
 [imports]
 include, cse.h                  -> ./include

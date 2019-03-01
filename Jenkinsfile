@@ -3,7 +3,7 @@ pipeline {
 
     triggers {
         upstream(
-            upstreamProjects: 'open-simulation-platform/cse-core/feature%2F174-scenarios-in-c-api, open-simulation-platform/cse-client/feature%2F44-run-scenarios',
+            upstreamProjects: 'open-simulation-platform/cse-core/master, open-simulation-platform/cse-client/feature%2F44-run-scenarios',
             threshold: hudson.model.Result.SUCCESS)
     }
 
