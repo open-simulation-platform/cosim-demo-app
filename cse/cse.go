@@ -1,6 +1,8 @@
 package cse
 
 /*
+	#cgo CFLAGS: -I${SRCDIR}/../include
+	#cgo LDFLAGS: -L${SRCDIR}/../dist/bin -L${SRCDIR}/../dist/lib -lcsecorec -lstdc++
 	#include <cse.h>
 */
 import "C"

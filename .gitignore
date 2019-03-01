@@ -17,9 +17,8 @@ cse-server-go
 .idea
 
 # Client build directory and artifact
-resources/public/js/compiled/app.js
+resources/public/
 
-# Dep/packr
-Gopkg.lock
-resources/
-vendor/
+# Conan output
+include/
+dist/
