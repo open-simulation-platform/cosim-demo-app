@@ -9,6 +9,8 @@
 
 (def id-store (atom nil))
 
+(def plot-container-height "70vh")
+
 (def range-configs
   [{:seconds 10
     :text    "10s"}
@@ -96,19 +98,25 @@
       (and begin end)
       (rf/dispatch [::controller/trend-zoom begin end]))))
 
+(defn- set-dom-element-height! [dom-node height]
+  (-> dom-node .-style .-height (set! height)))
+
 (defn trend-inner []
   (let [update (fn [comp]
                  (let [{:keys [trend-values trend-id]} (r/props comp)]
                    (update-chart-data (r/dom-node comp) trend-values trend-id)))]
     (r/create-class
       {:component-did-mount  (fn [comp]
-                               (let [{:keys [trend-layout]} (r/props comp)]
-                                 (js/Plotly.plot (r/dom-node comp)
+                               (let [{:keys [trend-layout]} (r/props comp)
+                                     dom-node (r/dom-node comp)
+                                     _ (set-dom-element-height! dom-node plot-container-height)]
+                                 (js/Plotly.react dom-node
                                                  (clj->js [{:x    []
                                                             :y    []
                                                             :mode "lines"
                                                             :type "scatter"}])
-                                                 (clj->js trend-layout))
+                                                 (clj->js trend-layout)
+                                                 (clj->js {:responsive true}))
                                  (.on (r/dom-node comp) "plotly_relayout" relayout-callback)))
        :component-did-update update
        :reagent-render       (fn []
