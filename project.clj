@@ -38,7 +38,7 @@
                                        :optimizations  :advanced
                                        :parallel-build true}}]}
 
-  :figwheel {:css-dirs ["resources/public/css"]}
+  :figwheel {:css-dirs ["resources/public/static/css"]}
 
   :profiles {:dev          [:project/dev :profiles/dev]
              :profiles/dev {}
