@@ -1,0 +1,5 @@
+#!/bin/sh
+for file in $(pwd)/$1/*
+do
+  patchelf --set-rpath '$ORIGIN' $file
+done
