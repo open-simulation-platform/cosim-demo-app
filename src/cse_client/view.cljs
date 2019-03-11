@@ -26,7 +26,7 @@
     "trend" (semantic/ui-dropdown-item
               {:key     (str "trend-item-" id)
                :text    label
-               :label   (str/capitalize plot-type)
+               :label   "Time series"
                :onClick #(rf/dispatch [::controller/add-to-trend current-module name causality type value-reference index])})
     "scatter"
     #_(semantic/ui-dropdown-item
@@ -42,7 +42,7 @@
     (semantic/ui-dropdown-item
       {:key     (str "trend-item-" id)
        :text    label
-       :label   (str/capitalize plot-type)
+       :label   "Scatter"
        :onClick #(rf/dispatch [::controller/add-to-trend current-module name causality type value-reference index])})))
 
 (defn action-dropdown [current-module name causality type value-reference trend-info]
@@ -51,7 +51,7 @@
       {:icon   "chart line icon"
        :button true}
       (semantic/ui-dropdown-menu
-        nil
+        {:direction "left"}
         (semantic/ui-dropdown-header nil "Create new trend")
         (semantic/ui-dropdown-divider)
         (semantic/ui-dropdown-item
@@ -144,6 +144,9 @@
        {:style {:margin-top "20%"}}
        "Loading"])))
 
+(defn- simulation-status-header-text [simulation-has-loaded?]
+  (if simulation-has-loaded? "Simulation status" "Simulation setup"))
+
 (defn sidebar []
   (let [module-routes @(rf/subscribe [:module-routes])
         route @(rf/subscribe [:kee-frame/route])
@@ -157,7 +160,7 @@
      [:div.item
       [:a.header {:href  (k/path-for [:index])
                   :class (when (= route-name :index) "active")}
-       "Overview"]]
+       (simulation-status-header-text loaded?)]]
      (when (and loaded? (> (count trend-info) 0))
        [:div.item
         [:div.header "Trends"]
@@ -177,7 +180,7 @@
          (map (fn [{:keys [id running?]}]
                 [:a.item {:class (when (= (-> route :path-params :id) id) "active")
                           :key   id
-                          :href  (k/path-for [:scenario {:id id}])} id
+                          :href  (k/path-for [:scenario {:id id}])} (scenario/scenario-filename-to-name id)
                  (when running? [:i.green.play.icon])])
               scenarios)]])
      [:div.ui.divider]
@@ -283,11 +286,19 @@
                        [:i.delete.icon]]]]])
                  @prev-paths)]]]]))))
 
+(defn- scenario-header [file-name]
+  (let [name (scenario/scenario-filename-to-name file-name)]
+    [:div.row name
+     [:span.additional (str "scenario data from ") file-name]]))
+
 (defn root-comp []
   (let [socket-state (rf/subscribe [:kee-frame.websocket/state socket-url])
         loaded? (rf/subscribe [:loaded?])
         status (rf/subscribe [:status])
-        module (rf/subscribe [:current-module])]
+        module (rf/subscribe [:current-module])
+        trends @(rf/subscribe [:trend-info])
+        active-trend-index @(rf/subscribe [:active-trend-index])
+        scenario-name @(rf/subscribe [:scenario-id])]
     [:div
      [:div.ui.inverted.huge.borderless.fixed.menu
       [:a.header.item {:href "/"} "Core Simulation Environment - demo application"]
@@ -320,11 +331,13 @@
          [:div.row
           [:h1.ui.huge.header [k/switch-route (comp :name :data)
                                :module (or @module "")
-                               :trend "Trend"
+                               :trend (if (and (number? (int active-trend-index)) (not-empty trends))
+                                        (:label (nth trends (int active-trend-index)))
+                                        "")
                                :guide "User guide"
-                               :index (if @loaded? "Simulation status" "Simulation setup")
+                               :index (simulation-status-header-text @loaded?)
                                :scenarios "Scenarios"
-                               :scenario "Scenario"
+                               :scenario (scenario-header scenario-name)
                                nil [:div "Loading..."]]]]
          [:div.ui.divider]
          [:div.row

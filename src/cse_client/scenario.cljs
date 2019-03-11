@@ -1,7 +1,11 @@
 (ns cse-client.scenario
   (:require [re-frame.core :as rf]
             [kee-frame.core :as k]
+            [clojure.string :as str]
             [cse-client.controller :as controller]))
+
+(defn scenario-filename-to-name [file-name]
+  (str/capitalize (first (str/split file-name "."))))
 
 (defn cellie [text valid? message]
   (if valid?
@@ -14,7 +18,9 @@
    {:disabled     (or any-running? invalid?)
     :on-click     #(rf/dispatch [::controller/load-scenario scenario-id])}
    (if invalid? [:i.red.ban.icon] [:i.green.play.icon])
-   (if invalid? "Invalid syntax" "Load scenario")])
+   (if invalid?
+     "Invalid syntax"
+     (if any-running? "Other scenario running" "Load scenario"))])
 
 (defn running-button [scenario-id]
   [:button.ui.right.labeled.icon.button
@@ -67,6 +73,5 @@
             [:div.item {:key (str "scenario-" id)}
              [:i.file.alternate.icon {:class (when running? "green")}]
              [:div.content
-              [:a {:href (k/path-for [:scenario {:id id}])} id]]])
+              [:a {:href (k/path-for [:scenario {:id id}])} (str (scenario-filename-to-name id) " - " id)]]])
           scenarios)]))
-
