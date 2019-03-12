@@ -135,8 +135,12 @@
              (doall (map (partial range-selector @trend-range) range-configs))]
             [:div.column])
           [:div.column
-           [:button.ui.button.right.floated {:on-click #(rf/dispatch [::controller/removetrend])} "Remove trend"]
-           [:button.ui.button.right.floated {:on-click #(rf/dispatch [::controller/untrend])} "Untrend all"]]]
+           [:button.ui.button.right.floated {:on-click #(rf/dispatch [::controller/removetrend])}
+            [:i.trash.gray.icon]
+            "Remove trend"]
+           [:button.ui.button.right.floated {:on-click #(rf/dispatch [::controller/untrend])}
+            [:i.eye.slash.gray.icon]
+            "Remove variables from trend"]]]
          [:div.one.column.row
           [trend-inner {:trend-values (create-traces plot-type trend-values)
                         :trend-layout (layout-selector plot-type)
