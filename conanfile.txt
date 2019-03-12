@@ -1,7 +1,7 @@
 [generators]
 
 [requires]
-cse-core/0.1.0@osp/master
+cse-core/0.1.0@osp/feature_190-reset-manipulators
 
 [imports]
 include, cse.h                  -> ./include
