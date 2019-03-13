@@ -193,13 +193,17 @@
                   (socket-command ["disable-realtime"])))
 
 (k/reg-event-fx ::untrend
-                (fn [{:keys [db]} _]
-                  (socket-command ["untrend" (:active-trend-index db)])))
+                (fn [_ [id]]
+                  (socket-command ["untrend" (str id)])))
 
 (k/reg-event-fx ::removetrend
-                (fn [{:keys [db]} _]
-                  (merge {:navigate-to [:index]}
-                         (socket-command ["removetrend" (:active-trend-index db)]))))
+                (fn [{:keys [db]} [id]]
+                  (let [route-name (:name (:data (:kee-frame/route db)))
+                        route-param-index (int (:index (:path-params (:kee-frame/route db))))
+                        current-path-to-be-deleted (and (= :trend route-name) (= route-param-index id))]
+                    (merge
+                     (when current-path-to-be-deleted {:navigate-to [:index]})
+                     (socket-command ["removetrend" (str id)])))))
 
 (k/reg-event-fx ::new-trend
                 (fn [_ [type label]]
