@@ -55,6 +55,10 @@
 (defn trend-title [{:keys [module signal causality type]}]
   (str/join " - " [module signal causality type]))
 
+(defn plot-type-from-label [label]
+  "Expects label to be a string on format 'Time series #a9123ddc-..'"
+  (str/trim (first (str/split label "#"))))
+
 (defn new-series [trend-variable]
   {:name (trend-title trend-variable)
    :x    []
@@ -130,9 +134,10 @@
         active-trend-index (rf/subscribe [:active-trend-index])]
     (fn []
       (let [{:keys [id plot-type label trend-values]} @active-trend
-            active-trend-index (int @active-trend-index)]
+            active-trend-index (int @active-trend-index)
+            name (plot-type-from-label label)]
         [:div.ui.one.column.grid
-         [c/variable-override-editor nil nil label [::controller/set-label]]
+         [c/variable-override-editor nil nil name [::controller/set-label]]
          [:div.two.column.row
           [:div.column
            (doall (map (partial range-selector @trend-range) range-configs))]
