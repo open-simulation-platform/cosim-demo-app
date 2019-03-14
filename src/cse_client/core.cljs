@@ -11,6 +11,8 @@
 
 (enable-console-print!)
 
+(goog-define debug false)
+
 (def routes
   [["/" :index]
    ["/modules/:module/:causality" :module]
@@ -185,7 +187,7 @@
 
 (k/start! {:routes         routes
            :hash-routing?  true
-           :debug?         {:blacklist #{::controller/socket-message-received}}
+           :debug?         (if debug {:blacklist #{::controller/socket-message-received}} false)
            :root-component [view/root-comp]
            :initial-db     {:trend-range      10
                             :active-guide-tab "About"
