@@ -155,9 +155,8 @@
         [:div.header "Trends"]
         [:div.menu
          (map (fn [{:keys [index label count]}]
-                [:div.item
+                [:div.item {:key label}
                  [:a.itemstyle {:class (when (and (= index (int active-trend-index)) (= route-name :trend)) "active")
-                                :key   label
                                 :href  (k/path-for [:trend {:index index}])}
                   label]
                  [:div.ui.teal.left.pointing.label count]
