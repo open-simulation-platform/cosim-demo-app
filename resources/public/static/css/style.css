@@ -63,3 +63,13 @@ body {
 #content .plotname-edit:hover {
     color: #aaa;
 }
+#sidebar a.itemstyle {
+    color: rgb(0,0,0,0.5);
+}
+#sidebar a.itemstyle:hover {
+    color: #333;
+}
+#sidebar a.itemstyle.active {
+    color: #000;
+    font-weight: bold;
+}

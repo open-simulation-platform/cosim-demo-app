@@ -155,18 +155,21 @@
         [:div.header "Trends"]
         [:div.menu
          (map (fn [{:keys [index label count]}]
-                [:a.item {:class (when (and (= index (int active-trend-index)) (= route-name :trend)) "active")
-                     :key   label
-                     :href  (k/path-for [:trend {:index index}])}
-                 label
+                [:div.item
+                 [:a.itemstyle {:class (when (and (= index (int active-trend-index)) (= route-name :trend)) "active")
+                                :key   label
+                                :href  (k/path-for [:trend {:index index}])}
+                  label]
                  [:div.ui.teal.left.pointing.label count]
-                 [:span {:style {:float 'right}
-                         :data-tooltip "Remove trend"}
-                  [:i.trash.gray.icon {:on-click #(rf/dispatch [::controller/removetrend])}]]
+                 [:span {:style {:float 'right :cursor 'pointer :z-index 1000}
+                         :data-tooltip "Remove trend"
+                         :data-position "top center"}
+                  [:i.trash.gray.icon {:on-click #(rf/dispatch [::controller/removetrend index])}]]
                  (if (< 0 count)
-                   [:span {:style {:float 'right}
-                           :data-tooltip "Remove all variables from trend"}
-                    [:i.eye.slash.gray.icon {:on-click #(rf/dispatch [::controller/untrend])}]])])
+                   [:span {:style {:float 'right :cursor 'pointer :z-index 1000}
+                           :data-tooltip "Remove all variables from trend"
+                           :data-position "top center"}
+                    [:i.eye.slash.gray.icon {:on-click #(rf/dispatch [::controller/untrend index])}]])])
               trend-info)
          [:a.item {:onClick #(rf/dispatch [::controller/new-trend "trend" default-label])}
           "Create new time series"

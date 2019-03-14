@@ -124,9 +124,11 @@
 
 (defn trend-outer []
   (let [trend-range (rf/subscribe [::trend-range])
-        active-trend (rf/subscribe [::active-trend])]
+        active-trend (rf/subscribe [::active-trend])
+        active-trend-index (rf/subscribe [:active-trend-index])]
     (fn []
-      (let [{:keys [id plot-type label trend-values]} @active-trend]
+      (let [{:keys [id plot-type label trend-values]} @active-trend
+            active-trend-index (int @active-trend-index)]
         [:div.ui.one.column.grid
          [c/variable-override-editor nil nil label [::controller/set-label]]
          [:div.two.column.row
@@ -135,10 +137,10 @@
              (doall (map (partial range-selector @trend-range) range-configs))]
             [:div.column])
           [:div.column
-           [:button.ui.button.right.floated {:on-click #(rf/dispatch [::controller/removetrend])}
+           [:button.ui.button.right.floated {:on-click #(rf/dispatch [::controller/removetrend active-trend-index])}
             [:i.trash.gray.icon]
             "Remove trend"]
-           [:button.ui.button.right.floated {:on-click #(rf/dispatch [::controller/untrend])}
+           [:button.ui.button.right.floated {:on-click #(rf/dispatch [::controller/untrend active-trend-index])}
             [:i.eye.slash.gray.icon]
             "Remove variables from trend"]]]
          [:div.one.column.row
