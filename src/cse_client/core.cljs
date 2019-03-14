@@ -125,6 +125,8 @@
 
 (rf/reg-sub :feedback-message #(:feedback-message %))
 
+(rf/reg-sub :show-success-feedback-messages :show-success-feedback-messages)
+
 (defn validate-event [db event]
   (let [module-tree (-> db :state :module-data :fmus)
         model-valid? (->> module-tree (map :name) (filter #(= (:model event) %)) seq boolean)
@@ -191,4 +193,5 @@
                             :active-guide-tab "About"
                             :page             1
                             :vars-per-page    20
-                            :prev-paths       (reader/read-string (storage/get-item "cse-paths"))}})
+                            :prev-paths       (reader/read-string (storage/get-item "cse-paths"))
+                            :show-success-feedback-messages (reader/read-string (storage/get-item "show-success-feedback-message"))}})

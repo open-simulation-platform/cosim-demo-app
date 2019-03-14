@@ -60,11 +60,13 @@
 
 (k/reg-event-fx ::feedback-message
                 (fn [{:keys [db]} [message]]
-                  (when (:success message)
-                    (go
-                      (<! (timeout 3000))
-                      (rf/dispatch [::close-feedback-message])))
-                  {:db (assoc db :feedback-message message)}))
+                  (if-not (:success message)
+                    {:db (assoc db :feedback-message message)}
+                    (when (:show-success-feedback-messages db)
+                      (go
+                        (<! (timeout 3000))
+                        (rf/dispatch [::close-feedback-message]))
+                      {:db (assoc db :feedback-message message)}))))
 
 (k/reg-event-db ::close-feedback-message
                 (fn [db _]
@@ -148,6 +150,12 @@
 (k/reg-event-db ::trend-leave
                 (fn [db _]
                   (dissoc db :active-trend-index)))
+
+(k/reg-event-db ::toggle-show-success-feedback-messages
+                (fn [db _]
+                  (let [new-setting (not (:show-success-feedback-messages db))]
+                    (storage/set-item! "show-success-feedback-message" new-setting)
+                    (assoc db :show-success-feedback-messages new-setting))))
 
 (k/reg-event-fx ::scenario-enter
                 (fn [{:keys [db]} [{:keys [id]}]]

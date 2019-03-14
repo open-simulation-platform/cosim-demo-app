@@ -328,7 +328,10 @@
         [:div.menu
          [:a.item {:href "/guide"} [:i.file.alternate.icon] "User guide"]
          [:a.item {:href "mailto:issue@opensimulationplatform.com?subject=Feedback to CSE Team"} [:i.mail.icon] "Provide feedback"]
-         [:a.item {:href "https://meet.dnvgl.com/sites/open-simulation-platform-jip" :target "_blank"} [:i.icon.linkify] "JIP site"]]]]]
+         [:a.item {:href "https://meet.dnvgl.com/sites/open-simulation-platform-jip" :target "_blank"} [:i.icon.linkify] "JIP site"]
+         [:a.item {:on-click #(rf/dispatch [::controller/toggle-show-success-feedback-messages])}
+          (if @(rf/subscribe [:show-success-feedback-messages]) [:i.toggle.on.icon.green] [:i.toggle.off.icon])
+          "Show success command feedback"]]]]]
      [:div.ui.grid
       [:div.row
        [:div#sidebar.column
