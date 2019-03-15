@@ -91,12 +91,14 @@
   (let [event (js->clj js-event)
         begin (get event "xaxis.range[0]")
         end (get event "xaxis.range[1]")
-        auto? (get event "xaxis.autorange")]
-    (cond
-      auto?
-      (rf/dispatch [::controller/trend-zoom-reset])
-      (and begin end)
-      (rf/dispatch [::controller/trend-zoom begin end]))))
+        auto? (get event "xaxis.autorange")
+        active-trend @(rf/subscribe [::active-trend])]
+    (when (= (:plot-type active-trend) "trend")
+      (cond
+        auto?
+        (rf/dispatch [::controller/trend-zoom-reset])
+        (and begin end)
+        (rf/dispatch [::controller/trend-zoom begin end])))))
 
 (defn- set-dom-element-height! [dom-node height]
   (-> dom-node .-style .-height (set! height)))
@@ -106,18 +108,18 @@
                  (let [{:keys [trend-values trend-id]} (r/props comp)]
                    (update-chart-data (r/dom-node comp) trend-values trend-id)))]
     (r/create-class
-      {:component-did-mount  (fn [comp]
-                               (let [{:keys [trend-layout]} (r/props comp)
-                                     dom-node (r/dom-node comp)
-                                     _ (set-dom-element-height! dom-node plot-container-height)]
-                                 (js/Plotly.react dom-node
-                                                 (clj->js [{:x    []
-                                                            :y    []
-                                                            :mode "lines"
-                                                            :type "scatter"}])
-                                                 (clj->js trend-layout)
-                                                 (clj->js {:responsive true}))
-                                 (.on (r/dom-node comp) "plotly_relayout" relayout-callback)))
+     {:component-did-mount  (fn [comp]
+                              (let [{:keys [trend-layout]} (r/props comp)
+                                    dom-node (r/dom-node comp)
+                                    _ (set-dom-element-height! dom-node plot-container-height)]
+                                (js/Plotly.newPlot dom-node
+                                                   (clj->js [{:x    []
+                                                              :y    []
+                                                              :mode "lines"
+                                                              :type "scatter"}])
+                                                   (clj->js trend-layout)
+                                                   (clj->js {:responsive true}))
+                                (.on dom-node "plotly_relayout" relayout-callback)))
        :component-did-update update
        :reagent-render       (fn []
                                [:div.column])})))
@@ -132,10 +134,8 @@
         [:div.ui.one.column.grid
          [c/variable-override-editor nil nil label [::controller/set-label]]
          [:div.two.column.row
-          (if-not (= "scatter" plot-type)
-            [:div.column
-             (doall (map (partial range-selector @trend-range) range-configs))]
-            [:div.column])
+          [:div.column
+           (doall (map (partial range-selector @trend-range) range-configs))]
           [:div.column
            [:button.ui.button.right.floated {:on-click #(rf/dispatch [::controller/removetrend active-trend-index])}
             [:i.trash.gray.icon]
