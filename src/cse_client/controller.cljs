@@ -110,7 +110,7 @@
           (nth (dec page))))
 
 (defn editable? [{:keys [type causality] :as variable}]
-  (if (and (#{"input" "parameter"} causality)
+  (if (and (#{"input" "parameter" "calculatedParameter" "output"} causality)
            (#{"Real" "Integer"} type))
     (assoc variable :editable? true)
     variable))
@@ -228,6 +228,10 @@
 (k/reg-event-fx ::set-value
                 (fn [_ [module signal causality type value]]
                   (socket-command ["set-value" module signal causality type (str value)])))
+
+(k/reg-event-fx ::reset-value
+                (fn [_ [module signal causality type]]
+                  (socket-command ["reset-value" module signal causality type])))
 
 (k/reg-event-fx ::trend-zoom
                 (fn [_ [begin end]]

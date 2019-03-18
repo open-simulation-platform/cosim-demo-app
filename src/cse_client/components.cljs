@@ -1,6 +1,5 @@
 (ns cse-client.components
   (:require [cse-client.controller :as controller]
-            [kee-frame.core :as k]
             [re-frame.core :as rf]
             [reagent.core :as r]))
 
@@ -14,18 +13,18 @@
                (reset! editing? false))
         save-if-changed (fn [value]
                           (if (not= value @internal-value)
-                              (save)
-                              (reset! editing? false)))]
+                            (save)
+                            (reset! editing? false)))]
     (fn [_ _ value]
       (if @editing?
         [:div.ui.action.input.fluid
-         [:input {:type      :text
-                  :auto-focus true
-                  :id        (str "input-" name)
-                  :value     (if @editing? @internal-value value)
-                  :on-change #(reset! internal-value (.. % -target -value))
+         [:input {:type         :text
+                  :auto-focus   true
+                  :id           (str "input-" name)
+                  :value        (if @editing? @internal-value value)
+                  :on-change    #(reset! internal-value (.. % -target -value))
                   :on-key-press #(when (= (.-key %) "Enter") (save-if-changed value))
-                  :on-blur #(save-if-changed value)}]
+                  :on-blur      #(save-if-changed value)}]
          [:button.ui.right.icon.button
           {:on-click save}
           [:i.check.link.icon]]
@@ -33,9 +32,15 @@
           {:on-click #(reset! editing? false)}
           [:i.times.link.icon]]]
 
-        [:div.plotname-edit
-         {:on-click (fn []
-                      (reset! editing? true)
-                      (reset! internal-value value))}
-
-         [:span [:i.edit.link.icon]] value]))))
+        [:div
+         [:span.plotname-edit
+          {:on-click     #(rf/dispatch [::controller/reset-value module name causality type])
+           :data-tooltip "Remove override"}
+          [:i.eraser.icon]]
+         [:span.plotname-edit
+          {:on-click     (fn []
+                           (reset! editing? true)
+                           (reset! internal-value value))
+           :data-tooltip "Override value"}
+          [:i.edit.link.icon]]
+         value]))))
