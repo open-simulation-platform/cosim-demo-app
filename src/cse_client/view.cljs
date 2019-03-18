@@ -25,7 +25,7 @@
   (case plot-type
     "trend" (semantic/ui-dropdown-item
              {:key     (str "trend-item-" id)
-              :text    label
+              :text    (trend/plot-type-from-label label)
               :label   "Time series"
               :onClick #(rf/dispatch [::controller/add-to-trend current-module name causality type value-reference index])})
     "scatter"
@@ -41,18 +41,15 @@
          (semantic/ui-dropdown-item {:text "Add to y"}))))
     (semantic/ui-dropdown-item
      {:key     (str "trend-item-" id)
-      :text    label
-      :label   "Scatter"
+      :text    (trend/plot-type-from-label label)
+      :label   "XY plot"
       :onClick #(rf/dispatch [::controller/add-to-trend current-module name causality type value-reference index])})))
 
 (defn action-dropdown [current-module name causality type value-reference trend-info]
-  (let [default-label (str "Trend #" (-> trend-info count inc))]
-    (when-not (empty? trend-info)
-      (semantic/ui-dropdown
-       {:button true
-        :text "Add to trend"}
-       (semantic/ui-dropdown-menu nil
-        (map (partial trend-item current-module name causality type value-reference) trend-info))))))
+  (when-not (empty? trend-info)
+    (semantic/ui-dropdown {:button true :text "Add to trend"}
+     (semantic/ui-dropdown-menu nil
+      (map (partial trend-item current-module name causality type value-reference) trend-info)))))
 
 (defn pages-menu []
   (let [current-page @(rf/subscribe [:current-page])
@@ -142,7 +139,6 @@
         route-module (-> route :path-params :module)
         loaded? @(rf/subscribe [:loaded?])
         trend-info @(rf/subscribe [:trend-info])
-        default-label (str "Trend #" (-> trend-info count inc))
         active-trend-index @(rf/subscribe [:active-trend-index])
         scenarios @(rf/subscribe [:scenarios])]
     [:div.ui.secondary.vertical.fluid.menu
@@ -158,7 +154,7 @@
                 [:div.item {:key label}
                  [:a.itemstyle {:class (when (and (= index (int active-trend-index)) (= route-name :trend)) "active")
                                 :href  (k/path-for [:trend {:index index}])}
-                  label]
+                  (trend/plot-type-from-label label)]
                  [:div.ui.teal.left.pointing.label count]
                  [:span {:style {:float 'right :cursor 'pointer :z-index 1000}
                          :data-tooltip "Remove trend"
@@ -170,11 +166,11 @@
                            :data-position "top center"}
                     [:i.eye.slash.gray.icon {:on-click #(rf/dispatch [::controller/untrend index])}]])])
               trend-info)
-         [:a.item {:onClick #(rf/dispatch [::controller/new-trend "trend" default-label])}
+         [:a.item {:onClick #(rf/dispatch [::controller/new-trend "trend" (str "Time series #" (random-uuid))])}
           "Create new time series"
           [:i.chart.line.gray.icon]]
-         [:a.item {:onClick #(rf/dispatch [::controller/new-trend "scatter" default-label])}
-          "Create new scatter plot"
+         [:a.item {:onClick #(rf/dispatch [::controller/new-trend "scatter" (str "XY plot #" (random-uuid))])}
+          "Create new XY plot"
           [:i.chart.line.gray.icon]]]])
      (when loaded?
        [:div.item
@@ -341,7 +337,7 @@
           [:h1.ui.huge.header [k/switch-route (comp :name :data)
                                :module (or @module "")
                                :trend (if (and (number? (int active-trend-index)) (not-empty trends))
-                                        (:label (nth trends (int active-trend-index)))
+                                        (trend/plot-type-from-label (:label (nth trends (int active-trend-index))))
                                         "")
                                :guide "User guide"
                                :index (simulation-status-header-text @loaded?)
