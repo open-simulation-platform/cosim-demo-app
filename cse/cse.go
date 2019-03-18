@@ -9,11 +9,9 @@ import "C"
 import (
 	"cse-server-go/metadata"
 	"cse-server-go/structs"
-	"errors"
 	"fmt"
 	"io/ioutil"
 	"log"
-	"math"
 	"os"
 	"path/filepath"
 	"strconv"
@@ -58,25 +56,6 @@ func createLocalSlave(fmuPath string) *C.cse_slave {
 	return C.cse_local_slave_create(C.CString(fmuPath))
 }
 
-func createObserver() (observer *C.cse_observer) {
-	observer = C.cse_last_value_observer_create()
-	return
-}
-
-func createTrendObserver() (observer *C.cse_observer) {
-	observer = C.cse_time_series_observer_create()
-	return
-}
-
-func createFileObserver(logPath string) (observer *C.cse_observer) {
-	observer = C.cse_file_observer_create(C.CString(logPath))
-	return
-}
-
-func executionAddObserver(execution *C.cse_execution, observer *C.cse_observer) {
-	C.cse_execution_add_observer(execution, observer)
-}
-
 func createOverrideManipulator() (manipulator *C.cse_manipulator) {
 	manipulator = C.cse_override_manipulator_create()
 	return
@@ -106,10 +85,6 @@ func executionStart(execution *C.cse_execution) (bool, string) {
 
 func executionDestroy(execution *C.cse_execution) {
 	C.cse_execution_destroy(execution)
-}
-
-func observerDestroy(observer *C.cse_observer) {
-	C.cse_observer_destroy(observer)
 }
 
 func manipulatorDestroy(manipulator *C.cse_manipulator) {
@@ -143,128 +118,6 @@ func executionDisableRealTime(execution *C.cse_execution) (bool, string) {
 	}
 }
 
-func uglyNanFix(value C.double) interface{} {
-	floatValue := float64(value)
-	if math.IsNaN(floatValue) {
-		return "NaN"
-	} else if math.IsInf(floatValue, 1) {
-		return "+Inf"
-	} else if math.IsInf(floatValue, -1) {
-		return "-Inf"
-	}
-	return floatValue
-}
-
-func observerGetReals(observer *C.cse_observer, variables []structs.Variable, slaveIndex int) (realSignals []structs.Signal) {
-	var realValueRefs []C.cse_variable_index
-	var realVariables []structs.Variable
-	var numReals int
-	for _, variable := range variables {
-		if variable.Type == "Real" {
-			ref := C.cse_variable_index(variable.ValueReference)
-			realValueRefs = append(realValueRefs, ref)
-			realVariables = append(realVariables, variable)
-			numReals++
-		}
-	}
-
-	if numReals > 0 {
-		realOutVal := make([]C.double, numReals)
-		C.cse_observer_slave_get_real(observer, C.cse_slave_index(slaveIndex), &realValueRefs[0], C.size_t(numReals), &realOutVal[0])
-
-		realSignals = make([]structs.Signal, numReals)
-		for k := range realVariables {
-			realSignals[k] = structs.Signal{
-				Name:      realVariables[k].Name,
-				Causality: realVariables[k].Causality,
-				Type:      realVariables[k].Type,
-				Value:     uglyNanFix(realOutVal[k]),
-			}
-		}
-	}
-	return realSignals
-}
-
-func observerGetIntegers(observer *C.cse_observer, variables []structs.Variable, slaveIndex int) (intSignals []structs.Signal) {
-	var intValueRefs []C.cse_variable_index
-	var intVariables []structs.Variable
-	var numIntegers int
-	for _, variable := range variables {
-		if variable.Type == "Integer" {
-			ref := C.cse_variable_index(variable.ValueReference)
-			intValueRefs = append(intValueRefs, ref)
-			intVariables = append(intVariables, variable)
-			numIntegers++
-		}
-	}
-
-	if numIntegers > 0 {
-		intOutVal := make([]C.int, numIntegers)
-		C.cse_observer_slave_get_integer(observer, C.cse_slave_index(slaveIndex), &intValueRefs[0], C.size_t(numIntegers), &intOutVal[0])
-
-		intSignals = make([]structs.Signal, numIntegers)
-		for k := range intVariables {
-			intSignals[k] = structs.Signal{
-				Name:      intVariables[k].Name,
-				Causality: intVariables[k].Causality,
-				Type:      intVariables[k].Type,
-				Value:     int(intOutVal[k]),
-			}
-		}
-	}
-	return intSignals
-}
-
-func observerGetRealSamples(observer *C.cse_observer, plotType string, idx int, signal *structs.TrendSignal, spec structs.TrendSpec) {
-	slaveIndex := C.cse_slave_index(signal.SlaveIndex)
-	variableIndex := C.cse_variable_index(signal.ValueReference)
-
-	stepNumbers := make([]C.cse_step_number, 2)
-	var success C.int
-	if spec.Auto {
-		duration := C.cse_duration(spec.Range * 1e9)
-		success = C.cse_observer_get_step_numbers_for_duration(observer, slaveIndex, duration, &stepNumbers[0])
-	} else {
-		tBegin := C.cse_time_point(spec.Begin * 1e9)
-		tEnd := C.cse_time_point(spec.End * 1e9)
-		success = C.cse_observer_get_step_numbers(observer, slaveIndex, tBegin, tEnd, &stepNumbers[0])
-	}
-	if int(success) < 0 {
-		return
-	}
-	first := stepNumbers[0]
-	last := stepNumbers[1]
-
-	numSamples := int(last) - int(first) + 1
-	cnSamples := C.size_t(numSamples)
-	realOutVal := make([]C.double, numSamples)
-	timeVal := make([]C.cse_time_point, numSamples)
-	timeStamps := make([]C.cse_step_number, numSamples)
-	actualNumSamples := C.cse_observer_slave_get_real_samples(observer, slaveIndex, variableIndex, first, cnSamples, &realOutVal[0], &timeStamps[0], &timeVal[0])
-	ns := int(actualNumSamples)
-	if ns <= 0 {
-		return
-	}
-	trendVals := make([]float64, ns)
-	times := make([]float64, ns)
-	for i := 0; i < ns; i++ {
-		trendVals[i] = float64(realOutVal[i])
-		times[i] = 1e-9 * float64(timeVal[i])
-	}
-
-	switch plotType {
-	case "trend":
-		signal.TrendXValues = times
-		signal.TrendYValues = trendVals
-	case "scatter":
-		if idx%2 == 0 {
-			signal.TrendXValues = trendVals
-		} else {
-			signal.TrendYValues = trendVals
-		}
-	}
-
-}
 
 func setReal(manipulator *C.cse_manipulator, slaveIndex int, variableIndex int, value float64) (bool, string) {
 	vi := make([]C.cse_variable_index, 1)
@@ -292,6 +145,15 @@ func setInteger(manipulator *C.cse_manipulator, slaveIndex int, variableIndex in
 	}
 }
 
+func findVariableIndex(fmu structs.FMU, signalName string, causality string, valueType string) (index int) {
+	for _, variable := range fmu.Variables {
+		if variable.Name == signalName && variable.Type == valueType && variable.Causality == causality {
+			index = variable.ValueReference
+		}
+	}
+	return
+}
+
 func setVariableValue(sim *Simulation, module string, signal string, causality string, valueType string, value string) (bool, string) {
 	fmu := findFmu(sim.MetaData, module)
 	varIndex := findVariableIndex(fmu, signal, causality, valueType)
@@ -317,41 +179,6 @@ func setVariableValue(sim *Simulation, module string, signal string, causality s
 		fmt.Println(message)
 		return false, message
 	}
-}
-
-func findVariableIndex(fmu structs.FMU, signalName string, causality string, valueType string) (index int) {
-	for _, variable := range fmu.Variables {
-		if variable.Name == signalName && variable.Type == valueType && variable.Causality == causality {
-			index = variable.ValueReference
-		}
-	}
-	return
-}
-
-func TrendLoop(sim *Simulation, status *structs.SimulationStatus) {
-	for {
-		for _, trend := range status.Trends {
-			if len(trend.TrendSignals) > 0 {
-				for i, _ := range trend.TrendSignals {
-					var signal = &trend.TrendSignals[i]
-					switch signal.Type {
-					case "Real":
-						observerGetRealSamples(sim.TrendObserver, trend.PlotType, i, signal, status.TrendSpec)
-					}
-				}
-			}
-		}
-		time.Sleep(1000 * time.Millisecond)
-	}
-}
-
-func parseFloat(argument string) float64 {
-	f, err := strconv.ParseFloat(argument, 64)
-	if err != nil {
-		log.Fatal(err)
-		return 0.0
-	}
-	return f
 }
 
 func simulationTeardown(sim *Simulation) (bool, string) {
@@ -448,139 +275,6 @@ func initializeSimulation(sim *Simulation, fmuDir string, logDir string) (bool, 
 	sim.ScenarioManager = scenarioManager
 	sim.MetaData = &metaData
 	return true, "Simulation loaded successfully"
-}
-
-func strCat(strs ...string) string {
-	var sb strings.Builder
-	for _, str := range strs {
-		sb.WriteString(str)
-	}
-	return sb.String()
-}
-
-func generateNextTrendId(status *structs.SimulationStatus) int {
-	var maxId = 0
-	for _, trend := range status.Trends {
-		if trend.Id > maxId {
-			maxId = trend.Id
-		}
-	}
-
-	return maxId + 1
-}
-
-func toVariableType(valueType string) (C.cse_variable_type, error) {
-	switch valueType {
-	case "Real":
-		return C.CSE_REAL, nil
-	case "Integer":
-		return C.CSE_INTEGER, nil
-	case "Boolean":
-		return C.CSE_BOOLEAN, nil
-	case "String":
-		return C.CSE_STRING, nil
-	}
-	return C.CSE_REAL, errors.New(strCat("Unknown variable type:", valueType))
-}
-
-func observerStartObserving(observer *C.cse_observer, slaveIndex int, valueType string, varIndex int) error {
-	variableType, err := toVariableType(valueType)
-	if err != nil {
-		return err
-	}
-	C.cse_observer_start_observing(observer, C.cse_slave_index(slaveIndex), variableType, C.cse_variable_index(varIndex))
-	return nil
-}
-
-func observerStopObserving(observer *C.cse_observer, slaveIndex int, valueType string, varIndex int) error {
-	variableType, err := toVariableType(valueType)
-	if err != nil {
-		return err
-	}
-	C.cse_observer_stop_observing(observer, C.cse_slave_index(slaveIndex), variableType, C.cse_variable_index(varIndex))
-	return nil
-}
-
-func addNewTrend(status *structs.SimulationStatus, plotType string, label string) (bool, string) {
-	id := generateNextTrendId(status)
-
-	status.Trends = append(status.Trends, structs.Trend{
-		Id:           id,
-		PlotType:     plotType,
-		Label:        label,
-		TrendSignals: []structs.TrendSignal{}})
-	return true, "Added new trend"
-}
-
-func addToTrend(sim *Simulation, status *structs.SimulationStatus, module string, signal string, causality string, valueType string, valueReference string, plotIndex string) (bool, string) {
-
-	idx, err := strconv.Atoi(plotIndex)
-	fmu := findFmu(sim.MetaData, module)
-
-	if err != nil {
-		message := strCat("Cannot parse plotIndex as integer", plotIndex, ", ", err.Error())
-		log.Println(message)
-		return false, message
-	}
-
-	varIndex, err := strconv.Atoi(valueReference)
-	if err != nil {
-		message := strCat("Cannot parse valueReference as integer ", valueReference, ", ", err.Error())
-		log.Println(message)
-		return false, message
-	}
-
-	err = observerStartObserving(sim.TrendObserver, fmu.ExecutionIndex, valueType, varIndex)
-	if err != nil {
-		message := strCat("Cannot start observing variable ", err.Error())
-		log.Println(message)
-		return false, message
-	}
-
-	status.Trends[idx].TrendSignals = append(status.Trends[idx].TrendSignals, structs.TrendSignal{
-		Module:         module,
-		SlaveIndex:     fmu.ExecutionIndex,
-		Signal:         signal,
-		Causality:      causality,
-		Type:           valueType,
-		ValueReference: varIndex})
-
-	return true, "Added variable to trend"
-}
-
-func setTrendLabel(status *structs.SimulationStatus, trendIndex string, trendLabel string) (bool, string) {
-	idx, _ := strconv.Atoi(trendIndex)
-	status.Trends[idx].Label = trendLabel
-	return true, "Modified trend label"
-}
-
-func removeAllFromTrend(sim *Simulation, status *structs.SimulationStatus, trendIndex string) (bool, string) {
-	var success = true
-	var message = "Removed all variables from trend"
-
-	idx, _ := strconv.Atoi(trendIndex)
-	for _, trendSignal := range status.Trends[idx].TrendSignals {
-		err := observerStopObserving(sim.TrendObserver, trendSignal.SlaveIndex, trendSignal.Type, trendSignal.ValueReference)
-		if err != nil {
-			message = strCat("Cannot stop observing variable: ", err.Error())
-			success = false
-			log.Println("Cannot stop observing", err)
-		}
-	}
-	status.Trends[idx].TrendSignals = []structs.TrendSignal{}
-	return success, message
-}
-
-func removeTrend(status *structs.SimulationStatus, trendIndex string) (bool, string) {
-	idx, _ := strconv.Atoi(trendIndex)
-
-	if len(status.Trends) > 1 {
-		status.Trends = append(status.Trends[:idx], status.Trends[idx+1:]...)
-	} else {
-		status.Trends = []structs.Trend{}
-	}
-
-	return true, "Removed trend"
 }
 
 func lastErrorMessage() string {
