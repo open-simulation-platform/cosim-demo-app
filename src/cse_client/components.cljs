@@ -4,13 +4,16 @@
             [reagent.core :as r]))
 
 (defn variable-override-editor [module {:keys [name causality type]} value event]
-  (let [editing? (r/atom false)
+  (let [simulation-status @(rf/subscribe [:status])
+        editing? (r/atom false)
+        edited? (r/atom false)
         internal-value (r/atom value)
         save (fn []
                (rf/dispatch (if event
-                              (conj event @internal-value)
-                              [::controller/set-value module name causality type @internal-value]))
-               (reset! editing? false))
+                                  (conj event @internal-value)
+                                  [::controller/set-value module name causality type @internal-value]))
+               (reset! editing? false)
+               (reset! edited? true))
         save-if-changed (fn [value]
                           (if (not= value @internal-value)
                             (save)
@@ -21,7 +24,7 @@
          [:input {:type         :text
                   :auto-focus   true
                   :id           (str "input-" name)
-                  :value        (if @editing? @internal-value value)
+                  :value        @internal-value
                   :on-change    #(reset! internal-value (.. % -target -value))
                   :on-key-press #(when (= (.-key %) "Enter") (save-if-changed value))
                   :on-blur      #(save-if-changed value)}]
@@ -34,7 +37,9 @@
 
         [:div
          [:span.plotname-edit
-          {:on-click     #(rf/dispatch [::controller/reset-value module name causality type])
+          {:on-click     (fn []
+                           (reset! edited? false)
+                           (rf/dispatch [::controller/reset-value module name causality type]))
            :data-tooltip "Remove override"}
           [:i.eraser.icon]]
          [:span.plotname-edit
@@ -43,4 +48,6 @@
                            (reset! internal-value value))
            :data-tooltip "Override value"}
           [:i.edit.link.icon]]
-         value]))))
+         (if (and @edited? (= "pause" simulation-status))
+           @internal-value
+           value)]))))
