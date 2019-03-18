@@ -3,7 +3,7 @@ pipeline {
 
     triggers {
         upstream(
-            upstreamProjects: 'open-simulation-platform/cse-core/feature%2F190-reset-manipulators, open-simulation-platform/cse-client/feature%2Freset-overrides',
+            upstreamProjects: 'open-simulation-platform/cse-core/master, open-simulation-platform/cse-client/feature%2Freset-overrides',
             threshold: hudson.model.Result.SUCCESS)
     }
 
