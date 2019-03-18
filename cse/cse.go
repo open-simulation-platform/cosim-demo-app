@@ -292,6 +292,28 @@ func setInteger(manipulator *C.cse_manipulator, slaveIndex int, variableIndex in
 	}
 }
 
+func resetReal(manipulator *C.cse_manipulator, slaveIndex int, variableIndex int) (bool, string) {
+	vi := make([]C.cse_variable_index, 1)
+	vi[0] = C.cse_variable_index(variableIndex)
+	success := C.cse_manipulator_slave_reset_real(manipulator, C.cse_slave_index(slaveIndex), &vi[0], C.size_t(1))
+	if int(success) < 0 {
+		return false, "Unable to reset real variable value"
+	} else {
+		return true, "Successfully reset real variable value"
+	}
+}
+
+func resetInteger(manipulator *C.cse_manipulator, slaveIndex int, variableIndex int) (bool, string) {
+	vi := make([]C.cse_variable_index, 1)
+	vi[0] = C.cse_variable_index(variableIndex)
+	success := C.cse_manipulator_slave_reset_integer(manipulator, C.cse_slave_index(slaveIndex), &vi[0], C.size_t(1))
+	if int(success) < 0 {
+		return false, "Unable to reset integer variable value"
+	} else {
+		return true, "Successfully reset integer variable value"
+	}
+}
+
 func setVariableValue(sim *Simulation, module string, signal string, causality string, valueType string, value string) (bool, string) {
 	fmu := findFmu(sim.MetaData, module)
 	varIndex := findVariableIndex(fmu, signal, causality, valueType)
@@ -314,6 +336,21 @@ func setVariableValue(sim *Simulation, module string, signal string, causality s
 		}
 	default:
 		message := strCat("Can't set this value: ", value)
+		fmt.Println(message)
+		return false, message
+	}
+}
+
+func resetVariableValue(sim *Simulation, module string, signal string, causality string, valueType string) (bool, string) {
+	fmu := findFmu(sim.MetaData, module)
+	varIndex := findVariableIndex(fmu, signal, causality, valueType)
+	switch valueType {
+	case "Real":
+			return resetReal(sim.OverrideManipulator, fmu.ExecutionIndex, varIndex)
+	case "Integer":
+			return resetInteger(sim.OverrideManipulator, fmu.ExecutionIndex, varIndex)
+	default:
+		message := strCat("Can't reset this variable: ", module, " - ", signal)
 		fmt.Println(message)
 		return false, message
 	}
@@ -640,6 +677,8 @@ func executeCommand(cmd []string, sim *Simulation, status *structs.SimulationSta
 		message = strCat("Trending last ", cmd[1], " seconds")
 	case "set-value":
 		success, message = setVariableValue(sim, cmd[1], cmd[2], cmd[3], cmd[4], cmd[5])
+		case "reset-value":
+		success, message = resetVariableValue(sim, cmd[1], cmd[2], cmd[3], cmd[4])
 	case "get-module-data":
 		shorty.ModuleData = sim.MetaData
 		scenarios := findScenarios(status)
