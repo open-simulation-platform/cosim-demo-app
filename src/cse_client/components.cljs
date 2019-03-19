@@ -36,17 +36,18 @@
           [:i.times.link.icon]]]
 
         [:div
-         [:span.plotname-edit
-          {:on-click     (fn []
-                           (reset! edited? false)
-                           (rf/dispatch [::controller/reset-value module name causality type]))
-           :data-tooltip "Remove override"}
-          [:i.eraser.icon]]
+         (if module
+           [:span.plotname-edit
+            {:on-click     (fn []
+                             (reset! edited? false)
+                             (rf/dispatch [::controller/reset-value module name causality type]))
+             :data-tooltip "Remove override"}
+            [:i.eraser.icon]])
          [:span.plotname-edit
           {:on-click     (fn []
                            (reset! editing? true)
                            (reset! internal-value value))
-           :data-tooltip "Override value"}
+           :data-tooltip (if module "Override value" "Rename plot")}
           [:i.edit.link.icon]]
          (if (and @edited? (= "pause" simulation-status))
            @internal-value
