@@ -143,12 +143,13 @@
        [:div.item
         [:div.header "Plots"]
         [:div.menu
-         (map (fn [{:keys [index label count]}]
+         (map (fn [{:keys [index label count plot-type]}]
                 [:div.item {:key label}
                  [:a.itemstyle {:class (when (and (= index (int active-trend-index)) (= route-name :trend)) "active")
                                 :href  (k/path-for [:trend {:index index}])}
                   (trend/plot-type-from-label label)]
-                 [:div.ui.teal.left.pointing.label count]
+                 (let [display-number (if (= plot-type "trend") count (int (/ count 2)))]
+                   [:div.ui.teal.left.pointing.label display-number])
                  [:span {:style {:float 'right :cursor 'pointer :z-index 1000}
                          :data-tooltip "Remove plot"
                          :data-position "top center"}

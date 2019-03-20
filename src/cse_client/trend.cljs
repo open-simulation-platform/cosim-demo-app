@@ -25,59 +25,91 @@
    {:seconds (* 60 20)
     :text    "20m"}])
 
-(defn trend-layout []
-  {:autosize           true
-   :use-resize-handler true})
+(def trend-layout
+  {:xaxis {:title "Time [s]"}
+   :autosize true
+   :use-resize-handler true
+   :showlegend true
+   :legend {:orientation "h"}})
 
-(defn scatter-layout []
+(def scatter-layout
   {:xaxis {:autorange true
            :autotick  true
-           :ticks     ""}})
+           :ticks     ""}
+   :showlegend true
+   :legend {:orientation "h"}})
 
-(defn layout-selector [plot-type]
+(defn- layout-selector [plot-type]
   (case plot-type
-    "trend" (trend-layout)
-    "scatter" (scatter-layout)))
+    "trend" trend-layout
+    "scatter" scatter-layout))
 
-(defn create-traces [plot-type trend-values]
+(defn- namespaced
+  "Takes a map and a symbol name or string and creates a new map with namespaced keys as defined by the symbol.
+  E.g. (namespaced {:a 1} 'my-ns) -> {:my-ns/a 1}"
+  [m ns]
+  (into {}
+        (map (fn [[k v]] [(keyword (str ns "/" (name k))) v])
+             (seq m))))
+
+(def first-signal-ns 'first)
+(def second-signal-ns 'second)
+
+(defn- format-data-for-plotting
+  "Data for time series plots (trend) are returned as is.
+  For XY plots (scatter) pairs of trend-values are merged together to form a plot with x and y values.
+  The metadata fields are given namespaces to avoid loosing information when merging the pairs of values."
+  [plot-type trend-values]
   (case plot-type
     "trend" trend-values
-    "scatter" (map (fn [[xvals yvals]]
-                     (merge xvals yvals)) (partition 2 trend-values))))
+    "scatter" (map (fn [[a b]]
+                     (merge
+                      (select-keys a [:xvals :yvals])
+                      (select-keys b [:xvals :yvals])
+                      (namespaced (dissoc a :xvals :yvals) first-signal-ns)
+                      (namespaced (dissoc b :xvals :yvals) second-signal-ns)))
+                   (partition 2 trend-values))))
 
-(defn range-selector [trend-range {:keys [text seconds]}]
+(defn- range-selector [trend-range {:keys [text seconds]}]
   ^{:key text}
   [:button.ui.button
    {:on-click #(rf/dispatch [::controller/trend-range seconds])
     :class    (if (= trend-range seconds) "active" "")}
    text])
 
-(defn trend-title [{:keys [module signal causality type]}]
-  (str/join " - " [module signal causality type]))
-
 (defn plot-type-from-label [label]
   "Expects label to be a string on format 'Time series #a9123ddc-..'"
   (str/trim (first (str/split label "#"))))
 
-(defn new-series [trend-variable]
-  {:name (trend-title trend-variable)
-   :x    []
-   :y    []})
-
-(defn delete-series [dom-node]
+(defn- delete-series [dom-node]
   (let [num-series (-> dom-node .-data .-length)]
     (doseq [_ (range num-series)]
       (js/Plotly.deleteTraces dom-node 0))))
 
-(defn maybe-update-series [dom-node trend-values]
+(defn- add-time-series-traces [dom-node plots]
+  (let [plot-legend-title (fn [{:keys [module signal causality type]}]
+                            (str/join " - " [module signal causality type]))]
+    (doseq [plot plots]
+      (js/Plotly.addTraces dom-node (clj->js {:name (plot-legend-title plot) :x [] :y []})))))
+
+(defn- add-xy-plot-traces [dom-node plots]
+  (let [plot-legend-title (fn [p]
+                            (let [first-signal ((keyword (str first-signal-ns "/" 'signal)) p)
+                                  second-signal ((keyword (str second-signal-ns "/" 'signal)) p)]
+                              (str/join " / " [first-signal second-signal])))]
+    (doseq [plot plots]
+      (js/Plotly.addTraces dom-node (clj->js {:name (plot-legend-title plot) :x [] :y []})))))
+
+(defn- maybe-update-series [dom-node trend-values]
   (let [num-series (-> dom-node .-data .-length)]
     (when (not= num-series (count trend-values))
       (doseq [_ (range num-series)]
         (js/Plotly.deleteTraces dom-node 0))
-      (doseq [trend-variable trend-values]
-        (js/Plotly.addTraces dom-node (clj->js (new-series trend-variable)))))))
+      (case (:plot-type @(rf/subscribe [::active-trend]))
+        "trend" (add-time-series-traces dom-node trend-values)
+        "scatter" (add-xy-plot-traces dom-node trend-values)))))
 
-(defn update-chart-data [dom-node trend-values trend-id]
+(defn- update-chart-data [dom-node trend-values trend-id trend-layout]
   (when-not (= trend-id @id-store)
     (reset! id-store trend-id)
     (delete-series dom-node))
@@ -89,9 +121,9 @@
                            (update :y conj yvals)))
                      init-data trend-values)]
     (maybe-update-series dom-node trend-values)
-    (js/Plotly.update dom-node (clj->js data))))
+    (js/Plotly.update dom-node (clj->js data) (clj->js trend-layout))))
 
-(defn relayout-callback [js-event]
+(defn- relayout-callback [js-event]
   (let [event (js->clj js-event)
         begin (get event "xaxis.range[0]")
         end (get event "xaxis.range[1]")
@@ -107,10 +139,10 @@
 (defn- set-dom-element-height! [dom-node height]
   (-> dom-node .-style .-height (set! height)))
 
-(defn trend-inner []
+(defn- trend-inner []
   (let [update (fn [comp]
-                 (let [{:keys [trend-values trend-id]} (r/props comp)]
-                   (update-chart-data (r/dom-node comp) trend-values trend-id)))]
+                 (let [{:keys [trend-values trend-id trend-layout]} (r/props comp)]
+                   (update-chart-data (r/dom-node comp) trend-values trend-id trend-layout)))]
     (r/create-class
      {:component-did-mount  (fn [comp]
                               (let [{:keys [trend-layout]} (r/props comp)
@@ -124,9 +156,9 @@
                                                    (clj->js trend-layout)
                                                    (clj->js {:responsive true}))
                                 (.on dom-node "plotly_relayout" relayout-callback)))
-       :component-did-update update
-       :reagent-render       (fn []
-                               [:div.column])})))
+      :component-did-update update
+      :reagent-render       (fn []
+                              [:div.column])})))
 
 (defn trend-outer []
   (let [trend-range (rf/subscribe [::trend-range])
@@ -149,14 +181,14 @@
             [:i.eye.slash.gray.icon]
             "Remove variables from trend"]]]
          [:div.one.column.row
-          [trend-inner {:trend-values (create-traces plot-type trend-values)
+          [trend-inner {:trend-values (format-data-for-plotting plot-type trend-values)
                         :trend-layout (layout-selector plot-type)
                         :trend-id     id}]]]))))
 
 (rf/reg-sub ::trend-range :trend-range)
 (rf/reg-sub ::active-trend #(get-in % [:state :trends (-> % :active-trend-index int)]))
 
-(defn ascending-points? [tuples]
+(defn- ascending-points? [tuples]
   (= tuples
      (sort-by :x tuples)))
 
