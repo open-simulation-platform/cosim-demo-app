@@ -1,7 +1,7 @@
 [generators]
 
 [requires]
-cse-core/0.2.0@osp/feature_prepare-for-release-v0.2.0
+cse-core/0.2.0@osp/master
 
 [imports]
 include, cse.h                  -> ./include
