@@ -147,6 +147,48 @@ func observerGetRealSamples(observer *C.cse_observer, signal *structs.TrendSigna
 	signal.TrendYValues = trendVals
 }
 
+func observerGetRealSynchronizedSamples(observer *C.cse_observer, signal1 *structs.TrendSignal, signal2 *structs.TrendSignal, spec structs.TrendSpec) {
+	slaveIndex1 := C.cse_slave_index(signal1.SlaveIndex)
+	variableIndex1 := C.cse_variable_index(signal1.ValueReference)
+
+	slaveIndex2 := C.cse_slave_index(signal2.SlaveIndex)
+	variableIndex2 := C.cse_variable_index(signal2.ValueReference)
+
+	stepNumbers := make([]C.cse_step_number, 2)
+	var success C.int
+	if spec.Auto {
+		duration := C.cse_duration(spec.Range * 1e9)
+		success = C.cse_observer_get_step_numbers_for_duration(observer, slaveIndex1, duration, &stepNumbers[0])
+	} else {
+		tBegin := C.cse_time_point(spec.Begin * 1e9)
+		tEnd := C.cse_time_point(spec.End * 1e9)
+		success = C.cse_observer_get_step_numbers(observer, slaveIndex1, tBegin, tEnd, &stepNumbers[0])
+	}
+	if int(success) < 0 {
+		return
+	}
+	first := stepNumbers[0]
+	last := stepNumbers[1]
+
+	numSamples := int(last) - int(first) + 1
+	cnSamples := C.size_t(numSamples)
+	realOutVal1 := make([]C.double, numSamples)
+	realOutVal2 := make([]C.double, numSamples)
+	actualNumSamples := C.cse_observer_slave_get_real_synchronized_series(observer, slaveIndex1, variableIndex1, slaveIndex2, variableIndex2, first, cnSamples, &realOutVal1[0],&realOutVal2[0])
+	ns := int(actualNumSamples)
+	if ns <= 0 {
+		return
+	}
+	trendVals1 := make([]float64, ns)
+	trendVals2 := make([]float64, ns)
+	for i := 0; i < ns; i++ {
+		trendVals1[i] = float64(realOutVal1[i])
+		trendVals2[i] = float64(realOutVal2[i])
+	}
+	signal1.TrendXValues = trendVals1
+	signal2.TrendYValues = trendVals2
+}
+
 func toVariableType(valueType string) (C.cse_variable_type, error) {
 	switch valueType {
 	case "Real":

@@ -118,7 +118,6 @@ func executionDisableRealTime(execution *C.cse_execution) (bool, string) {
 	}
 }
 
-
 func setReal(manipulator *C.cse_manipulator, slaveIndex int, variableIndex int, value float64) (bool, string) {
 	vi := make([]C.cse_variable_index, 1)
 	vi[0] = C.cse_variable_index(variableIndex)
@@ -208,9 +207,9 @@ func resetVariableValue(sim *Simulation, module string, signal string, causality
 	varIndex := findVariableIndex(fmu, signal, causality, valueType)
 	switch valueType {
 	case "Real":
-			return resetReal(sim.OverrideManipulator, fmu.ExecutionIndex, varIndex)
+		return resetReal(sim.OverrideManipulator, fmu.ExecutionIndex, varIndex)
 	case "Integer":
-			return resetInteger(sim.OverrideManipulator, fmu.ExecutionIndex, varIndex)
+		return resetInteger(sim.OverrideManipulator, fmu.ExecutionIndex, varIndex)
 	default:
 		message := strCat("Can't reset this variable: ", module, " - ", signal)
 		fmt.Println(message)
@@ -371,7 +370,7 @@ func executeCommand(cmd []string, sim *Simulation, status *structs.SimulationSta
 		message = strCat("Trending last ", cmd[1], " seconds")
 	case "set-value":
 		success, message = setVariableValue(sim, cmd[1], cmd[2], cmd[3], cmd[4], cmd[5])
-		case "reset-value":
+	case "reset-value":
 		success, message = resetVariableValue(sim, cmd[1], cmd[2], cmd[3], cmd[4])
 	case "get-module-data":
 		shorty.ModuleData = sim.MetaData
@@ -383,7 +382,7 @@ func executeCommand(cmd []string, sim *Simulation, status *structs.SimulationSta
 		success, message = setSignalSubscriptions(status, cmd)
 	case "load-scenario":
 		success, message = loadScenario(sim, status, cmd[1])
-		case "abort-scenario":
+	case "abort-scenario":
 		success, message = abortScenario(sim.ScenarioManager)
 	case "parse-scenario":
 		scenario, err := parseScenario(status, cmd[1])

@@ -103,14 +103,30 @@ func removeTrend(status *structs.SimulationStatus, trendIndex string) (bool, str
 func TrendLoop(sim *Simulation, status *structs.SimulationStatus) {
 	for {
 		for _, trend := range status.Trends {
-			if len(trend.TrendSignals) > 0 {
-				for i, _ := range trend.TrendSignals {
-					var signal = &trend.TrendSignals[i]
-					switch signal.Type {
-					case "Real":
-						observerGetRealSamples(sim.TrendObserver, signal, status.TrendSpec)
+			switch trend.PlotType {
+			case "trend":
+				if len(trend.TrendSignals) > 0 {
+					for i, _ := range trend.TrendSignals {
+						var signal = &trend.TrendSignals[i]
+						switch signal.Type {
+						case "Real":
+							observerGetRealSamples(sim.TrendObserver, signal, status.TrendSpec)
+						}
 					}
 				}
+				break
+			case "scatter":
+				signalCount := len(trend.TrendSignals)
+				if signalCount > 0 {
+					for j := 0; (j + 1) < signalCount; j += 2 {
+						var signal1 = &trend.TrendSignals[j]
+						var signal2 = &trend.TrendSignals[j+1]
+						if (signal1.Type == "Real" && signal2.Type == "Real") {
+							observerGetRealSynchronizedSamples(sim.TrendObserver, signal1, signal2, status.TrendSpec)
+						}
+					}
+				}
+				break
 			}
 		}
 		time.Sleep(1000 * time.Millisecond)
