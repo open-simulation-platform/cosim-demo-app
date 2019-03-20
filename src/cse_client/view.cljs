@@ -23,32 +23,25 @@
 
 (defn trend-item [current-module name causality type value-reference {:keys [id index count label plot-type]}]
   (case plot-type
+
     "trend" (semantic/ui-dropdown-item
              {:key     (str "trend-item-" id)
               :text    (trend/plot-type-from-label label)
               :label   "Time series"
               :onClick #(rf/dispatch [::controller/add-to-trend current-module name causality type value-reference index])})
-    "scatter"
-    #_(semantic/ui-dropdown-item
-       nil
-       (semantic/ui-dropdown
-        {:text  label
-         :label (str/capitalize plot-type)}
-        (semantic/ui-dropdown-menu
-         nil
-         (semantic/ui-dropdown-header nil "Add signal")
-         (semantic/ui-dropdown-item {:text "Add to x"})
-         (semantic/ui-dropdown-item {:text "Add to y"}))))
-    (semantic/ui-dropdown-item
-     {:key     (str "trend-item-" id)
-      :text    (trend/plot-type-from-label label)
-      :label   "XY plot"
-      :onClick #(rf/dispatch [::controller/add-to-trend current-module name causality type value-reference index])})))
+
+    "scatter" (let [label-text (trend/plot-type-from-label label)
+                    axis (if (even? count) 'X 'Y)]
+                (semantic/ui-dropdown-item
+                 {:key     (str "trend-item-" id)
+                  :text    label-text
+                  :label   (str "XY plot - " axis " axis")
+                  :onClick #(rf/dispatch [::controller/add-to-trend current-module name causality type value-reference index])}))))
 
 (defn action-dropdown [current-module name causality type value-reference trend-info]
   (when-not (empty? trend-info)
-    (semantic/ui-dropdown {:button true :text "Add to trend"}
-     (semantic/ui-dropdown-menu nil
+    (semantic/ui-dropdown {:button true :text "Add to plot"}
+     (semantic/ui-dropdown-menu {:direction 'left}
       (map (partial trend-item current-module name causality type value-reference) trend-info)))))
 
 (defn pages-menu []
@@ -148,7 +141,7 @@
        (simulation-status-header-text loaded?)]]
      (when loaded?
        [:div.item
-        [:div.header "Trends"]
+        [:div.header "Plots"]
         [:div.menu
          (map (fn [{:keys [index label count]}]
                 [:div.item {:key label}
@@ -157,12 +150,12 @@
                   (trend/plot-type-from-label label)]
                  [:div.ui.teal.left.pointing.label count]
                  [:span {:style {:float 'right :cursor 'pointer :z-index 1000}
-                         :data-tooltip "Remove trend"
+                         :data-tooltip "Remove plot"
                          :data-position "top center"}
                   [:i.trash.gray.icon {:on-click #(rf/dispatch [::controller/removetrend index])}]]
                  (if (< 0 count)
                    [:span {:style {:float 'right :cursor 'pointer :z-index 1000}
-                           :data-tooltip "Remove all variables from trend"
+                           :data-tooltip "Remove all variables from plot"
                            :data-position "top center"}
                     [:i.eye.slash.gray.icon {:on-click #(rf/dispatch [::controller/untrend index])}]])])
               trend-info)
