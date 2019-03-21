@@ -22,3 +22,7 @@ resources/public/
 # Conan output
 include/
 dist/
+conan_imports_manifest.txt
+conanbuildinfo.txt
+conaninfo.txt
+graph_info.json
