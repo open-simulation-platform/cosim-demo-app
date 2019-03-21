@@ -26,23 +26,24 @@
     :text    "20m"}])
 
 (def trend-layout
-  {:xaxis {:title "Time [s]"}
-   :autosize true
+  {:xaxis              {:title "Time [s]"}
+   :autosize           true
    :use-resize-handler true
-   :showlegend true
-   :legend {:orientation "h"}})
+   :showlegend         true
+   :legend             {:orientation "h"}})
 
 (def scatter-layout
-  {:xaxis {:autorange true
-           :autotick  true
-           :ticks     ""}
+  {:xaxis      {:autorange true
+                :autotick  true
+                :ticks     ""}
    :showlegend true
-   :legend {:orientation "h"}})
+   :legend     {:orientation "h"}})
 
 (defn- layout-selector [plot-type]
   (case plot-type
     "trend" trend-layout
-    "scatter" scatter-layout))
+    "scatter" scatter-layout
+    {}))
 
 (defn- namespaced
   "Takes a map and a symbol name or string and creates a new map with namespaced keys as defined by the symbol.
@@ -64,11 +65,12 @@
     "trend" trend-values
     "scatter" (map (fn [[a b]]
                      (merge
-                      (select-keys a [:xvals :yvals])
-                      (select-keys b [:xvals :yvals])
-                      (namespaced (dissoc a :xvals :yvals) first-signal-ns)
-                      (namespaced (dissoc b :xvals :yvals) second-signal-ns)))
-                   (partition 2 trend-values))))
+                       (select-keys a [:xvals :yvals])
+                       (select-keys b [:xvals :yvals])
+                       (namespaced (dissoc a :xvals :yvals) first-signal-ns)
+                       (namespaced (dissoc b :xvals :yvals) second-signal-ns)))
+                   (partition 2 trend-values))
+    []))
 
 (defn- range-selector [trend-range {:keys [text seconds]}]
   ^{:key text}
@@ -144,21 +146,21 @@
                  (let [{:keys [trend-values trend-id trend-layout]} (r/props comp)]
                    (update-chart-data (r/dom-node comp) trend-values trend-id trend-layout)))]
     (r/create-class
-     {:component-did-mount  (fn [comp]
-                              (let [{:keys [trend-layout]} (r/props comp)
-                                    dom-node (r/dom-node comp)
-                                    _ (set-dom-element-height! dom-node plot-container-height)]
-                                (js/Plotly.newPlot dom-node
-                                                   (clj->js [{:x    []
-                                                              :y    []
-                                                              :mode "lines"
-                                                              :type "scatter"}])
-                                                   (clj->js trend-layout)
-                                                   (clj->js {:responsive true}))
-                                (.on dom-node "plotly_relayout" relayout-callback)))
-      :component-did-update update
-      :reagent-render       (fn []
-                              [:div.column])})))
+      {:component-did-mount  (fn [comp]
+                               (let [{:keys [trend-layout]} (r/props comp)
+                                     dom-node (r/dom-node comp)
+                                     _ (set-dom-element-height! dom-node plot-container-height)]
+                                 (js/Plotly.newPlot dom-node
+                                                    (clj->js [{:x    []
+                                                               :y    []
+                                                               :mode "lines"
+                                                               :type "scatter"}])
+                                                    (clj->js trend-layout)
+                                                    (clj->js {:responsive true}))
+                                 (.on dom-node "plotly_relayout" relayout-callback)))
+       :component-did-update update
+       :reagent-render       (fn []
+                               [:div.column])})))
 
 (defn trend-outer []
   (let [trend-range (rf/subscribe [::trend-range])

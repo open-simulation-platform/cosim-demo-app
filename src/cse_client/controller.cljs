@@ -75,7 +75,8 @@
 (k/reg-event-fx ::socket-message-received
                 (fn [{:keys [db]} [{message :message}]]
                   (when-let [module-data (:module-data message)]
-                    (s/assert ::module-data module-data))
+                    (s/assert ::module-data module-data)
+                    (rf/dispatch [::fetch-signals]))
                   (merge
                     {:db (update db :state merge message)}
                     (when-let [feedback (:feedback message)]
@@ -210,8 +211,8 @@
                         route-param-index (int (:index (:path-params (:kee-frame/route db))))
                         current-path-to-be-deleted (and (= :trend route-name) (= route-param-index id))]
                     (merge
-                     (when current-path-to-be-deleted {:navigate-to [:index]})
-                     (socket-command ["removetrend" (str id)])))))
+                      (when current-path-to-be-deleted {:navigate-to [:index]})
+                      (socket-command ["removetrend" (str id)])))))
 
 (k/reg-event-fx ::new-trend
                 (fn [_ [type label]]

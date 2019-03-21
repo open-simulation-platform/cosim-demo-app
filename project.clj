@@ -1,6 +1,6 @@
 (defproject cse-client "1.0-SNAPSHOT"
   :min-lein-version "2.0.0"
-  :dependencies [[kee-frame "0.3.3-SNAPSHOT"]
+  :dependencies [[kee-frame "0.3.3"]
                  [reagent "0.8.1"]
                  [re-frame "0.10.6" :exclusions [reagent]]
                  [cljsjs/plotly "1.36.1-0"]
@@ -28,7 +28,7 @@
                                        :source-map-timestamp true
                                        :parallel-build       true
                                        :closure-defines      {cse-client.core/debug                 true
-                                                              cse-client.view/default-load-dir      "C:\\MC\\git\\cse-demos\\house"
+                                                              cse-client.view/default-load-dir      ""
                                                               cse-client.view/default-log-dir       ""
                                                               "re_frame.trace.trace_enabled_QMARK_" true}
                                        :preloads             [devtools.preload day8.re-frame-10x.preload]
