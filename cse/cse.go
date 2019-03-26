@@ -87,6 +87,10 @@ func executionDestroy(execution *C.cse_execution) {
 	C.cse_execution_destroy(execution)
 }
 
+func localSlaveDestroy(slave *C.cse_slave) {
+	C.cse_local_slave_destroy(slave);
+}
+
 func manipulatorDestroy(manipulator *C.cse_manipulator) {
 	C.cse_manipulator_destroy(manipulator)
 }
@@ -226,8 +230,12 @@ func simulationTeardown(sim *Simulation) (bool, string) {
 	}
 	manipulatorDestroy(sim.OverrideManipulator)
 	manipulatorDestroy(sim.ScenarioManager)
+	for _, slave := range(sim.LocalSlaves) {
+		localSlaveDestroy(slave)
+	}
 
 	sim.Execution = nil
+	sim.LocalSlaves = []*C.cse_slave{}
 	sim.Observer = nil
 	sim.TrendObserver = nil
 	sim.FileObserver = nil
@@ -278,9 +286,11 @@ func initializeSimulation(sim *Simulation, fmuDir string, logDir string) (bool, 
 		}
 		paths := getFmuPaths(fmuDir)
 		for _, path := range paths {
-			success := addFmu(execution, &metaData, path)
-			if !success {
+			slave := addFmu(execution, &metaData, path)
+			if (nil == slave) {
 				return false, strCat("Could not add FMU to execution: ", path)
+			} else {
+				sim.LocalSlaves = append(sim.LocalSlaves, slave)
 			}
 		}
 	}
@@ -514,20 +524,20 @@ func StateUpdateLoop(state chan structs.JsonResponse, simulationStatus *structs.
 	}
 }
 
-func addFmu(execution *C.cse_execution, metaData *structs.MetaData, fmuPath string) bool {
+func addFmu(execution *C.cse_execution, metaData *structs.MetaData, fmuPath string) *C.cse_slave {
 	log.Println("Loading: " + fmuPath)
 	localSlave := createLocalSlave(fmuPath)
 	if localSlave == nil {
-		return false
+		return nil
 	}
 	fmu := metadata.ReadModelDescription(fmuPath)
 	index := executionAddSlave(execution, localSlave)
 	if index < 0 {
-		return false
+		return nil
 	}
 	fmu.ExecutionIndex = index
 	metaData.FMUs = append(metaData.FMUs, fmu)
-	return true
+	return localSlave
 }
 
 func addFmuSsd(metaData *structs.MetaData, name string, index int, fmuPath string) {
@@ -604,6 +614,7 @@ type Simulation struct {
 	OverrideManipulator *C.cse_manipulator
 	ScenarioManager     *C.cse_manipulator
 	MetaData            *structs.MetaData
+	LocalSlaves         []*C.cse_slave
 }
 
 func CreateEmptySimulation() Simulation {
