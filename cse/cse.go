@@ -361,13 +361,15 @@ func executeCommand(cmd []string, sim *Simulation, status *structs.SimulationSta
 	case "setlabel":
 		success, message = setTrendLabel(status, cmd[1], cmd[2])
 	case "trend-zoom":
-		status.TrendSpec = structs.TrendSpec{Auto: false, Begin: parseFloat(cmd[1]), End: parseFloat(cmd[2])}
+		idx, _ := strconv.Atoi(cmd[1])
+		status.Trends[idx].Spec = structs.TrendSpec{Auto: false, Begin: parseFloat(cmd[2]), End: parseFloat(cmd[3])}
 		success = true
-		message = strCat("Trending values from ", cmd[1], " to ", cmd[2])
+		message = strCat("Plotting values from ", cmd[2], " to ", cmd[3])
 	case "trend-zoom-reset":
-		status.TrendSpec = structs.TrendSpec{Auto: true, Range: parseFloat(cmd[1])}
+		idx, _ := strconv.Atoi(cmd[1])
+		status.Trends[idx].Spec = structs.TrendSpec{Auto: true, Range: parseFloat(cmd[2])}
 		success = true
-		message = strCat("Trending last ", cmd[1], " seconds")
+		message = strCat("Plotting last ", cmd[2], " seconds")
 	case "set-value":
 		success, message = setVariableValue(sim, cmd[1], cmd[2], cmd[3], cmd[4], cmd[5])
 	case "reset-value":

@@ -25,7 +25,10 @@ func addNewTrend(status *structs.SimulationStatus, plotType string, label string
 		Id:           id,
 		PlotType:     plotType,
 		Label:        label,
-		TrendSignals: []structs.TrendSignal{}})
+		TrendSignals: []structs.TrendSignal{},
+		Spec: structs.TrendSpec{
+			Auto:  true,
+			Range: 10.0}})
 	return true, "Added new trend"
 }
 
@@ -110,7 +113,7 @@ func TrendLoop(sim *Simulation, status *structs.SimulationStatus) {
 						var signal = &trend.TrendSignals[i]
 						switch signal.Type {
 						case "Real":
-							observerGetRealSamples(sim.TrendObserver, signal, status.TrendSpec)
+							observerGetRealSamples(sim.TrendObserver, signal, trend.Spec)
 						}
 					}
 				}
@@ -122,7 +125,7 @@ func TrendLoop(sim *Simulation, status *structs.SimulationStatus) {
 						var signal1 = &trend.TrendSignals[j]
 						var signal2 = &trend.TrendSignals[j+1]
 						if (signal1.Type == "Real" && signal2.Type == "Real") {
-							observerGetRealSynchronizedSamples(sim.TrendObserver, signal1, signal2, status.TrendSpec)
+							observerGetRealSynchronizedSamples(sim.TrendObserver, signal1, signal2, trend.Spec)
 						}
 					}
 				}
