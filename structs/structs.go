@@ -44,13 +44,14 @@ type Trend struct {
 	PlotType     string        `json:"plot-type"`
 	Label        string        `json:"label"`
 	TrendSignals []TrendSignal `json:"trend-values"`
+	Spec         TrendSpec     `json:"spec"`
 }
 
 type TrendSpec struct {
-	Begin float64
-	End   float64
-	Range float64
-	Auto  bool
+	Begin float64 `json:"begin"`
+	End   float64 `json:"end"`
+	Range float64 `json:"range"`
+	Auto  bool    `json:"auto"`
 }
 
 type ShortLivedData struct {
@@ -65,7 +66,6 @@ type SimulationStatus struct {
 	Module              string
 	SignalSubscriptions []Variable
 	Trends              []Trend
-	TrendSpec           TrendSpec
 	Status              string
 	CurrentScenario     string
 }
