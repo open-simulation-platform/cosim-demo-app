@@ -187,8 +187,11 @@
                         :trend-layout (layout-selector plot-type)
                         :trend-id     id}]]]))))
 
-(rf/reg-sub ::trend-range :trend-range)
 (rf/reg-sub ::active-trend #(get-in % [:state :trends (-> % :active-trend-index int)]))
+
+(rf/reg-sub ::trend-range
+            :<- [::active-trend]
+            #(-> % :spec :range))
 
 (defn- ascending-points? [tuples]
   (= tuples

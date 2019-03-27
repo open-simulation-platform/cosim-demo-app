@@ -235,12 +235,13 @@
                   (socket-command ["reset-value" module signal causality type])))
 
 (k/reg-event-fx ::trend-zoom
-                (fn [_ [begin end]]
-                  (socket-command ["trend-zoom" (str begin) (str end)])))
+
+                (fn [{:keys [db]} [begin end]]
+                  (socket-command ["trend-zoom" (:active-trend-index db) (str begin) (str end)])))
 
 (k/reg-event-fx ::trend-zoom-reset
                 (fn [{:keys [db]} _]
-                  (socket-command ["trend-zoom-reset" (-> db :trend-range str)])))
+                  (socket-command ["trend-zoom-reset" (:active-trend-index db) (-> db :trend-range str)])))
 
 (k/reg-event-fx ::trend-range
                 (fn [{:keys [db]} [new-range]]

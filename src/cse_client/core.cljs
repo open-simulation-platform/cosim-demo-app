@@ -191,9 +191,8 @@
            :hash-routing?  true
            :debug?         (if debug {:blacklist #{::controller/socket-message-received}} false)
            :root-component [view/root-comp]
-           :initial-db     {:trend-range      10
-                            :active-guide-tab "About"
-                            :page             1
-                            :vars-per-page    20
-                            :prev-paths       (reader/read-string (storage/get-item "cse-paths"))
+           :initial-db     {:active-guide-tab               "About"
+                            :page                           1
+                            :vars-per-page                  20
+                            :prev-paths                     (reader/read-string (storage/get-item "cse-paths"))
                             :show-success-feedback-messages (reader/read-string (storage/get-item "show-success-feedback-message"))}})

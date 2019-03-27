@@ -25,24 +25,26 @@
   (case plot-type
 
     "trend" (semantic/ui-dropdown-item
-             {:key     (str "trend-item-" id)
-              :text    (trend/plot-type-from-label label)
-              :label   "Time series"
-              :onClick #(rf/dispatch [::controller/add-to-trend current-module name causality type value-reference index])})
+              {:key     (str "trend-item-" id)
+               :text    (trend/plot-type-from-label label)
+               :label   "Time series"
+               :onClick #(rf/dispatch [::controller/add-to-trend current-module name causality type value-reference index])})
 
     "scatter" (let [label-text (trend/plot-type-from-label label)
                     axis (if (even? count) 'X 'Y)]
                 (semantic/ui-dropdown-item
-                 {:key     (str "trend-item-" id)
-                  :text    label-text
-                  :label   (str "XY plot - " axis " axis")
-                  :onClick #(rf/dispatch [::controller/add-to-trend current-module name causality type value-reference index])}))))
+                  {:key     (str "trend-item-" id)
+                   :text    label-text
+                   :label   (str "XY plot - " axis " axis")
+                   :onClick #(rf/dispatch [::controller/add-to-trend current-module name causality type value-reference index])}))))
 
 (defn action-dropdown [current-module name causality type value-reference trend-info]
   (when-not (empty? trend-info)
-    (semantic/ui-dropdown {:button true :text "Add to plot"}
-     (semantic/ui-dropdown-menu {:direction 'left}
-      (map (partial trend-item current-module name causality type value-reference) trend-info)))))
+    (semantic/ui-dropdown
+      {:button true :text "Add to plot"}
+      (semantic/ui-dropdown-menu
+        {:direction 'left}
+        (map (partial trend-item current-module name causality type value-reference) trend-info)))))
 
 (defn pages-menu []
   (let [current-page @(rf/subscribe [:current-page])
@@ -150,13 +152,13 @@
                   (trend/plot-type-from-label label)]
                  (let [display-number (if (= plot-type "trend") count (int (/ count 2)))]
                    [:div.ui.teal.left.pointing.label display-number])
-                 [:span {:style {:float 'right :cursor 'pointer :z-index 1000}
-                         :data-tooltip "Remove plot"
+                 [:span {:style         {:float 'right :cursor 'pointer :z-index 1000}
+                         :data-tooltip  "Remove plot"
                          :data-position "top center"}
                   [:i.trash.gray.icon {:on-click #(rf/dispatch [::controller/removetrend index])}]]
                  (if (< 0 count)
-                   [:span {:style {:float 'right :cursor 'pointer :z-index 1000}
-                           :data-tooltip "Remove all variables from plot"
+                   [:span {:style         {:float 'right :cursor 'pointer :z-index 1000}
+                           :data-tooltip  "Remove all variables from plot"
                            :data-position "top center"}
                     [:i.eye.slash.gray.icon {:on-click #(rf/dispatch [::controller/untrend index])}]])])
               trend-info)
