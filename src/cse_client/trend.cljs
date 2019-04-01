@@ -25,19 +25,23 @@
    {:seconds (* 60 20)
     :text    "20m"}])
 
-(def trend-layout
-  {:xaxis              {:title "Time [s]"}
-   :autosize           true
+(def common-layout
+  {:autosize true
    :use-resize-handler true
-   :showlegend         true
-   :legend             {:orientation "h"}})
+   :showlegend true
+   :uirevision true
+   :margin {:l 40 :r 40 :t 20 :pad 5}
+   :legend {:orientation "h"}})
+
+(def trend-layout
+  (merge common-layout
+         {:xaxis {:title "Time [s]"}}))
 
 (def scatter-layout
-  {:xaxis      {:autorange true
-                :autotick  true
-                :ticks     ""}
-   :showlegend true
-   :legend     {:orientation "h"}})
+  (merge common-layout
+         {:xaxis {:autorange true
+                  :autotick  true
+                  :ticks     ""}}))
 
 (defn- layout-selector [plot-type]
   (case plot-type
@@ -83,48 +87,6 @@
   "Expects label to be a string on format 'Time series #a9123ddc-..'"
   (str/trim (first (str/split label "#"))))
 
-(defn- delete-series [dom-node]
-  (let [num-series (-> dom-node .-data .-length)]
-    (doseq [_ (range num-series)]
-      (js/Plotly.deleteTraces dom-node 0))))
-
-(defn- add-time-series-traces [dom-node plots]
-  (let [plot-legend-title (fn [{:keys [module signal causality type]}]
-                            (str/join " - " [module signal causality type]))]
-    (doseq [plot plots]
-      (js/Plotly.addTraces dom-node (clj->js {:name (plot-legend-title plot) :x [] :y []})))))
-
-(defn- add-xy-plot-traces [dom-node plots]
-  (let [plot-legend-title (fn [p]
-                            (let [first-signal ((keyword (str first-signal-ns "/" 'signal)) p)
-                                  second-signal ((keyword (str second-signal-ns "/" 'signal)) p)]
-                              (str/join " / " [first-signal second-signal])))]
-    (doseq [plot plots]
-      (js/Plotly.addTraces dom-node (clj->js {:name (plot-legend-title plot) :x [] :y []})))))
-
-(defn- maybe-update-series [dom-node trend-values]
-  (let [num-series (-> dom-node .-data .-length)]
-    (when (not= num-series (count trend-values))
-      (doseq [_ (range num-series)]
-        (js/Plotly.deleteTraces dom-node 0))
-      (case (:plot-type @(rf/subscribe [::active-trend]))
-        "trend" (add-time-series-traces dom-node trend-values)
-        "scatter" (add-xy-plot-traces dom-node trend-values)))))
-
-(defn- update-chart-data [dom-node trend-values trend-id trend-layout]
-  (when-not (= trend-id @id-store)
-    (reset! id-store trend-id)
-    (delete-series dom-node))
-  (s/assert ::trend-values trend-values)
-  (let [init-data {:x [] :y []}
-        data (reduce (fn [data {:keys [xvals yvals]}]
-                       (-> data
-                           (update :x conj xvals)
-                           (update :y conj yvals)))
-                     init-data trend-values)]
-    (maybe-update-series dom-node trend-values)
-    (js/Plotly.update dom-node (clj->js data) (clj->js trend-layout))))
-
 (defn- relayout-callback [js-event]
   (let [event (js->clj js-event)
         begin (get event "xaxis.range[0]")
@@ -141,26 +103,38 @@
 (defn- set-dom-element-height! [dom-node height]
   (-> dom-node .-style .-height (set! height)))
 
+(defn- time-series-legend-name [{:keys [module signal causality type]}]
+  (str/join " - " [module signal causality type]))
+
+(defn- xy-plot-legend-name [plot]
+  (let [first-signal ((keyword (str first-signal-ns "/" 'signal)) plot)
+        second-signal ((keyword (str second-signal-ns "/" 'signal)) plot)]
+    (str/join " / " [first-signal second-signal])))
+
 (defn- trend-inner []
-  (let [update (fn [comp]
-                 (let [{:keys [trend-values trend-id trend-layout]} (r/props comp)]
-                   (update-chart-data (r/dom-node comp) trend-values trend-id trend-layout)))]
+  (let [render-plot (fn [comp]
+                      (let [{:keys [trend-values plot-type]} (r/props comp)
+                            dom-node (r/dom-node comp)
+                            _ (set-dom-element-height! dom-node plot-container-height)
+                            layout (layout-selector plot-type)
+                            plot-data (map (fn [trend] {:x (:xvals trend)
+                                                        :y (:yvals trend)
+                                                        :name (case plot-type
+                                                                "trend" (time-series-legend-name trend)
+                                                                "scatter" (xy-plot-legend-name trend))
+                                                        :mode "lines"
+                                                        :type "scatter"}) trend-values)]
+                        (js/Plotly.react dom-node
+                                         (clj->js plot-data)
+                                         (clj->js layout)
+                                         (clj->js {:responsive true}))))]
     (r/create-class
-      {:component-did-mount  (fn [comp]
-                               (let [{:keys [trend-layout]} (r/props comp)
-                                     dom-node (r/dom-node comp)
-                                     _ (set-dom-element-height! dom-node plot-container-height)]
-                                 (js/Plotly.newPlot dom-node
-                                                    (clj->js [{:x    []
-                                                               :y    []
-                                                               :mode "lines"
-                                                               :type "scatter"}])
-                                                    (clj->js trend-layout)
-                                                    (clj->js {:responsive true}))
-                                 (.on dom-node "plotly_relayout" relayout-callback)))
-       :component-did-update update
-       :reagent-render       (fn []
-                               [:div.column])})))
+     {:component-did-mount  (fn [comp]
+                              (render-plot comp)
+                              (.on (r/dom-node comp) "plotly_relayout" relayout-callback))
+      :component-did-update render-plot
+      :reagent-render       (fn []
+                              [:div.column])})))
 
 (defn trend-outer []
   (let [trend-range (rf/subscribe [::trend-range])
@@ -178,14 +152,14 @@
           [:div.column
            [:button.ui.button.right.floated {:on-click #(rf/dispatch [::controller/removetrend active-trend-index])}
             [:i.trash.gray.icon]
-            "Remove trend"]
+            "Remove plot"]
            [:button.ui.button.right.floated {:on-click #(rf/dispatch [::controller/untrend active-trend-index])}
             [:i.eye.slash.gray.icon]
-            "Remove variables from trend"]]]
+            "Remove variables from plot"]]]
          [:div.one.column.row
           [trend-inner {:trend-values (format-data-for-plotting plot-type trend-values)
-                        :trend-layout (layout-selector plot-type)
-                        :trend-id     id}]]]))))
+                        :plot-type plot-type
+                        :trend-id id}]]]))))
 
 (rf/reg-sub ::active-trend #(get-in % [:state :trends (-> % :active-trend-index int)]))
 
