@@ -104,9 +104,7 @@ func removeTrend(status *structs.SimulationStatus, trendIndex string) (bool, str
 }
 
 func activeTrend(status *structs.SimulationStatus, trendIndex string) (bool, string) {
-	log.Println(trendIndex)
 	idx, _ := strconv.Atoi(trendIndex)
-
 	status.ActiveTrend = idx
 
 	return true, "Changed active trend index"
@@ -117,7 +115,7 @@ func TrendLoop(sim *Simulation, status *structs.SimulationStatus) {
 		for _, trend := range status.Trends {
 			switch trend.PlotType {
 			case "trend":
-				if len(trend.TrendSignals) > 0 {
+				if len(trend.TrendSignals) > 0 && status.ActiveTrend == trend.Id {
 					for i, _ := range trend.TrendSignals {
 						var signal = &trend.TrendSignals[i]
 						switch signal.Type {
@@ -129,7 +127,7 @@ func TrendLoop(sim *Simulation, status *structs.SimulationStatus) {
 				break
 			case "scatter":
 				signalCount := len(trend.TrendSignals)
-				if signalCount > 0 {
+				if signalCount > 0 && status.ActiveTrend == trend.Id {
 					for j := 0; (j + 1) < signalCount; j += 2 {
 						var signal1 = &trend.TrendSignals[j]
 						var signal2 = &trend.TrendSignals[j+1]
