@@ -88,7 +88,7 @@ func executionDestroy(execution *C.cse_execution) {
 }
 
 func localSlaveDestroy(slave *C.cse_slave) {
-	C.cse_local_slave_destroy(slave);
+	C.cse_local_slave_destroy(slave)
 }
 
 func manipulatorDestroy(manipulator *C.cse_manipulator) {
@@ -230,7 +230,7 @@ func simulationTeardown(sim *Simulation) (bool, string) {
 	}
 	manipulatorDestroy(sim.OverrideManipulator)
 	manipulatorDestroy(sim.ScenarioManager)
-	for _, slave := range(sim.LocalSlaves) {
+	for _, slave := range sim.LocalSlaves {
 		localSlaveDestroy(slave)
 	}
 
@@ -287,7 +287,7 @@ func initializeSimulation(sim *Simulation, fmuDir string, logDir string) (bool, 
 		paths := getFmuPaths(fmuDir)
 		for _, path := range paths {
 			slave := addFmu(execution, &metaData, path)
-			if (nil == slave) {
+			if nil == slave {
 				return false, strCat("Could not add FMU to execution: ", path)
 			} else {
 				sim.LocalSlaves = append(sim.LocalSlaves, slave)
@@ -324,7 +324,7 @@ func initializeSimulation(sim *Simulation, fmuDir string, logDir string) (bool, 
 }
 
 func lastErrorMessage() string {
-	msg := C.cse_last_error_message();
+	msg := C.cse_last_error_message()
 	return C.GoString(msg)
 }
 
@@ -368,6 +368,8 @@ func executeCommand(cmd []string, sim *Simulation, status *structs.SimulationSta
 		success, message = removeAllFromTrend(sim, status, cmd[1])
 	case "removetrend":
 		success, message = removeTrend(status, cmd[1])
+	case "active-trend":
+		success, message = activeTrend(status, cmd[1])
 	case "setlabel":
 		success, message = setTrendLabel(status, cmd[1], cmd[2])
 	case "trend-zoom":
@@ -498,7 +500,7 @@ func GenerateJsonResponse(status *structs.SimulationStatus, sim *Simulation, fee
 		response.ConfigDir = status.ConfigDir
 		response.Trends = status.Trends
 		if sim.ScenarioManager != nil && isScenarioRunning(sim.ScenarioManager) {
-			response.RunningScenario = status.CurrentScenario;
+			response.RunningScenario = status.CurrentScenario
 		}
 
 	}

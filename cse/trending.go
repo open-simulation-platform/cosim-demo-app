@@ -103,6 +103,15 @@ func removeTrend(status *structs.SimulationStatus, trendIndex string) (bool, str
 	return true, "Removed trend"
 }
 
+func activeTrend(status *structs.SimulationStatus, trendIndex string) (bool, string) {
+	log.Println(trendIndex)
+	idx, _ := strconv.Atoi(trendIndex)
+
+	status.ActiveTrend = idx
+
+	return true, "Changed active trend index"
+}
+
 func TrendLoop(sim *Simulation, status *structs.SimulationStatus) {
 	for {
 		for _, trend := range status.Trends {
@@ -124,7 +133,7 @@ func TrendLoop(sim *Simulation, status *structs.SimulationStatus) {
 					for j := 0; (j + 1) < signalCount; j += 2 {
 						var signal1 = &trend.TrendSignals[j]
 						var signal2 = &trend.TrendSignals[j+1]
-						if (signal1.Type == "Real" && signal2.Type == "Real") {
+						if signal1.Type == "Real" && signal2.Type == "Real" {
 							observerGetRealSynchronizedSamples(sim.TrendObserver, signal1, signal2, trend.Spec)
 						}
 					}

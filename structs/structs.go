@@ -68,6 +68,7 @@ type SimulationStatus struct {
 	Trends              []Trend
 	Status              string
 	CurrentScenario     string
+	ActiveTrend         int
 }
 
 type Variable struct {
