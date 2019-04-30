@@ -144,13 +144,18 @@
                     {:db (dissoc db :current-module)}
                     (socket-command ["signals"]))))
 
-(k/reg-event-db ::trend-enter
-                (fn [db [{:keys [index]}]]
-                  (assoc db :active-trend-index index)))
+(k/reg-event-fx ::trend-enter
+                (fn [{:keys [db]} [{:keys [index]}]]
+                  (let [trend-id (-> db :state :trends (get (int index)) :id)]
+                    (merge
+                      {:db (assoc db :active-trend-index index)}
+                      (socket-command ["active-trend" (str trend-id)])))))
 
-(k/reg-event-db ::trend-leave
-                (fn [db _]
-                  (dissoc db :active-trend-index)))
+(k/reg-event-fx ::trend-leave
+                (fn [{:keys [db]} _]
+                  (merge
+                    {:db (dissoc db :active-trend-index)}
+                    (socket-command ["active-trend" nil]))))
 
 (k/reg-event-db ::toggle-show-success-feedback-messages
                 (fn [db _]
