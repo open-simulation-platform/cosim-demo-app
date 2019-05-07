@@ -303,7 +303,11 @@ func initializeSimulation(sim *Simulation, fmuDir string, logDir string) (bool, 
 
 	var fileObserver *C.cse_observer
 	if len(logDir) > 0 {
-		fileObserver := createFileObserver(logDir)
+		if hasFile(fmuDir, "LogConfig.xml") {
+			fileObserver = createFileObserverFromCfg(logDir, fmuDir+"\\LogConfig.xml")
+		} else {
+			fileObserver = createFileObserver(logDir)
+		}
 		executionAddObserver(execution, fileObserver)
 	}
 
