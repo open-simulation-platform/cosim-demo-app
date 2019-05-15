@@ -66,6 +66,8 @@ func executionAddManipulator(execution *C.cse_execution, manipulator *C.cse_mani
 }
 
 func executionAddSlave(execution *C.cse_execution, slave *C.cse_slave) int {
+	log.Println()
+
 	slaveIndex := C.cse_execution_add_slave(execution, slave)
 	if slaveIndex < 0 {
 		printLastError()
