@@ -7,8 +7,8 @@ package cse
 */
 import "C"
 import (
-	"cse-server-go/metadata"
 	"cse-server-go/structs"
+	"errors"
 	"fmt"
 	"io/ioutil"
 	"log"
@@ -221,6 +221,87 @@ func resetVariableValue(sim *Simulation, module string, signal string, causality
 	}
 }
 
+func parseCausality(causality C.cse_variable_causality) (string, error) {
+	switch causality {
+	case C.CSE_VARIABLE_CAUSALITY_INPUT:
+		return "input", nil
+	case C.CSE_VARIABLE_CAUSALITY_OUTPUT:
+		return "output", nil
+	case C.CSE_VARIABLE_CAUSALITY_PARAMETER:
+		return "parameter", nil
+	case C.CSE_VARIABLE_CAUSALITY_CALCULATEDPARAMETER:
+		return "calculatedParameter", nil
+	case C.CSE_VARIABLE_CAUSALITY_LOCAL:
+		return "local", nil
+	case C.CSE_VARIABLE_CAUSALITY_INDEPENDENT:
+		return "independent", nil
+	}
+	return "", errors.New("Unable to parse variable causality")
+}
+
+func parseVariability(variability C.cse_variable_variability) (string, error) {
+	switch variability {
+	case C.CSE_VARIABLE_VARIABILITY_CONSTANT:
+		return "constant", nil
+	case C.CSE_VARIABLE_VARIABILITY_FIXED:
+		return "fixed", nil
+	case C.CSE_VARIABLE_VARIABILITY_TUNABLE:
+		return "tunable", nil
+	case C.CSE_VARIABLE_VARIABILITY_DISCRETE:
+		return "discrete", nil
+	case C.CSE_VARIABLE_VARIABILITY_CONTINUOUS:
+		return "continuous", nil
+	}
+	return "", errors.New("Unable to parse variable variability")
+}
+
+func parseType(valueType C.cse_variable_type) (string, error) {
+	switch valueType {
+	case C.CSE_VARIABLE_TYPE_REAL:
+		return "Real", nil
+	case C.CSE_VARIABLE_TYPE_INTEGER:
+		return "Integer", nil
+	case C.CSE_VARIABLE_TYPE_STRING:
+		return "String", nil
+	case C.CSE_VARIABLE_TYPE_BOOLEAN:
+		return "Boolean", nil
+	}
+	return "", errors.New("Unable to parse variable type")
+}
+
+func addVariableMetadata(execution *C.cse_execution, fmu *structs.FMU) (error) {
+	nVariables := C.cse_slave_get_num_variables(execution, C.cse_slave_index(fmu.ExecutionIndex))
+	var variables = make([]C.cse_variable_description, int(nVariables))
+	success := C.cse_slave_get_variables(execution, C.cse_slave_index(fmu.ExecutionIndex), &variables[0], nVariables)
+	if int(success) < 0 {
+		return errors.New(strCat("Unable to get variables for slave with name ", fmu.Name))
+	}
+	for _, variable := range variables {
+		name := C.GoString(&variable.name[0])
+		index := int(variable.index)
+		causality, err := parseCausality(variable.causality)
+		if err != nil {
+			return errors.New(strCat("Problem parsing causality for slave ", fmu.Name, ", variable ", name))
+		}
+		variability, err := parseVariability(variable.variability)
+		if err != nil {
+			return errors.New(strCat("Problem parsing variability for slave ", fmu.Name, ", variable ", name))
+		}
+		valueType, err := parseType(variable._type)
+		if err != nil {
+			return errors.New(strCat("Problem parsing type for slave ", fmu.Name, ", variable ", name))
+		}
+		fmu.Variables = append(fmu.Variables, structs.Variable{
+			name,
+			index,
+			causality,
+			variability,
+			valueType,
+		})
+	}
+	return nil
+}
+
 func simulationTeardown(sim *Simulation) (bool, string) {
 	executionDestroy(sim.Execution)
 	observerDestroy(sim.Observer)
@@ -278,7 +359,6 @@ func initializeSimulation(sim *Simulation, fmuDir string, logDir string) (bool, 
 		if execution == nil {
 			return false, "Could not create execution from SystemStructure.ssd file"
 		}
-		addSsdMetadata(execution, &metaData, fmuDir)
 	} else {
 		execution = createExecution()
 		if execution == nil {
@@ -286,13 +366,18 @@ func initializeSimulation(sim *Simulation, fmuDir string, logDir string) (bool, 
 		}
 		paths := getFmuPaths(fmuDir)
 		for _, path := range paths {
-			slave := addFmu(execution, &metaData, path)
-			if nil == slave {
-				return false, strCat("Could not add FMU to execution: ", path)
+			slave, err := addFmu(execution, path)
+			if err != nil {
+				return false, strCat("Could not add FMU to execution: ", err.Error())
 			} else {
 				sim.LocalSlaves = append(sim.LocalSlaves, slave)
 			}
 		}
+	}
+
+	err := addMetadata(execution, &metaData)
+	if err != nil {
+		return false, err.Error()
 	}
 
 	observer := createObserver()
@@ -528,41 +613,37 @@ func StateUpdateLoop(state chan structs.JsonResponse, simulationStatus *structs.
 	}
 }
 
-func addFmu(execution *C.cse_execution, metaData *structs.MetaData, fmuPath string) *C.cse_slave {
+func addFmu(execution *C.cse_execution, fmuPath string) (*C.cse_slave, error) {
 	log.Println("Loading: " + fmuPath)
 	localSlave := createLocalSlave(fmuPath)
 	if localSlave == nil {
-		return nil
+		printLastError()
+		return nil, errors.New(strCat("Unable to create slave from fmu: ", fmuPath))
 	}
-	fmu := metadata.ReadModelDescription(fmuPath)
 	index := executionAddSlave(execution, localSlave)
 	if index < 0 {
-		return nil
+		return nil, errors.New(strCat("Unable to add slave to execution: ", fmuPath))
 	}
-	fmu.ExecutionIndex = index
-	metaData.FMUs = append(metaData.FMUs, fmu)
-	return localSlave
+	return localSlave, nil
 }
 
-func addFmuSsd(metaData *structs.MetaData, name string, index int, fmuPath string) {
-	//log.Println("Parsing: " + fmuPath)
-	fmu := metadata.ReadModelDescription(fmuPath)
-	fmu.Name = name
-	fmu.ExecutionIndex = index
-	metaData.FMUs = append(metaData.FMUs, fmu)
-}
-
-func addSsdMetadata(execution *C.cse_execution, metaData *structs.MetaData, fmuDir string) {
+func addMetadata(execution *C.cse_execution, metaData *structs.MetaData) error {
 	nSlaves := C.cse_execution_get_num_slaves(execution)
 	var slaveInfos = make([]C.cse_slave_info, int(nSlaves))
 	C.cse_execution_get_slave_infos(execution, &slaveInfos[0], nSlaves)
 	for _, info := range slaveInfos {
 		name := C.GoString(&info.name[0])
-		source := C.GoString(&info.source[0])
 		index := int(info.index)
-		pathToFmu := filepath.Join(fmuDir, source)
-		addFmuSsd(metaData, name, index, pathToFmu)
+		fmu := structs.FMU{}
+		fmu.Name = name
+		fmu.ExecutionIndex = index
+		err := addVariableMetadata(execution, &fmu)
+		metaData.FMUs = append(metaData.FMUs, fmu)
+		if err != nil {
+			return err
+		}
 	}
+	return nil
 }
 
 func getFmuPaths(loadFolder string) (paths []string) {
