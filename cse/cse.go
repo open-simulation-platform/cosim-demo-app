@@ -266,17 +266,24 @@ func parseType(valueType C.cse_variable_type) (string, error) {
 	case C.CSE_VARIABLE_TYPE_BOOLEAN:
 		return "Boolean", nil
 	}
-	return "", errors.New("Unable to parse variable type")
+	return "", errors.New("unable to parse variable type")
 }
 
 func addVariableMetadata(execution *C.cse_execution, fmu *structs.FMU) (error) {
 	nVariables := C.cse_slave_get_num_variables(execution, C.cse_slave_index(fmu.ExecutionIndex))
+	if int(nVariables) < 0 {
+		return errors.New("invalid slave index to find variables for")
+	} else if int(nVariables) == 0 {
+		log.Println("No variables for ", fmu.Name)
+		return nil
+	}
+
 	var variables = make([]C.cse_variable_description, int(nVariables))
-	success := C.cse_slave_get_variables(execution, C.cse_slave_index(fmu.ExecutionIndex), &variables[0], nVariables)
-	if int(success) < 0 {
+	nVariablesRead := C.cse_slave_get_variables(execution, C.cse_slave_index(fmu.ExecutionIndex), &variables[0], C.size_t(nVariables))
+	if int(nVariablesRead) < 0 {
 		return errors.New(strCat("Unable to get variables for slave with name ", fmu.Name))
 	}
-	for _, variable := range variables {
+	for _, variable := range variables[0:int(nVariablesRead)] {
 		name := C.GoString(&variable.name[0])
 		index := int(variable.index)
 		causality, err := parseCausality(variable.causality)
