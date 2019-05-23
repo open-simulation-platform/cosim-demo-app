@@ -66,8 +66,6 @@ func executionAddManipulator(execution *C.cse_execution, manipulator *C.cse_mani
 }
 
 func executionAddSlave(execution *C.cse_execution, slave *C.cse_slave) int {
-	log.Println()
-
 	slaveIndex := C.cse_execution_add_slave(execution, slave)
 	if slaveIndex < 0 {
 		printLastError()
@@ -306,7 +304,7 @@ func initializeSimulation(sim *Simulation, fmuDir string, logDir string) (bool, 
 	var fileObserver *C.cse_observer
 	if len(logDir) > 0 {
 		if hasFile(fmuDir, "LogConfig.xml") {
-			fileObserver = createFileObserverFromCfg(logDir, fmuDir+"\\LogConfig.xml")
+			fileObserver = createFileObserverFromCfg(logDir, filepath.Join(fmuDir, "LogConfig.xml"))
 		} else {
 			fileObserver = createFileObserver(logDir)
 		}
