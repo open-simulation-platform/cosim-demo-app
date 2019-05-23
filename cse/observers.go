@@ -197,15 +197,15 @@ func observerGetRealSynchronizedSamples(observer *C.cse_observer, signal1 *struc
 func toVariableType(valueType string) (C.cse_variable_type, error) {
 	switch valueType {
 	case "Real":
-		return C.CSE_REAL, nil
+		return C.CSE_VARIABLE_TYPE_REAL, nil
 	case "Integer":
-		return C.CSE_INTEGER, nil
+		return C.CSE_VARIABLE_TYPE_INTEGER, nil
 	case "Boolean":
-		return C.CSE_BOOLEAN, nil
+		return C.CSE_VARIABLE_TYPE_BOOLEAN, nil
 	case "String":
-		return C.CSE_STRING, nil
+		return C.CSE_VARIABLE_TYPE_STRING, nil
 	}
-	return C.CSE_REAL, errors.New(strCat("Unknown variable type:", valueType))
+	return C.CSE_VARIABLE_TYPE_REAL, errors.New(strCat("Unknown variable type:", valueType))
 }
 
 func observerStartObserving(observer *C.cse_observer, slaveIndex int, valueType string, varIndex int) error {
