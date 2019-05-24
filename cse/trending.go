@@ -107,7 +107,7 @@ func activeTrend(status *structs.SimulationStatus, trendIndex string) (bool, str
 	if len(trendIndex) > 0 {
 		idx, err := strconv.Atoi(trendIndex)
 		if err != nil {
-			return false, strCat("Could not parse trend index: ", trendIndex , " " , err.Error())
+			return false, strCat("Could not parse trend index: ", trendIndex, " ", err.Error())
 		}
 		status.ActiveTrend = idx
 	} else {

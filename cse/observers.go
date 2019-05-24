@@ -27,6 +27,11 @@ func createFileObserver(logPath string) (observer *C.cse_observer) {
 	return
 }
 
+func createFileObserverFromCfg(logPath string, cfgPath string) (observer *C.cse_observer) {
+	observer = C.cse_file_observer_create_from_cfg(C.CString(logPath), C.CString(cfgPath))
+	return
+}
+
 func executionAddObserver(execution *C.cse_execution, observer *C.cse_observer) {
 	C.cse_execution_add_observer(execution, observer)
 }
@@ -174,7 +179,7 @@ func observerGetRealSynchronizedSamples(observer *C.cse_observer, signal1 *struc
 	cnSamples := C.size_t(numSamples)
 	realOutVal1 := make([]C.double, numSamples)
 	realOutVal2 := make([]C.double, numSamples)
-	actualNumSamples := C.cse_observer_slave_get_real_synchronized_series(observer, slaveIndex1, variableIndex1, slaveIndex2, variableIndex2, first, cnSamples, &realOutVal1[0],&realOutVal2[0])
+	actualNumSamples := C.cse_observer_slave_get_real_synchronized_series(observer, slaveIndex1, variableIndex1, slaveIndex2, variableIndex2, first, cnSamples, &realOutVal1[0], &realOutVal2[0])
 	ns := int(actualNumSamples)
 	if ns <= 0 {
 		return
