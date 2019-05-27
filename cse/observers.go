@@ -112,6 +112,66 @@ func observerGetIntegers(observer *C.cse_observer, variables []structs.Variable,
 	return intSignals
 }
 
+func observerGetBooleans(observer *C.cse_observer, variables []structs.Variable, slaveIndex int) (boolSignals []structs.Signal) {
+	var boolValueRefs []C.cse_variable_index
+	var boolVariables []structs.Variable
+	var numBooleans int
+	for _, variable := range variables {
+		if variable.Type == "Boolean" {
+			ref := C.cse_variable_index(variable.ValueReference)
+			boolValueRefs = append(boolValueRefs, ref)
+			boolVariables = append(boolVariables, variable)
+			numBooleans++
+		}
+	}
+
+	if numBooleans > 0 {
+		boolOutVal := make([]C.bool, numBooleans)
+		C.cse_observer_slave_get_boolean(observer, C.cse_slave_index(slaveIndex), &boolValueRefs[0], C.size_t(numBooleans), &boolOutVal[0])
+
+		boolSignals = make([]structs.Signal, numBooleans)
+		for k := range boolVariables {
+			boolSignals[k] = structs.Signal{
+				Name:      boolVariables[k].Name,
+				Causality: boolVariables[k].Causality,
+				Type:      boolVariables[k].Type,
+				Value:     bool(boolOutVal[k]),
+			}
+		}
+	}
+	return boolSignals
+}
+
+func observerGetStrings(observer *C.cse_observer, variables []structs.Variable, slaveIndex int) (stringSignals []structs.Signal) {
+	var stringValueRefs []C.cse_variable_index
+	var stringVariables []structs.Variable
+	var numStrings int
+	for _, variable := range variables {
+		if variable.Type == "String" {
+			ref := C.cse_variable_index(variable.ValueReference)
+			stringValueRefs = append(stringValueRefs, ref)
+			stringVariables = append(stringVariables, variable)
+			numStrings++
+		}
+	}
+
+	if numStrings > 0 {
+		stringOutVal := make([]C.cse_string_value, numStrings)
+		C.cse_observer_slave_get_string(observer, C.cse_slave_index(slaveIndex), &stringValueRefs[0], C.size_t(numStrings), &stringOutVal[0])
+
+		stringSignals = make([]structs.Signal, numStrings)
+		for k := range stringVariables {
+			stringSignals[k] = structs.Signal{
+				Name:      stringVariables[k].Name,
+				Causality: stringVariables[k].Causality,
+				Type:      stringVariables[k].Type,
+				Value:     C.GoString(&stringOutVal[k].value[0]),
+			}
+		}
+	}
+	return stringSignals
+}
+
 func observerGetRealSamples(observer *C.cse_observer, signal *structs.TrendSignal, spec structs.TrendSpec) {
 	slaveIndex := C.cse_slave_index(signal.SlaveIndex)
 	variableIndex := C.cse_variable_index(signal.ValueReference)

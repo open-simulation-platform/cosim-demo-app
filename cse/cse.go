@@ -148,35 +148,67 @@ func setInteger(manipulator *C.cse_manipulator, slaveIndex int, variableIndex in
 	}
 }
 
-func findVariableIndex(fmu structs.FMU, signalName string, causality string, valueType string) (index int) {
-	for _, variable := range fmu.Variables {
-		if variable.Name == signalName && variable.Type == valueType && variable.Causality == causality {
-			index = variable.ValueReference
-		}
+func setBoolean(manipulator *C.cse_manipulator, slaveIndex int, variableIndex int, value bool) (bool, string) {
+	vi := make([]C.cse_variable_index, 1)
+	vi[0] = C.cse_variable_index(variableIndex)
+	v := make([]C.bool, 1)
+	v[0] = C.bool(value)
+	success := C.cse_manipulator_slave_set_boolean(manipulator, C.cse_slave_index(slaveIndex), &vi[0], C.size_t(1), &v[0])
+	if int(success) < 0 {
+		return false, "Unable to set boolean variable value"
+	} else {
+		return true, "Successfully set boolean variable value"
 	}
-	return
 }
 
-func setVariableValue(sim *Simulation, module string, signal string, causality string, valueType string, value string) (bool, string) {
-	fmu := findFmu(sim.MetaData, module)
-	varIndex := findVariableIndex(fmu, signal, causality, valueType)
+func setString(manipulator *C.cse_manipulator, slaveIndex int, variableIndex int, value string) (bool, string) {
+	vi := make([]C.cse_variable_index, 1)
+	vi[0] = C.cse_variable_index(variableIndex)
+	v := make([]*C.char, 1)
+	v[0] = C.CString(value)
+	success := C.cse_manipulator_slave_set_string(manipulator, C.cse_slave_index(slaveIndex), &vi[0], C.size_t(1), &v[0])
+	if int(success) < 0 {
+		return false, "Unable to set boolean variable value"
+	} else {
+		return true, "Successfully set boolean variable value"
+	}
+}
+
+func setVariableValue(sim *Simulation, slaveIndex string, valueType string, valueReference string, value string) (bool, string) {
+	index, err := strconv.Atoi(slaveIndex)
+	if err != nil {
+		return false, strCat("Can't parse slave index as integer: ", slaveIndex)
+	}
+	varIndex, err := strconv.Atoi(valueReference)
+	if err != nil {
+		return false, strCat("Can't parse value reference as integer: ", valueReference)
+	}
 	switch valueType {
 	case "Real":
 		val, err := strconv.ParseFloat(value, 64)
 		if err != nil {
 			log.Println(err)
-			return false, err.Error()
+			return false, strCat("Can't parse value as double: ", value, ", error: ", err.Error())
 		} else {
-			return setReal(sim.OverrideManipulator, fmu.ExecutionIndex, varIndex, val)
+			return setReal(sim.OverrideManipulator, index, varIndex, val)
 		}
 	case "Integer":
 		val, err := strconv.Atoi(value)
 		if err != nil {
 			log.Println(err)
-			return false, err.Error()
+			return false, strCat("Can't parse value as integer: ", value, ", error: ", err.Error())
 		} else {
-			return setInteger(sim.OverrideManipulator, fmu.ExecutionIndex, varIndex, val)
+			return setInteger(sim.OverrideManipulator, index, varIndex, val)
 		}
+	case "Boolean":
+		var val = false
+		if "true" == value {
+			val = true
+		}
+		return setBoolean(sim.OverrideManipulator, index, varIndex, val)
+	case "String":
+		return setString(sim.OverrideManipulator, index, varIndex, value)
+
 	default:
 		message := strCat("Can't set this value: ", value)
 		fmt.Println(message)
@@ -184,39 +216,34 @@ func setVariableValue(sim *Simulation, module string, signal string, causality s
 	}
 }
 
-func resetReal(manipulator *C.cse_manipulator, slaveIndex int, variableIndex int) (bool, string) {
+func resetVariable(manipulator *C.cse_manipulator, slaveIndex int, variableType C.cse_variable_type, variableIndex int) (bool, string) {
 	vi := make([]C.cse_variable_index, 1)
 	vi[0] = C.cse_variable_index(variableIndex)
-	success := C.cse_manipulator_slave_reset_real(manipulator, C.cse_slave_index(slaveIndex), &vi[0], C.size_t(1))
+	success := C.cse_manipulator_slave_reset(manipulator, C.cse_slave_index(slaveIndex), variableType, &vi[0], C.size_t(1))
 	if int(success) < 0 {
-		return false, "Unable to reset real variable value"
+		return false, "Unable to reset variable value"
 	} else {
-		return true, "Successfully reset real variable value"
+		return true, "Successfully reset variable value"
 	}
 }
 
-func resetInteger(manipulator *C.cse_manipulator, slaveIndex int, variableIndex int) (bool, string) {
-	vi := make([]C.cse_variable_index, 1)
-	vi[0] = C.cse_variable_index(variableIndex)
-	success := C.cse_manipulator_slave_reset_integer(manipulator, C.cse_slave_index(slaveIndex), &vi[0], C.size_t(1))
-	if int(success) < 0 {
-		return false, "Unable to reset integer variable value"
-	} else {
-		return true, "Successfully reset integer variable value"
+func resetVariableValue(sim *Simulation, slaveIndex string, valueType string, valueReference string) (bool, string) {
+	index, err := strconv.Atoi(slaveIndex)
+	if err != nil {
+		return false, strCat("Can't parse slave index as integer: ", slaveIndex)
 	}
-}
-
-func resetVariableValue(sim *Simulation, module string, signal string, causality string, valueType string) (bool, string) {
-	fmu := findFmu(sim.MetaData, module)
-	varIndex := findVariableIndex(fmu, signal, causality, valueType)
+	varIndex, err := strconv.Atoi(valueReference)
+	if err != nil {
+		return false, strCat("Can't parse value reference as integer: ", valueReference)
+	}
 	switch valueType {
 	case "Real":
-		return resetReal(sim.OverrideManipulator, fmu.ExecutionIndex, varIndex)
+		return resetVariable(sim.OverrideManipulator, index, C.CSE_VARIABLE_TYPE_REAL, varIndex)
 	case "Integer":
-		return resetInteger(sim.OverrideManipulator, fmu.ExecutionIndex, varIndex)
+		return resetVariable(sim.OverrideManipulator, index, C.CSE_VARIABLE_TYPE_INTEGER, varIndex)
 	default:
-		message := strCat("Can't reset this variable: ", module, " - ", signal)
-		fmt.Println(message)
+		message := strCat("Can't reset variable with type ", valueType, " and value reference ", valueReference, " for slave with index ", slaveIndex)
+		log.Println(message)
 		return false, message
 	}
 }
@@ -479,9 +506,9 @@ func executeCommand(cmd []string, sim *Simulation, status *structs.SimulationSta
 		success = true
 		message = strCat("Plotting last ", cmd[2], " seconds")
 	case "set-value":
-		success, message = setVariableValue(sim, cmd[1], cmd[2], cmd[3], cmd[4], cmd[5])
+		success, message = setVariableValue(sim, cmd[1], cmd[2], cmd[3], cmd[4])
 	case "reset-value":
-		success, message = resetVariableValue(sim, cmd[1], cmd[2], cmd[3], cmd[4])
+		success, message = resetVariableValue(sim, cmd[1], cmd[2], cmd[3])
 	case "get-module-data":
 		shorty.ModuleData = sim.MetaData
 		scenarios := findScenarios(status)
@@ -568,9 +595,13 @@ func findModuleData(status *structs.SimulationStatus, metaData *structs.MetaData
 		slaveIndex := findFmu(metaData, status.Module).ExecutionIndex
 		realSignals := observerGetReals(observer, status.SignalSubscriptions, slaveIndex)
 		intSignals := observerGetIntegers(observer, status.SignalSubscriptions, slaveIndex)
+		boolSignals := observerGetBooleans(observer, status.SignalSubscriptions, slaveIndex)
+		stringSignals := observerGetStrings(observer, status.SignalSubscriptions, slaveIndex)
 		var signals []structs.Signal
 		signals = append(signals, realSignals...)
 		signals = append(signals, intSignals...)
+		signals = append(signals, boolSignals...)
+		signals = append(signals, stringSignals...)
 
 		module.Signals = signals
 		module.Name = status.Module
