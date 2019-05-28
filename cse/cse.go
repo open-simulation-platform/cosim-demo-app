@@ -241,6 +241,10 @@ func resetVariableValue(sim *Simulation, slaveIndex string, valueType string, va
 		return resetVariable(sim.OverrideManipulator, index, C.CSE_VARIABLE_TYPE_REAL, varIndex)
 	case "Integer":
 		return resetVariable(sim.OverrideManipulator, index, C.CSE_VARIABLE_TYPE_INTEGER, varIndex)
+	case "Boolean":
+		return resetVariable(sim.OverrideManipulator, index, C.CSE_VARIABLE_TYPE_BOOLEAN, varIndex)
+	case "String":
+		return resetVariable(sim.OverrideManipulator, index, C.CSE_VARIABLE_TYPE_STRING, varIndex)
 	default:
 		message := strCat("Can't reset variable with type ", valueType, " and value reference ", valueReference, " for slave with index ", slaveIndex)
 		log.Println(message)
