@@ -104,8 +104,15 @@ func executionStop(execution *C.cse_execution) (bool, string) {
 	}
 }
 
-func executionEnableRealTime(execution *C.cse_execution) (bool, string) {
-	success := C.cse_execution_enable_real_time_simulation(execution)
+func executionEnableRealTime(execution *C.cse_execution, realTimeTarget string) (bool, string) {
+	val, err := strconv.Atoi(realTimeTarget)
+
+	if err != nil {
+		log.Println(err)
+		return false, err.Error()
+	}
+
+	success := C.cse_execution_enable_real_time_simulation(execution, C.int(val))
 	if int(success) < 0 {
 		return false, "Unable to enable real time"
 	} else {
@@ -269,7 +276,7 @@ func parseType(valueType C.cse_variable_type) (string, error) {
 	return "", errors.New("unable to parse variable type")
 }
 
-func addVariableMetadata(execution *C.cse_execution, fmu *structs.FMU) (error) {
+func addVariableMetadata(execution *C.cse_execution, fmu *structs.FMU) error {
 	nVariables := C.cse_slave_get_num_variables(execution, C.cse_slave_index(fmu.ExecutionIndex))
 	if int(nVariables) < 0 {
 		return errors.New("invalid slave index to find variables for")
@@ -453,7 +460,7 @@ func executeCommand(cmd []string, sim *Simulation, status *structs.SimulationSta
 		success, message = executionStart(sim.Execution)
 		status.Status = "play"
 	case "enable-realtime":
-		success, message = executionEnableRealTime(sim.Execution)
+		success, message = executionEnableRealTime(sim.Execution, cmd[1])
 	case "disable-realtime":
 		success, message = executionDisableRealTime(sim.Execution)
 	case "newtrend":
