@@ -156,7 +156,7 @@ func observerGetStrings(observer *C.cse_observer, variables []structs.Variable, 
 	}
 
 	if numStrings > 0 {
-		stringOutVal := make([]C.cse_string_value, numStrings)
+		stringOutVal := make([]*C.char, numStrings)
 		C.cse_observer_slave_get_string(observer, C.cse_slave_index(slaveIndex), &stringValueRefs[0], C.size_t(numStrings), &stringOutVal[0])
 
 		stringSignals = make([]structs.Signal, numStrings)
@@ -165,7 +165,7 @@ func observerGetStrings(observer *C.cse_observer, variables []structs.Variable, 
 				Name:      stringVariables[k].Name,
 				Causality: stringVariables[k].Causality,
 				Type:      stringVariables[k].Type,
-				Value:     C.GoString(&stringOutVal[k].value[0]),
+				Value:     C.GoString(stringOutVal[k]),
 			}
 		}
 	}
