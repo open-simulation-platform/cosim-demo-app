@@ -105,14 +105,15 @@ func executionStop(execution *C.cse_execution) (bool, string) {
 }
 
 func executionEnableRealTime(execution *C.cse_execution, realTimeTarget string) (bool, string) {
-	val, err := strconv.Atoi(realTimeTarget)
+
+	val, err := strconv.ParseFloat(realTimeTarget, 16)
 
 	if err != nil {
 		log.Println(err)
 		return false, err.Error()
 	}
 
-	success := C.cse_execution_enable_real_time_simulation(execution, C.int(val))
+	success := C.cse_execution_enable_real_time_simulation(execution, C.double(val))
 	if int(success) < 0 {
 		return false, "Unable to enable real time"
 	} else {
