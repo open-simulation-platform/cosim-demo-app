@@ -3,7 +3,7 @@ pipeline {
 
     triggers {
         upstream(
-            upstreamProjects: 'open-simulation-platform/cse-core/master, open-simulation-platform/cse-client/master',
+            upstreamProjects: 'open-simulation-platform/cse-core/pull/261, open-simulation-platform/cse-client/master',
             threshold: hudson.model.Result.SUCCESS)
     }
 
