@@ -1,7 +1,7 @@
 [generators]
 
 [requires]
-cse-core/0.3.0@osp/master
+cse-core/0.3.0@osp/feature_169-set-arbirtrary-real-time-factor
 
 [imports]
 include, cse.h                  -> ./include
