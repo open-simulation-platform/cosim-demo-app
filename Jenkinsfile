@@ -3,7 +3,7 @@ pipeline {
 
     triggers {
         upstream(
-            upstreamProjects: 'open-simulation-platform/cse-core/feature%2F253-observe-bool-and-string-variables, open-simulation-platform/cse-client/feature%2F87-bools-and-strings',
+            upstreamProjects: 'open-simulation-platform/cse-core/master, open-simulation-platform/cse-client/master',
             threshold: hudson.model.Result.SUCCESS)
     }
 
@@ -32,7 +32,7 @@ pipeline {
                         stage ('Get dependencies') {
                             steps {
                                 copyArtifacts(
-                                    projectName: 'open-simulation-platform/cse-client/feature%2F87-bools-and-strings',
+                                    projectName: 'open-simulation-platform/cse-client/master',
                                     filter: 'resources/public/**/*',
                                     target: 'src/cse-server-go')
 
@@ -120,7 +120,7 @@ pipeline {
                         stage ('Get dependencies') {
                             steps {
                                 copyArtifacts(
-                                    projectName: 'open-simulation-platform/cse-client/feature%2F87-bools-and-strings',
+                                    projectName: 'open-simulation-platform/cse-client/master',
                                     filter: 'resources/public/**/*',
                                     target: 'src/cse-server-go')
 
