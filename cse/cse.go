@@ -104,16 +104,8 @@ func executionStop(execution *C.cse_execution) (bool, string) {
 	}
 }
 
-func executionEnableRealTime(execution *C.cse_execution, realTimeTarget string) (bool, string) {
-
-	val, err := strconv.ParseFloat(realTimeTarget, 16)
-
-	if err != nil {
-		log.Println(err)
-		return false, err.Error()
-	}
-
-	success := C.cse_execution_enable_real_time_simulation(execution, C.double(val))
+func executionEnableRealTime(execution *C.cse_execution) (bool, string) {
+	success := C.cse_execution_enable_real_time_simulation(execution)
 	if int(success) < 0 {
 		return false, "Unable to enable real time"
 	} else {
@@ -128,6 +120,23 @@ func executionDisableRealTime(execution *C.cse_execution) (bool, string) {
 	} else {
 		return true, "Real time execution disabled"
 	}
+}
+
+func executionSetCustomRealTimeFactor(execution *C.cse_execution, realTimeFactor string) (bool, string) {
+	val, err := strconv.ParseFloat(realTimeFactor, 16)
+
+	if err != nil {
+		log.Println(err)
+		return false, err.Error()
+	}
+
+	if val < 1 {
+		return false, "Real time factor must be greater than or equal to 1.0"
+	}
+
+	C.cse_execution_set_custom_real_time_factor(execution, C.double(val))
+
+	return true, "Custom real time factor successfully set"
 }
 
 func setReal(manipulator *C.cse_manipulator, slaveIndex int, variableIndex int, value float64) (bool, string) {
@@ -461,9 +470,11 @@ func executeCommand(cmd []string, sim *Simulation, status *structs.SimulationSta
 		success, message = executionStart(sim.Execution)
 		status.Status = "play"
 	case "enable-realtime":
-		success, message = executionEnableRealTime(sim.Execution, cmd[1])
+		success, message = executionEnableRealTime(sim.Execution)
 	case "disable-realtime":
 		success, message = executionDisableRealTime(sim.Execution)
+	case "set-custom-realtime-factor":
+		success, message = executionSetCustomRealTimeFactor(sim.Execution, cmd[1])
 	case "newtrend":
 		success, message = addNewTrend(status, cmd[1], cmd[2])
 	case "addtotrend":
