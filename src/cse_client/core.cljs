@@ -88,6 +88,8 @@
 
 (rf/reg-sub :current-module #(:current-module %))
 
+(rf/reg-sub :current-module-index #(-> % :current-module-meta :index))
+
 (rf/reg-sub :pages
             (fn [db]
               (let [page-count (:page-count db)

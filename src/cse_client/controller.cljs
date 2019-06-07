@@ -93,17 +93,20 @@
   (or (:vars-per-page db)
       10))
 
-(defn variable-groups [db module causality]
+(defn module-meta [db module]
   (->> db
        :state
        :module-data
        :fmus
        (filter #(= module (:name %)))
-       first
+       first))
+
+(defn variable-groups [module-meta causality vars-per-page]
+  (->> module-meta
        :variables
        (filter #(= causality (:causality %)))
        (sort-by :name)
-       (partition-all (page-size db))))
+       (partition-all vars-per-page)))
 
 (defn filter-signals [groups page]
   (some-> groups
@@ -112,7 +115,7 @@
 
 (defn editable? [{:keys [type causality] :as variable}]
   (if (and (#{"input" "parameter" "calculatedParameter" "output"} causality)
-           (#{"Real" "Integer"} type))
+           (#{"Real" "Integer" "Boolean" "String"} type))
     (assoc variable :editable? true)
     variable))
 
@@ -122,8 +125,8 @@
 
 (k/reg-event-fx ::fetch-signals
                 (fn [{:keys [db]} _]
-                  (let [{:keys [current-module active-causality page]} db
-                        groups (variable-groups db current-module active-causality)
+                  (let [{:keys [current-module active-causality page current-module-meta vars-per-page]} db
+                        groups (variable-groups current-module-meta active-causality vars-per-page)
                         viewing (filter-signals groups page)]
                     (merge
                       {:db (assoc db :viewing (map editable? viewing)
@@ -134,6 +137,7 @@
                 (fn [{:keys [db]} [{:keys [module causality]}]]
                   (merge
                     {:db       (assoc db :current-module module
+                                         :current-module-meta (module-meta db module)
                                          :active-causality causality
                                          :page 1)
                      :dispatch [::fetch-signals]})))
@@ -141,7 +145,7 @@
 (k/reg-event-fx ::module-leave
                 (fn [{:keys [db]} _]
                   (merge
-                    {:db (dissoc db :current-module)}
+                    {:db (dissoc db :current-module :current-module-meta)}
                     (socket-command ["signals"]))))
 
 (k/reg-event-fx ::trend-enter
@@ -232,12 +236,12 @@
                   (socket-command ["setlabel" (:active-trend-index db) label])))
 
 (k/reg-event-fx ::set-value
-                (fn [_ [module signal causality type value]]
-                  (socket-command ["set-value" module signal causality type (str value)])))
+                (fn [_ [index type value-reference value]]
+                  (socket-command ["set-value" index type value-reference (str value)])))
 
 (k/reg-event-fx ::reset-value
-                (fn [_ [module signal causality type]]
-                  (socket-command ["reset-value" module signal causality type])))
+                (fn [_ [index type value-reference]]
+                  (socket-command ["reset-value" index type value-reference])))
 
 (k/reg-event-fx ::trend-zoom
 

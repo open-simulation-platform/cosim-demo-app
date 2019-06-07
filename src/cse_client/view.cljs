@@ -15,11 +15,17 @@
 (goog-define default-load-dir "")
 (goog-define default-log-dir "")
 
-(defn variable-display [module {:keys [name causality type editable?] :as variable}]
+(defn variable-display [module index {:keys [name causality type editable?] :as variable}]
   (let [value @(rf/subscribe [:signal-value module name causality type])]
     (if editable?
-      [c/variable-override-editor module variable value]
-      [:div value])))
+      [c/variable-override-editor index variable value]
+      [:div (str value)])))
+
+(defn xy-plottable? [type]
+  (= "Real" type))
+
+(defn plottable? [type]
+  (#{"Real" "Integer"} type))
 
 (defn trend-item [current-module name causality type value-reference {:keys [id index count label plot-type]}]
   (case plot-type
@@ -30,18 +36,19 @@
                :label   "Time series"
                :onClick #(rf/dispatch [::controller/add-to-trend current-module name causality type value-reference index])})
 
-    "scatter" (let [label-text (trend/plot-type-from-label label)
-                    axis (if (even? count) 'X 'Y)]
-                (semantic/ui-dropdown-item
-                  {:key     (str "trend-item-" id)
-                   :text    label-text
-                   :label   (str "XY plot - " axis " axis")
-                   :onClick #(rf/dispatch [::controller/add-to-trend current-module name causality type value-reference index])}))))
+    "scatter" (when (xy-plottable? type)
+                (let [label-text (trend/plot-type-from-label label)
+                      axis (if (even? count) 'X 'Y)]
+                  (semantic/ui-dropdown-item
+                    {:key     (str "trend-item-" id)
+                     :text    label-text
+                     :label   (str "XY plot - " axis " axis")
+                     :onClick #(rf/dispatch [::controller/add-to-trend current-module name causality type value-reference index])})))))
 
 (defn action-dropdown [current-module name causality type value-reference trend-info]
-  (when-not (empty? trend-info)
+  (when (and (seq trend-info) (plottable? type))
     (semantic/ui-dropdown
-      {:button true :text "Add to plot"}
+      {:button false :text "Add to plot"}
       (semantic/ui-dropdown-menu
         {:direction 'left}
         (map (partial trend-item current-module name causality type value-reference) trend-info)))))
@@ -79,6 +86,7 @@
 
 (defn tab-content [tabby]
   (let [current-module @(rf/subscribe [:current-module])
+        current-module-index @(rf/subscribe [:current-module-index])
         module-signals @(rf/subscribe [:module-signals])
         active @(rf/subscribe [:active-causality])
         trend-info @(rf/subscribe [:trend-info])]
@@ -96,7 +104,7 @@
               [:tr {:key (str current-module "-" causality "-" name)}
                [:td name]
                [:td type]
-               [:td [variable-display current-module variable]]
+               [:td [variable-display current-module current-module-index variable]]
                [:td (action-dropdown current-module name causality type value-reference trend-info)]])
             module-signals)]]]))
 
@@ -145,6 +153,12 @@
        [:div.item
         [:div.header "Plots"]
         [:div.menu
+         [:a.item {:onClick #(rf/dispatch [::controller/new-trend "trend" (str "Time series #" (random-uuid))])}
+          "Create new time series"
+          [:i.chart.line.gray.icon]]
+         [:a.item {:onClick #(rf/dispatch [::controller/new-trend "scatter" (str "XY plot #" (random-uuid))])}
+          "Create new XY plot"
+          [:i.chart.line.gray.icon]]
          (map (fn [{:keys [index label count plot-type]}]
                 [:div.item {:key label}
                  [:a.itemstyle {:class (when (and (= index (int active-trend-index)) (= route-name :trend)) "active")
@@ -161,13 +175,7 @@
                            :data-tooltip  "Remove all variables from plot"
                            :data-position "top center"}
                     [:i.eye.slash.gray.icon {:on-click #(rf/dispatch [::controller/untrend index])}]])])
-              trend-info)
-         [:a.item {:onClick #(rf/dispatch [::controller/new-trend "trend" (str "Time series #" (random-uuid))])}
-          "Create new time series"
-          [:i.chart.line.gray.icon]]
-         [:a.item {:onClick #(rf/dispatch [::controller/new-trend "scatter" (str "XY plot #" (random-uuid))])}
-          "Create new XY plot"
-          [:i.chart.line.gray.icon]]]])
+              trend-info)]])
      (when loaded?
        [:div.item
         [:a.header
@@ -350,7 +358,7 @@
            :scenarios [scenario/overview]
            :scenario [scenario/one]
            nil [:div "Loading..."]]]]]]]
-     (when (= :disconnected (:state @socket-state))
+     (when (not= :connected (:state @socket-state))
        [:div.ui.page.dimmer.transition.active
         {:style {:display :flex}}
         [:div.content

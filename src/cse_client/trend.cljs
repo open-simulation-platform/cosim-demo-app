@@ -145,7 +145,7 @@
             active-trend-index (int @active-trend-index)
             name (plot-type-from-label label)]
         [:div.ui.one.column.grid
-         [c/variable-override-editor nil nil name [::controller/set-label]]
+         [c/text-editor name [::controller/set-label]]
          [:div.two.column.row
           [:div.column
            (doall (map (partial range-selector @trend-range) range-configs))]
