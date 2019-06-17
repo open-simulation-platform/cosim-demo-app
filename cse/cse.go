@@ -39,6 +39,7 @@ func createSsdExecution(ssdDir string) (execution *C.cse_execution) {
 type executionStatus struct {
 	time                 float64
 	realTimeFactor       float64
+	realTimeFactorTarget float64
 	isRealTimeSimulation bool
 }
 
@@ -48,6 +49,7 @@ func getExecutionStatus(execution *C.cse_execution) (execStatus executionStatus)
 	nanoTime := int64(status.current_time)
 	execStatus.time = float64(nanoTime) * 1e-9
 	execStatus.realTimeFactor = float64(status.real_time_factor)
+	execStatus.realTimeFactorTarget = float64(status.real_time_factor_target)
 	execStatus.isRealTimeSimulation = int(status.is_real_time_simulation) > 0
 	return
 }
@@ -122,8 +124,8 @@ func executionDisableRealTime(execution *C.cse_execution) (bool, string) {
 	}
 }
 
-func executionSetCustomRealTimeFactor(execution *C.cse_execution, realTimeFactor string) (bool, string) {
-	val, err := strconv.ParseFloat(realTimeFactor, 16)
+func executionSetCustomRealTimeFactor(execution *C.cse_execution, status *structs.SimulationStatus, realTimeFactor string) (bool, string) {
+	val, err := strconv.ParseFloat(realTimeFactor, 64)
 
 	if err != nil {
 		log.Println(err)
@@ -474,7 +476,7 @@ func executeCommand(cmd []string, sim *Simulation, status *structs.SimulationSta
 	case "disable-realtime":
 		success, message = executionDisableRealTime(sim.Execution)
 	case "set-custom-realtime-factor":
-		success, message = executionSetCustomRealTimeFactor(sim.Execution, cmd[1])
+		success, message = executionSetCustomRealTimeFactor(sim.Execution, status, cmd[1])
 	case "newtrend":
 		success, message = addNewTrend(status, cmd[1], cmd[2])
 	case "addtotrend":
@@ -610,6 +612,7 @@ func GenerateJsonResponse(status *structs.SimulationStatus, sim *Simulation, fee
 		execStatus := getExecutionStatus(sim.Execution)
 		response.SimulationTime = execStatus.time
 		response.RealTimeFactor = execStatus.realTimeFactor
+		response.RealTimeFactorTarget = execStatus.realTimeFactorTarget
 		response.IsRealTimeSimulation = execStatus.isRealTimeSimulation
 		response.Module = findModuleData(status, sim.MetaData, sim.Observer)
 		response.ConfigDir = status.ConfigDir
