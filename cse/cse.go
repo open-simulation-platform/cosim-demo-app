@@ -131,7 +131,7 @@ func executionSetCustomRealTimeFactor(execution *C.cse_execution, realTimeFactor
 	}
 
 	if val < 0 {
-		return false, "Real time factor must be greater than or equal to 0"
+		return false, "Real time factor target must be greater than 0.0"
 	}
 
 	C.cse_execution_set_custom_real_time_factor(execution, C.double(val))
