@@ -82,7 +82,7 @@ func executionAddSlave(execution *C.cse_execution, slave *C.cse_slave) int {
 func executionStart(execution *C.cse_execution) (bool, string) {
 	success := C.cse_execution_start(execution)
 	if int(success) < 0 {
-		return false, "Unable to start simulation: " + lastErrorMessage()
+		return false, strCat("Unable to start simulation: " + lastErrorMessage())
 	} else {
 		return true, "Simulation is running"
 	}
@@ -103,7 +103,7 @@ func manipulatorDestroy(manipulator *C.cse_manipulator) {
 func executionStop(execution *C.cse_execution) (bool, string) {
 	success := C.cse_execution_stop(execution)
 	if int(success) < 0 {
-		return false, "Unable to stop simulation: " + lastErrorMessage()
+		return false, strCat("Unable to stop simulation: " + lastErrorMessage())
 	} else {
 		return true, "Simulation is paused"
 	}
@@ -112,7 +112,7 @@ func executionStop(execution *C.cse_execution) (bool, string) {
 func executionEnableRealTime(execution *C.cse_execution) (bool, string) {
 	success := C.cse_execution_enable_real_time_simulation(execution)
 	if int(success) < 0 {
-		return false, "Unable to enable real time: " + lastErrorMessage()
+		return false, strCat("Unable to enable real time: " + lastErrorMessage())
 	} else {
 		return true, "Real time execution enabled"
 	}
@@ -121,7 +121,7 @@ func executionEnableRealTime(execution *C.cse_execution) (bool, string) {
 func executionDisableRealTime(execution *C.cse_execution) (bool, string) {
 	success := C.cse_execution_disable_real_time_simulation(execution)
 	if int(success) < 0 {
-		return false, "Unable to disable real time: " + lastErrorMessage()
+		return false, strCat("Unable to disable real time: " + lastErrorMessage())
 	} else {
 		return true, "Real time execution disabled"
 	}
@@ -134,7 +134,7 @@ func setReal(manipulator *C.cse_manipulator, slaveIndex int, variableIndex int, 
 	v[0] = C.double(value)
 	success := C.cse_manipulator_slave_set_real(manipulator, C.cse_slave_index(slaveIndex), &vi[0], C.size_t(1), &v[0])
 	if int(success) < 0 {
-		return false, "Unable to set real variable value: " + lastErrorMessage()
+		return false, strCat("Unable to set real variable value: " + lastErrorMessage())
 	} else {
 		return true, "Successfully set real variable value"
 	}
@@ -147,7 +147,7 @@ func setInteger(manipulator *C.cse_manipulator, slaveIndex int, variableIndex in
 	v[0] = C.int(value)
 	success := C.cse_manipulator_slave_set_integer(manipulator, C.cse_slave_index(slaveIndex), &vi[0], C.size_t(1), &v[0])
 	if int(success) < 0 {
-		return false, "Unable to set integer variable value: " + lastErrorMessage()
+		return false, strCat("Unable to set integer variable value: " + lastErrorMessage())
 	} else {
 		return true, "Successfully set integer variable value"
 	}
@@ -194,7 +194,7 @@ func resetReal(manipulator *C.cse_manipulator, slaveIndex int, variableIndex int
 	vi[0] = C.cse_variable_index(variableIndex)
 	success := C.cse_manipulator_slave_reset_real(manipulator, C.cse_slave_index(slaveIndex), &vi[0], C.size_t(1))
 	if int(success) < 0 {
-		return false, "Unable to reset real variable value: " + lastErrorMessage()
+		return false, strCat("Unable to reset real variable value: " + lastErrorMessage())
 	} else {
 		return true, "Successfully reset real variable value"
 	}
@@ -205,7 +205,7 @@ func resetInteger(manipulator *C.cse_manipulator, slaveIndex int, variableIndex 
 	vi[0] = C.cse_variable_index(variableIndex)
 	success := C.cse_manipulator_slave_reset_integer(manipulator, C.cse_slave_index(slaveIndex), &vi[0], C.size_t(1))
 	if int(success) < 0 {
-		return false, "Unable to reset integer variable value: " + lastErrorMessage()
+		return false, strCat("Unable to reset integer variable value: " + lastErrorMessage())
 	} else {
 		return true, "Successfully reset integer variable value"
 	}
@@ -369,12 +369,12 @@ func initializeSimulation(sim *Simulation, fmuDir string, logDir string) (bool, 
 	if hasFile(fmuDir, "SystemStructure.ssd") {
 		execution = createSsdExecution(fmuDir)
 		if execution == nil {
-			return false, "Could not create execution from SystemStructure.ssd file: " + lastErrorMessage()
+			return false, strCat("Could not create execution from SystemStructure.ssd file: ", lastErrorMessage())
 		}
 	} else {
 		execution = createExecution()
 		if execution == nil {
-			return false, "Could not create execution: " + lastErrorMessage()
+			return false, strCat("Could not create execution: ", lastErrorMessage())
 		}
 		paths := getFmuPaths(fmuDir)
 		for _, path := range paths {

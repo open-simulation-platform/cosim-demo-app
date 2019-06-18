@@ -52,7 +52,7 @@ func addToTrend(sim *Simulation, status *structs.SimulationStatus, module string
 
 	err = observerStartObserving(sim.TrendObserver, fmu.ExecutionIndex, valueType, varIndex)
 	if err != nil {
-		message := strCat("Cannot start observing variable ", err.Error())
+		message := strCat("Cannot start observing variable ", lastErrorMessage())
 		log.Println(message)
 		return false, message
 	}
