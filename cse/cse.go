@@ -23,6 +23,11 @@ func printLastError() {
 	fmt.Printf("Error code %d: %s\n", int(C.cse_last_error_code()), C.GoString(C.cse_last_error_message()))
 }
 
+func lastErrorMessage() string {
+	msg := C.cse_last_error_message()
+	return C.GoString(msg)
+}
+
 func createExecution() (execution *C.cse_execution) {
 	startTime := C.cse_time_point(0.0 * 1e9)
 	stepSize := C.cse_duration(0.1 * 1e9)
@@ -77,7 +82,7 @@ func executionAddSlave(execution *C.cse_execution, slave *C.cse_slave) int {
 func executionStart(execution *C.cse_execution) (bool, string) {
 	success := C.cse_execution_start(execution)
 	if int(success) < 0 {
-		return false, "Unable to start simulation"
+		return false, "Unable to start simulation: " + lastErrorMessage()
 	} else {
 		return true, "Simulation is running"
 	}
@@ -98,7 +103,7 @@ func manipulatorDestroy(manipulator *C.cse_manipulator) {
 func executionStop(execution *C.cse_execution) (bool, string) {
 	success := C.cse_execution_stop(execution)
 	if int(success) < 0 {
-		return false, "Unable to stop simulation"
+		return false, "Unable to stop simulation: " + lastErrorMessage()
 	} else {
 		return true, "Simulation is paused"
 	}
@@ -107,7 +112,7 @@ func executionStop(execution *C.cse_execution) (bool, string) {
 func executionEnableRealTime(execution *C.cse_execution) (bool, string) {
 	success := C.cse_execution_enable_real_time_simulation(execution)
 	if int(success) < 0 {
-		return false, "Unable to enable real time"
+		return false, "Unable to enable real time: " + lastErrorMessage()
 	} else {
 		return true, "Real time execution enabled"
 	}
@@ -116,7 +121,7 @@ func executionEnableRealTime(execution *C.cse_execution) (bool, string) {
 func executionDisableRealTime(execution *C.cse_execution) (bool, string) {
 	success := C.cse_execution_disable_real_time_simulation(execution)
 	if int(success) < 0 {
-		return false, "Unable to disable real time"
+		return false, "Unable to disable real time: " + lastErrorMessage()
 	} else {
 		return true, "Real time execution disabled"
 	}
@@ -129,7 +134,7 @@ func setReal(manipulator *C.cse_manipulator, slaveIndex int, variableIndex int, 
 	v[0] = C.double(value)
 	success := C.cse_manipulator_slave_set_real(manipulator, C.cse_slave_index(slaveIndex), &vi[0], C.size_t(1), &v[0])
 	if int(success) < 0 {
-		return false, "Unable to set real variable value"
+		return false, "Unable to set real variable value: " + lastErrorMessage()
 	} else {
 		return true, "Successfully set real variable value"
 	}
@@ -142,7 +147,7 @@ func setInteger(manipulator *C.cse_manipulator, slaveIndex int, variableIndex in
 	v[0] = C.int(value)
 	success := C.cse_manipulator_slave_set_integer(manipulator, C.cse_slave_index(slaveIndex), &vi[0], C.size_t(1), &v[0])
 	if int(success) < 0 {
-		return false, "Unable to set integer variable value"
+		return false, "Unable to set integer variable value: " + lastErrorMessage()
 	} else {
 		return true, "Successfully set integer variable value"
 	}
@@ -189,7 +194,7 @@ func resetReal(manipulator *C.cse_manipulator, slaveIndex int, variableIndex int
 	vi[0] = C.cse_variable_index(variableIndex)
 	success := C.cse_manipulator_slave_reset_real(manipulator, C.cse_slave_index(slaveIndex), &vi[0], C.size_t(1))
 	if int(success) < 0 {
-		return false, "Unable to reset real variable value"
+		return false, "Unable to reset real variable value: " + lastErrorMessage()
 	} else {
 		return true, "Successfully reset real variable value"
 	}
@@ -200,7 +205,7 @@ func resetInteger(manipulator *C.cse_manipulator, slaveIndex int, variableIndex 
 	vi[0] = C.cse_variable_index(variableIndex)
 	success := C.cse_manipulator_slave_reset_integer(manipulator, C.cse_slave_index(slaveIndex), &vi[0], C.size_t(1))
 	if int(success) < 0 {
-		return false, "Unable to reset integer variable value"
+		return false, "Unable to reset integer variable value: " + lastErrorMessage()
 	} else {
 		return true, "Successfully reset integer variable value"
 	}
@@ -269,7 +274,7 @@ func parseType(valueType C.cse_variable_type) (string, error) {
 	return "", errors.New("unable to parse variable type")
 }
 
-func addVariableMetadata(execution *C.cse_execution, fmu *structs.FMU) (error) {
+func addVariableMetadata(execution *C.cse_execution, fmu *structs.FMU) error {
 	nVariables := C.cse_slave_get_num_variables(execution, C.cse_slave_index(fmu.ExecutionIndex))
 	if int(nVariables) < 0 {
 		return errors.New("invalid slave index to find variables for")
@@ -364,12 +369,12 @@ func initializeSimulation(sim *Simulation, fmuDir string, logDir string) (bool, 
 	if hasFile(fmuDir, "SystemStructure.ssd") {
 		execution = createSsdExecution(fmuDir)
 		if execution == nil {
-			return false, "Could not create execution from SystemStructure.ssd file"
+			return false, "Could not create execution from SystemStructure.ssd file: " + lastErrorMessage()
 		}
 	} else {
 		execution = createExecution()
 		if execution == nil {
-			return false, "Could not create execution"
+			return false, "Could not create execution: " + lastErrorMessage()
 		}
 		paths := getFmuPaths(fmuDir)
 		for _, path := range paths {
@@ -417,11 +422,6 @@ func initializeSimulation(sim *Simulation, fmuDir string, logDir string) (bool, 
 	sim.ScenarioManager = scenarioManager
 	sim.MetaData = &metaData
 	return true, "Simulation loaded successfully"
-}
-
-func lastErrorMessage() string {
-	msg := C.cse_last_error_message()
-	return C.GoString(msg)
 }
 
 func executeCommand(cmd []string, sim *Simulation, status *structs.SimulationStatus) (shorty structs.ShortLivedData, feedback structs.CommandFeedback) {

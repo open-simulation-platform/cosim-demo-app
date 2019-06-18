@@ -56,7 +56,7 @@ func loadScenario(sim *Simulation, status *structs.SimulationStatus, filename st
 func abortScenario(manipulator *C.cse_manipulator) (bool, string) {
 	intVal := C.cse_scenario_abort(manipulator)
 	if int(intVal) < 0 {
-		return false, "Failed to abort scenario"
+		return false, strCat("Failed to abort scenario: " + lastErrorMessage())
 	} else {
 		return true, "Scenario aborted"
 	}
@@ -66,7 +66,7 @@ func parseScenario(status *structs.SimulationStatus, filename string) (interface
 	pathToFile := filepath.Join(status.ConfigDir, "scenarios", filename)
 	jsonFile, err := os.Open(pathToFile)
 
-	if (err != nil) {
+	if err != nil {
 		log.Println("Can't open file:", pathToFile)
 		return "", err
 	}
@@ -74,12 +74,12 @@ func parseScenario(status *structs.SimulationStatus, filename string) (interface
 	defer jsonFile.Close()
 
 	bytes, err := ioutil.ReadAll(jsonFile)
-	if (err != nil) {
+	if err != nil {
 		return "", err
 	}
 	var data interface{}
 	err = json.Unmarshal(bytes, &data)
-	if (err != nil) {
+	if err != nil {
 		return "", err
 	}
 	return data, nil
