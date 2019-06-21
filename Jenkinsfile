@@ -19,7 +19,7 @@ pipeline {
                         GOPATH = "${env.BASE}/gopath/${env.EXECUTOR_NUMBER}"
                         PATH = "${env.MINGW_HOME}/bin;${GOPATH}/bin;${env.PATH}"
                         CONAN_USER_HOME = "${env.BASE}/conan-repositories/${env.EXECUTOR_NUMBER}"
-                        CONAN_USER_HOME_SHORT = "${env.CONAN_USER_HOME}"
+                        CONAN_USER_HOME_SHORT = 'None'
                         OSP_CONAN_CREDS = credentials('jenkins-osp-conan-creds')
                     }
 
