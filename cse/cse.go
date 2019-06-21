@@ -378,8 +378,14 @@ func validateConfigDir(fmuDir string) (bool, string) {
 			hasFMUs = true
 		}
 	}
-	if !hasFMUs {
-		return false, strCat(fmuDir, " does not contain any FMUs")
+	var hasSSD = false
+	for _, f := range files {
+		if f.Name() == "SystemStructure.ssd" {
+			hasSSD = true
+		}
+	}
+	if !hasFMUs && !hasSSD {
+		return false, strCat(fmuDir, " does not contain any FMUs nor a SystemStructure.ssd file")
 	}
 	return true, ""
 }
