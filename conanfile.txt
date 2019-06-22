@@ -4,7 +4,7 @@
 cse-core/0.3.0@osp/master
 
 [options]
-cse-core:fmuproxy=True
+cse-core:fmuproxy=false
 
 [imports]
 include, cse.h                  -> ./include
