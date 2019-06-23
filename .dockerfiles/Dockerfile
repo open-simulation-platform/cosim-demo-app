@@ -8,6 +8,7 @@ RUN apt-get update && \
     curl \
     patchelf \
     git \
+    flex \
     python3-setuptools \
     python3-wheel \
     python3-pip \
