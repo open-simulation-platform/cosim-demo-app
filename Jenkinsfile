@@ -56,9 +56,11 @@ pipeline {
                             steps {
                                 dir ('src/cse-server-go/dist/bin') {
                                     sh 'cp -rf ../../cse-server-go.exe .'
+                                    sh 'curl https://github.com/NTNU-IHB/FMU-proxy/releases/download/v0.5.0-RC2/fmu-proxy.jar -o fmu-proxy.jar -L'
                                 }
                                 dir ('src/cse-server-go/dist') {
                                     sh 'cp -rf ../run-windows.cmd .'
+                                    sh 'cp -rf ../run-fmuproxy.cmd .'
                                 }
                             }
                         }
@@ -145,6 +147,7 @@ pipeline {
                             steps {
                                 dir ('src/cse-server-go/dist/bin') {
                                     sh 'cp -rf ../../cse-server-go .'
+                                    sh 'curl https://github.com/NTNU-IHB/FMU-proxy/releases/download/v0.5.0-RC2/fmu-proxy.jar -o fmu-proxy.jar -L'
                                 }
                                 dir ('src/cse-server-go/dist') {
                                     sh 'cp ../run-linux .'
