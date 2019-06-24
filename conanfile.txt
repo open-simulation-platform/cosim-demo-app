@@ -1,7 +1,7 @@
 [generators]
 
 [requires]
-cse-core/0.3.0@osp/getting-conan-packages-ready-for-release
+cse-core/0.3.0@osp/master
 
 [options]
 cse-core:fmuproxy=True
