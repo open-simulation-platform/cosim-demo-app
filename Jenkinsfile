@@ -3,7 +3,7 @@ pipeline {
 
     triggers {
         upstream(
-            upstreamProjects: 'open-simulation-platform/cse-core/feature%2F169-set-arbirtrary-real-time-factor, open-simulation-platform/cse-client/feature%2F169-arbitrary-real-time-target',
+            upstreamProjects: 'open-simulation-platform/cse-core/master, open-simulation-platform/cse-client/master',
             threshold: hudson.model.Result.SUCCESS)
     }
 
@@ -32,7 +32,7 @@ pipeline {
                         stage ('Get dependencies') {
                             steps {
                                 copyArtifacts(
-                                    projectName: 'open-simulation-platform/cse-client/feature%2F169-arbitrary-real-time-target',
+                                    projectName: 'open-simulation-platform/cse-client/master',
                                     filter: 'resources/public/**/*',
                                     target: 'src/cse-server-go')
 
@@ -122,7 +122,7 @@ pipeline {
                         stage ('Get dependencies') {
                             steps {
                                 copyArtifacts(
-                                    projectName: 'open-simulation-platform/cse-client/feature%2F169-arbitrary-real-time-target',
+                                    projectName: 'open-simulation-platform/cse-client/master',
                                     filter: 'resources/public/**/*',
                                     target: 'src/cse-server-go')
 
