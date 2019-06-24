@@ -22,7 +22,18 @@
                      [:h4 "Creating a SSP configuration file"]
                      [:p "For specifying connections between FMUs in a co-simulation, cse-core currently supports the SSP standard for FMUs.
                      An example SSP setup with two FMUs can be downloaded below."]
-                     [:a {:target "TOP" :href "xml/ExampleSystemStructure.xml" :download ""} "Example SSP file"]])
+                     [:a {:target "TOP" :href "static/xml/ExampleSystemStructure.xml" :download ""} "Example SSP file"]
+                     [:h4 "Creating a log configuration file"]
+                     [:p "For configuring what signals to log in each FMU, cse-core optionally supports the inclusion of a log config XML file, to be put
+                     in the same directory as the FMUs."]
+                     [:i "The file must be named LogConfig.xml (including case)."]
+                     [:p ""]
+                     [:p "An example file is provided below."]
+                     [:p "Note that while a config can be provided in one file for all the simulators in the simulation, output will still be to one file
+                     pr. simulator / FMU. An optional attribute" [:i " decimationFactor"] " can be provided on the simulator level, which will specify how often
+                     simulator values are to be logged (logging only every decimationFactor sample)."]
+                     [:p "Finally, to log all signals for a simulator, simply leave the variable list empty as shown in the example file."]
+                     [:a {:target "TOP" :href "static/xml/LogConfig.xml" :download ""} "Example logger configuration file"]])
 
 (def simulation-content [:div
                          [:h4 "Running a simulation"]
