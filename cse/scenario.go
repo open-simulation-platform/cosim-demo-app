@@ -56,7 +56,7 @@ func loadScenario(sim *Simulation, status *structs.SimulationStatus, filename st
 func abortScenario(manipulator *C.cse_manipulator) (bool, string) {
 	intVal := C.cse_scenario_abort(manipulator)
 	if int(intVal) < 0 {
-		return false, strCat("Failed to abort scenario: " + lastErrorMessage())
+		return false, strCat("Failed to abort scenario: ", lastErrorMessage())
 	} else {
 		return true, "Scenario aborted"
 	}
