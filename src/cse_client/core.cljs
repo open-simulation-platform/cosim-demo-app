@@ -53,6 +53,9 @@
 (defn real-time-factor [db]
   (some-> db :state :realTimeFactor (.toFixed 3)))
 
+(defn real-time-factor-target [db]
+  (some-> db :state :realTimeFactorTarget (.toFixed 3)))
+
 (rf/reg-sub :real-time-factor #(real-time-factor %))
 
 (defn real-time? [db]
@@ -64,6 +67,7 @@
   {"Algorithm type"               "Fixed step"
    "Simulation time"              (simulation-time db)
    "Real time factor"             (real-time-factor db)
+   "Real time factor target"      (real-time-factor-target db)
    "Real time target"             (real-time? db)
    "Connection status"            (get-in db [:kee-frame.websocket/sockets socket-url :state])
    "Path to loaded config folder" (-> db :state :configDir)})
@@ -186,6 +190,14 @@
                              :state
                              :scenario
                              (merge-defaults db))))
+
+(rf/reg-sub :get-key
+            (fn [db [_ key]]
+              (key db)))
+
+(rf/reg-sub :get-state-key
+            (fn [db [_ key]]
+              (-> db :state key)))
 
 (rf/reg-sub :scenario-id #(:scenario-id %))
 

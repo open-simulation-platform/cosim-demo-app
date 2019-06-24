@@ -152,7 +152,7 @@
           [:div.column
            [:button.ui.button.right.floated {:on-click #(rf/dispatch [::controller/removetrend active-trend-index])}
             [:i.trash.gray.icon]
-            "Remove plot"]
+           "Remove plot"]
            [:button.ui.button.right.floated {:on-click #(rf/dispatch [::controller/untrend active-trend-index])}
             [:i.eye.slash.gray.icon]
             "Remove variables from plot"]]]

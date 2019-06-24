@@ -210,6 +210,11 @@
       :data-tooltip "Execute simulation towards real time target"}
      "Enable"]))
 
+(defn realtime-factor-field []
+  [c/text-editor
+   @(rf/subscribe [:get-state-key :realTimeFactorTarget])
+   [::controller/set-real-time-factor-target]])
+
 (defn teardown-button []
   [:button.ui.button {:on-click     #(rf/dispatch [::controller/teardown])
                       :disabled     (not (= @(rf/subscribe [:status]) "pause"))
@@ -244,6 +249,7 @@
    [:table.ui.basic.table.definition
     [:tbody
      [:tr [:td "Real time target"] [:td [realtime-button]]]
+     [:tr [:td "Real time factor target value"] [:td [realtime-factor-field]]]
      [:tr [:td "Simulation execution"] [:td [teardown-button]]]]]])
 
 (defn index-page []

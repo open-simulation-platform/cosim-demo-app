@@ -203,8 +203,14 @@
                   (socket-command ["pause"])))
 
 (k/reg-event-fx ::enable-realtime
-                (fn [_ _]
+                (fn [_]
                   (socket-command ["enable-realtime"])))
+
+(k/reg-event-fx ::set-real-time-factor-target
+                (fn [{:keys [db]} [val]]
+                  (merge
+                    {:db (assoc db :enable-real-time-target true)}
+                    (socket-command ["set-custom-realtime-factor" val]))))
 
 (k/reg-event-fx ::disable-realtime
                 (fn [_ _]
@@ -244,7 +250,6 @@
                   (socket-command ["reset-value" index type value-reference])))
 
 (k/reg-event-fx ::trend-zoom
-
                 (fn [{:keys [db]} [begin end]]
                   (socket-command ["trend-zoom" (:active-trend-index db) (str begin) (str end)])))
 
