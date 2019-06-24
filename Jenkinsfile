@@ -151,6 +151,7 @@ pipeline {
                                 }
                                 dir ('src/cse-server-go/dist') {
                                     sh 'cp ../run-linux .'
+                                    sh 'cp ../run-fmuproxy .'
                                 }
                                 dir ('src/cse-server-go') {
                                     sh 'chmod 755 set-rpath'
