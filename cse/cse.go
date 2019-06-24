@@ -136,7 +136,7 @@ func executionSetCustomRealTimeFactor(execution *C.cse_execution, status *struct
 		return false, "Real time factor target must be greater than 0.0"
 	}
 
-	C.cse_execution_set_custom_real_time_factor(execution, C.double(val))
+	C.cse_execution_set_real_time_factor_target(execution, C.double(val))
 
 	return true, "Custom real time factor successfully set"
 }
