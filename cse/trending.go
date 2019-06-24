@@ -52,7 +52,7 @@ func addToTrend(sim *Simulation, status *structs.SimulationStatus, module string
 
 	err = observerStartObserving(sim.TrendObserver, fmu.ExecutionIndex, valueType, varIndex)
 	if err != nil {
-		message := strCat("Cannot start observing variable ", err.Error())
+		message := strCat("Cannot start observing variable ", lastErrorMessage())
 		log.Println(message)
 		return false, message
 	}
@@ -82,7 +82,7 @@ func removeAllFromTrend(sim *Simulation, status *structs.SimulationStatus, trend
 	for _, trendSignal := range status.Trends[idx].TrendSignals {
 		err := observerStopObserving(sim.TrendObserver, trendSignal.SlaveIndex, trendSignal.Type, trendSignal.ValueReference)
 		if err != nil {
-			message = strCat("Cannot stop observing variable: ", err.Error())
+			message = strCat("Cannot stop observing variable: ", lastErrorMessage())
 			success = false
 			log.Println("Cannot stop observing", err)
 		}
