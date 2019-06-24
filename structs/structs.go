@@ -16,6 +16,7 @@ type JsonResponse struct {
 	Loaded               bool             `json:"loaded"`
 	SimulationTime       float64          `json:"time"`
 	RealTimeFactor       float64          `json:"realTimeFactor"`
+	RealTimeFactorTarget float64          `json:"realTimeFactorTarget"`
 	IsRealTimeSimulation bool             `json:"isRealTime"`
 	ConfigDir            string           `json:"configDir,omitempty"`
 	Status               string           `json:"status,omitempty"`

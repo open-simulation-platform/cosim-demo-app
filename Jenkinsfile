@@ -38,6 +38,8 @@ pipeline {
 
                                 dir ('src/cse-server-go') {
                                     sh 'conan remote add osp https://osp-conan.azurewebsites.net/artifactory/api/conan/conan-local --force'
+                                    sh 'conan remote add helmesjo https://api.bintray.com/conan/helmesjo/public-conan --force'
+                                    sh 'conan remote add bincrafters https://api.bintray.com/conan/bincrafters/public-conan --force'
                                     sh 'conan user -p $OSP_CONAN_CREDS_PSW -r osp $OSP_CONAN_CREDS_USR'
                                     sh 'conan install . -s build_type=Release -u'
                                 }
