@@ -56,9 +56,11 @@ pipeline {
                             steps {
                                 dir ('src/cse-server-go/dist/bin') {
                                     sh 'cp -rf ../../cse-server-go.exe .'
+                                    sh 'curl https://github.com/NTNU-IHB/FMU-proxy/releases/download/v0.5.0/fmu-proxy.jar -o fmu-proxy.jar -L'
                                 }
                                 dir ('src/cse-server-go/dist') {
                                     sh 'cp -rf ../run-windows.cmd .'
+                                    sh 'cp -rf ../run-fmuproxy.cmd .'
                                 }
                             }
                         }
@@ -126,6 +128,8 @@ pipeline {
 
                                 dir ('src/cse-server-go') {
                                     sh 'conan remote add osp https://osp-conan.azurewebsites.net/artifactory/api/conan/conan-local --force'
+                                    sh 'conan remote add helmesjo https://api.bintray.com/conan/helmesjo/public-conan --force'
+                                    sh 'conan remote add bincrafters https://api.bintray.com/conan/bincrafters/public-conan --force'
                                     sh 'conan user -p $OSP_CONAN_CREDS_PSW -r osp $OSP_CONAN_CREDS_USR'
                                     sh 'conan install . -s build_type=Release -s compiler.libcxx=libstdc++11 -u'
                                 }
@@ -143,9 +147,11 @@ pipeline {
                             steps {
                                 dir ('src/cse-server-go/dist/bin') {
                                     sh 'cp -rf ../../cse-server-go .'
+                                    sh 'curl https://github.com/NTNU-IHB/FMU-proxy/releases/download/v0.5.0/fmu-proxy.jar -o fmu-proxy.jar -L'
                                 }
                                 dir ('src/cse-server-go/dist') {
                                     sh 'cp ../run-linux .'
+                                    sh 'cp ../run-fmuproxy .'
                                 }
                                 dir ('src/cse-server-go') {
                                     sh 'chmod 755 set-rpath'
