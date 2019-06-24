@@ -2,18 +2,9 @@
 
 [requires]
 cse-core/0.3.0@osp/getting-conan-packages-ready-for-release
-OpenSSL/1.0.2o@conan/stable
-thrift/0.12.0@helmesjo/stable
-boost/1.66.0@conan/stable
-FMILibrary/2.0.3@kyllingstad/testing
-gsl_microsoft/1.0.0@bincrafters/stable
-libzip/1.5.1@bincrafters/stable
-jsonformoderncpp/3.5.0@vthiery/stable
 
 [options]
 cse-core:fmuproxy=True
-boost:shared=True
-libzip:shared=True
 
 [imports]
 include, cse.h                  -> ./include
