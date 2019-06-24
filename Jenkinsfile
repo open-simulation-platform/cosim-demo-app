@@ -1,6 +1,12 @@
 pipeline {
     agent none
 
+    triggers {
+        upstream(
+            upstreamProjects: 'open-simulation-platform/cse-core/v0.2.0, open-simulation-platform/cse-client/v0.2.0',
+            threshold: hudson.model.Result.SUCCESS)
+    }
+
     options { checkoutToSubdirectory('src/cse-server-go') }
 
     stages {
@@ -26,7 +32,7 @@ pipeline {
                         stage ('Get dependencies') {
                             steps {
                                 copyArtifacts(
-                                    projectName: 'open-simulation-platform/cse-client/master',
+                                    projectName: 'open-simulation-platform/cse-client/v0.2.0',
                                     filter: 'resources/public/**/*',
                                     target: 'src/cse-server-go')
 
@@ -114,7 +120,7 @@ pipeline {
                         stage ('Get dependencies') {
                             steps {
                                 copyArtifacts(
-                                    projectName: 'open-simulation-platform/cse-client/master',
+                                    projectName: 'open-simulation-platform/cse-client/v0.2.0',
                                     filter: 'resources/public/**/*',
                                     target: 'src/cse-server-go')
 
