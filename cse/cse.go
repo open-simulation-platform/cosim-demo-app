@@ -160,7 +160,7 @@ func setBoolean(manipulator *C.cse_manipulator, slaveIndex int, variableIndex in
 	v[0] = C.bool(value)
 	success := C.cse_manipulator_slave_set_boolean(manipulator, C.cse_slave_index(slaveIndex), &vi[0], C.size_t(1), &v[0])
 	if int(success) < 0 {
-		return false, "Unable to set boolean variable value"
+		return false, strCat("Unable to set boolean variable value: ", lastErrorMessage())
 	} else {
 		return true, "Successfully set boolean variable value"
 	}
@@ -173,7 +173,7 @@ func setString(manipulator *C.cse_manipulator, slaveIndex int, variableIndex int
 	v[0] = C.CString(value)
 	success := C.cse_manipulator_slave_set_string(manipulator, C.cse_slave_index(slaveIndex), &vi[0], C.size_t(1), &v[0])
 	if int(success) < 0 {
-		return false, "Unable to set boolean variable value"
+		return false, strCat("Unable to set boolean variable value", lastErrorMessage())
 	} else {
 		return true, "Successfully set boolean variable value"
 	}
@@ -226,7 +226,7 @@ func resetVariable(manipulator *C.cse_manipulator, slaveIndex int, variableType 
 	vi[0] = C.cse_variable_index(variableIndex)
 	success := C.cse_manipulator_slave_reset(manipulator, C.cse_slave_index(slaveIndex), variableType, &vi[0], C.size_t(1))
 	if int(success) < 0 {
-		return false, "Unable to reset variable value"
+		return false, strCat("Unable to reset variable value: ", lastErrorMessage())
 	} else {
 		return true, "Successfully reset variable value"
 	}
@@ -305,7 +305,7 @@ func parseType(valueType C.cse_variable_type) (string, error) {
 	return "", errors.New("unable to parse variable type")
 }
 
-func addVariableMetadata(execution *C.cse_execution, fmu *structs.FMU) error {
+func addVariableMetadata(execution *C.cse_execution, fmu *structs.FMU) (error) {
 	nVariables := C.cse_slave_get_num_variables(execution, C.cse_slave_index(fmu.ExecutionIndex))
 	if int(nVariables) < 0 {
 		return errors.New("invalid slave index to find variables for")
