@@ -47,18 +47,14 @@
         [:th "Time"]
         [:th "Model"]
         [:th "Variable"]
-        [:th "Type"]
-        [:th "Causality"]
         [:th "Action"]
         [:th "Value"]]]
       [:tbody
-       (map-indexed (fn [index {:keys [time model variable causality type action value model-valid? variable-valid? validation-message] :as event}]
+       (map-indexed (fn [index {:keys [time model variable action value model-valid? variable-valid? validation-message] :as event}]
                       [:tr {:key (str "scenario-" index "-event")}
                        [:td time]
                        [cellie model model-valid? validation-message]
                        [cellie variable variable-valid? validation-message]
-                       [cellie type variable-valid? validation-message]
-                       [cellie causality variable-valid? validation-message]
                        [:td action]
                        [:td value]])
                     (:events scenario))]]

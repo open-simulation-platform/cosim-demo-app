@@ -142,17 +142,15 @@
                                  (filter #(= (:model event) (:name %)))
                                  first
                                  :variables
-                                 (filter (fn [{:keys [name causality type]}]
-                                           (and (= name (:variable event))
-                                                (= causality (:causality event))
-                                                (= (str/lower-case type) (str/lower-case (:type event))))))
+                                 (filter (fn [{:keys [name]}]
+                                            (= name (:variable event))))
                                  seq
                                  boolean)]
     (-> event
         (assoc :model-valid? model-valid? :variable-valid? variable-valid? :valid? (and model-valid? variable-valid?))
         (assoc :validation-message (cond
                                      (not model-valid?) "Can't find a model with this name"
-                                     (not variable-valid?) "Can't find a variable with this name, type and causality")))))
+                                     (not variable-valid?) "Can't find a variable with this name")))))
 
 (defn merge-defaults [db scenario]
   (let [new-events (->> scenario
