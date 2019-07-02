@@ -7,6 +7,12 @@ type Signal struct {
 	Value     interface{} `json:"value"`
 }
 
+type ModifiedSignal struct {
+	SlaveIndex int64  `json:"slaveIndex"`
+	Type       string `json:"type"`
+	Index      int64  `json:"index"`
+}
+
 type Module struct {
 	Signals []Signal `json:"signals,omitempty"`
 	Name    string   `json:"name,omitempty"`
@@ -27,6 +33,7 @@ type JsonResponse struct {
 	Scenarios            *[]string        `json:"scenarios,omitempty"`
 	Scenario             *interface{}     `json:"scenario,omitempty"`
 	RunningScenario      string           `json:"running-scenario"`
+	ManipulatedVariables []Signal         `json:"manipulated-variables,omitempty"`
 }
 
 type TrendSignal struct {

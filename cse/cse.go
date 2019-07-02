@@ -364,6 +364,33 @@ func addVariableMetadata(execution *C.cse_execution, fmu *structs.FMU) error {
 	return nil
 }
 
+func addManipulatedVariables(execution *C.cse_execution) error {
+	nVars := C.cse_get_num_modified_variables(execution)
+	if int(nVars) < 0 {
+		return errors.New("Could not get number of modified variables")
+	}
+
+	var variables = make([]C.cse_variable_id, int(nVars))
+	var structs = make([]structs.Variable, int(nVars))
+	tmp := C.cse_get_modified_variables(execution, variables)
+
+	if int(tmp) < 0 {
+		return errors.New("Could not get modified variables from execution")
+	}
+
+	for _, variable := range variables[0:int(nVars)] {
+		slave_index := int(variable.slave_index)
+		variable_index := int(variable.variable_index)
+
+		variableType, err := parseType(variable._type)
+		if err != nil {
+			return errors.New("Problem parsing type")
+		}
+
+	}
+
+}
+
 func simulationTeardown(sim *Simulation) (bool, string) {
 	executionDestroy(sim.Execution)
 	observerDestroy(sim.Observer)
