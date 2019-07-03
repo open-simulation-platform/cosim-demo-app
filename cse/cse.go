@@ -364,31 +364,34 @@ func addVariableMetadata(execution *C.cse_execution, fmu *structs.FMU) error {
 	return nil
 }
 
-func addManipulatedVariables(execution *C.cse_execution) error {
+func fetchManipulatedVariables(execution *C.cse_execution) ([]structs.ManipulatedVariable, error) {
 	nVars := C.cse_get_num_modified_variables(execution)
 	if int(nVars) < 0 {
-		return errors.New("Could not get number of modified variables")
+		return nil, errors.New("Could not get number of modified variables")
 	}
 
 	var variables = make([]C.cse_variable_id, int(nVars))
-	var structs = make([]structs.Variable, int(nVars))
-	tmp := C.cse_get_modified_variables(execution, variables)
+	var varStructs = make([]structs.ManipulatedVariable, int(nVars))
+	err := C.cse_get_modified_variables(execution, &variables[0])
 
-	if int(tmp) < 0 {
-		return errors.New("Could not get modified variables from execution")
+	if int(err) < 0 {
+		return nil, errors.New("Could not get modified variables from execution")
 	}
 
 	for _, variable := range variables[0:int(nVars)] {
-		slave_index := int(variable.slave_index)
-		variable_index := int(variable.variable_index)
-
+		slaveIndex := int(variable.slave_index)
+		variableIndex := int(variable.variable_index)
 		variableType, err := parseType(variable._type)
+
 		if err != nil {
-			return errors.New("Problem parsing type")
+			return nil, errors.New("Problem parsing type")
 		}
 
+		manipulatedVariable := structs.ManipulatedVariable{slaveIndex, variableType, variableIndex}
+		varStructs = append(varStructs, manipulatedVariable)
 	}
 
+	return varStructs, nil
 }
 
 func simulationTeardown(sim *Simulation) (bool, string) {
@@ -685,6 +688,10 @@ func GenerateJsonResponse(status *structs.SimulationStatus, sim *Simulation, fee
 		response.Module = findModuleData(status, sim.MetaData, sim.Observer)
 		response.ConfigDir = status.ConfigDir
 		response.Trends = status.Trends
+
+		manipulatedVars, _ := fetchManipulatedVariables(sim.Execution)
+
+		response.ManipulatedVariables = manipulatedVars
 		if sim.ScenarioManager != nil && isScenarioRunning(sim.ScenarioManager) {
 			response.RunningScenario = status.CurrentScenario
 		}

@@ -18,22 +18,28 @@ type Module struct {
 	Name    string   `json:"name,omitempty"`
 }
 
+type ManipulatedVariable struct {
+	SlaveIndex    int    `json:"slaveIndex"`
+	Type          string `json:"type"`
+	VariableIndex int    `json:"variableIndex"`
+}
+
 type JsonResponse struct {
-	Loaded               bool             `json:"loaded"`
-	SimulationTime       float64          `json:"time"`
-	RealTimeFactor       float64          `json:"realTimeFactor"`
-	RealTimeFactorTarget float64          `json:"realTimeFactorTarget"`
-	IsRealTimeSimulation bool             `json:"isRealTime"`
-	ConfigDir            string           `json:"configDir,omitempty"`
-	Status               string           `json:"status,omitempty"`
-	Module               Module           `json:"module,omitempty"`
-	Trends               []Trend          `json:"trends"`
-	ModuleData           *MetaData        `json:"module-data,omitempty"`
-	Feedback             *CommandFeedback `json:"feedback,omitempy"`
-	Scenarios            *[]string        `json:"scenarios,omitempty"`
-	Scenario             *interface{}     `json:"scenario,omitempty"`
-	RunningScenario      string           `json:"running-scenario"`
-	ManipulatedVariables []Signal         `json:"manipulated-variables,omitempty"`
+	Loaded               bool                  `json:"loaded"`
+	SimulationTime       float64               `json:"time"`
+	RealTimeFactor       float64               `json:"realTimeFactor"`
+	RealTimeFactorTarget float64               `json:"realTimeFactorTarget"`
+	IsRealTimeSimulation bool                  `json:"isRealTime"`
+	ConfigDir            string                `json:"configDir,omitempty"`
+	Status               string                `json:"status,omitempty"`
+	Module               Module                `json:"module,omitempty"`
+	Trends               []Trend               `json:"trends"`
+	ModuleData           *MetaData             `json:"module-data,omitempty"`
+	Feedback             *CommandFeedback      `json:"feedback,omitempy"`
+	Scenarios            *[]string             `json:"scenarios,omitempty"`
+	Scenario             *interface{}          `json:"scenario,omitempty"`
+	RunningScenario      string                `json:"running-scenario"`
+	ManipulatedVariables []ManipulatedVariable `json:"manipulatedVariables,omitempty"`
 }
 
 type TrendSignal struct {
