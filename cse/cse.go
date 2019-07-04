@@ -364,34 +364,40 @@ func addVariableMetadata(execution *C.cse_execution, fmu *structs.FMU) error {
 	return nil
 }
 
-func fetchManipulatedVariables(execution *C.cse_execution) ([]structs.ManipulatedVariable, error) {
+func fetchManipulatedVariables(execution *C.cse_execution) ([]structs.ManipulatedVariable, string) {
 	nVars := C.cse_get_num_modified_variables(execution)
 	if int(nVars) < 0 {
-		return nil, errors.New("Could not get number of modified variables")
+		return nil, "Could not get number of manipulated variables"
 	}
 
 	var variables = make([]C.cse_variable_id, int(nVars))
 	var varStructs = make([]structs.ManipulatedVariable, int(nVars))
+
+	if int(nVars) == 0 {
+		varStructs = nil
+		return varStructs, "Simulation does not have any manipulated variables"
+	}
+
 	err := C.cse_get_modified_variables(execution, &variables[0])
 
 	if int(err) < 0 {
-		return nil, errors.New("Could not get modified variables from execution")
+		return nil, "Could not fetch manipulated variables from execution"
 	}
 
-	for _, variable := range variables[0:int(nVars)] {
+	for n, variable := range variables[0:int(nVars)] {
 		slaveIndex := int(variable.slave_index)
 		variableIndex := int(variable.variable_index)
 		variableType, err := parseType(variable._type)
 
 		if err != nil {
-			return nil, errors.New("Problem parsing type")
+			return nil, "Problem parsing variabletype"
 		}
 
 		manipulatedVariable := structs.ManipulatedVariable{slaveIndex, variableType, variableIndex}
-		varStructs = append(varStructs, manipulatedVariable)
+		varStructs[n] = manipulatedVariable
 	}
 
-	return varStructs, nil
+	return varStructs, ""
 }
 
 func simulationTeardown(sim *Simulation) (bool, string) {

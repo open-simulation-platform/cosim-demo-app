@@ -39,7 +39,7 @@ type JsonResponse struct {
 	Scenarios            *[]string             `json:"scenarios,omitempty"`
 	Scenario             *interface{}          `json:"scenario,omitempty"`
 	RunningScenario      string                `json:"running-scenario"`
-	ManipulatedVariables []ManipulatedVariable `json:"manipulatedVariables,omitempty"`
+	ManipulatedVariables []ManipulatedVariable `json:"manipulatedVariables"`
 }
 
 type TrendSignal struct {
