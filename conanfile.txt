@@ -1,7 +1,7 @@
 [generators]
 
 [requires]
-cse-core/0.3.0@osp/master
+cse-core/0.3.0@osp/v0.3.0
 
 [options]
 cse-core:fmuproxy=True
