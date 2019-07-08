@@ -8,9 +8,9 @@ type Signal struct {
 }
 
 type ModifiedSignal struct {
-	SlaveIndex int64  `json:"slaveIndex"`
-	Type       string `json:"type"`
-	Index      int64  `json:"index"`
+	SlaveIndex     int    `json:"slaveIndex"`
+	Type           string `json:"type"`
+	ValueReference int    `json:"valueReference"`
 }
 
 type Module struct {
@@ -19,9 +19,9 @@ type Module struct {
 }
 
 type ManipulatedVariable struct {
-	SlaveIndex    int    `json:"slaveIndex"`
-	Type          string `json:"type"`
-	VariableIndex int    `json:"variableIndex"`
+	SlaveIndex     int    `json:"slaveIndex"`
+	Type           string `json:"type"`
+	ValueReference int    `json:"valueReference"`
 }
 
 type JsonResponse struct {

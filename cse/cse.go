@@ -386,14 +386,14 @@ func fetchManipulatedVariables(execution *C.cse_execution) ([]structs.Manipulate
 
 	for n, variable := range variables[0:int(nVars)] {
 		slaveIndex := int(variable.slave_index)
-		variableIndex := int(variable.variable_index)
+		valueReference := int(variable.variable_index)
 		variableType, err := parseType(variable._type)
 
 		if err != nil {
 			return nil, "Problem parsing variabletype"
 		}
 
-		manipulatedVariable := structs.ManipulatedVariable{slaveIndex, variableType, variableIndex}
+		manipulatedVariable := structs.ManipulatedVariable{slaveIndex, variableType, valueReference}
 		varStructs[n] = manipulatedVariable
 	}
 
