@@ -378,10 +378,10 @@ func fetchManipulatedVariables(execution *C.cse_execution) ([]structs.Manipulate
 		return varStructs, "Simulation does not have any manipulated variables"
 	}
 
-	err := C.cse_get_modified_variables(execution, &variables[0])
+	numVars := C.cse_get_modified_variables(execution, &variables[0], C.size_t(nVars))
 
-	if int(err) < 0 {
-		return nil, "Could not fetch manipulated variables from execution"
+	if int(numVars) < int(nVars) {
+		return nil, "Could not fetch all modified variables from execution"
 	}
 
 	for n, variable := range variables[0:int(nVars)] {
