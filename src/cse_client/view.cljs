@@ -213,7 +213,8 @@
 (defn realtime-factor-field []
   [c/text-editor
    @(rf/subscribe [:get-state-key :realTimeFactorTarget])
-   [::controller/set-real-time-factor-target]])
+   [::controller/set-real-time-factor-target]
+   "Edit real time target"])
 
 (defn teardown-button []
   [:button.ui.button {:on-click     #(rf/dispatch [::controller/teardown])

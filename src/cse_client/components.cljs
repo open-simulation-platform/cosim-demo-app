@@ -55,7 +55,7 @@
            @internal-value
            (str value))]))))
 
-(defn text-editor [value event]
+(defn text-editor [value event tooltip]
   (let [editing? (r/atom false)
         internal-value (r/atom value)
         save (fn []
@@ -86,6 +86,6 @@
           {:on-click     (fn []
                            (reset! editing? true)
                            (reset! internal-value value))
-           :data-tooltip "Rename plot"}
+           :data-tooltip tooltip}
           [:i.edit.link.icon]]
          value]))))

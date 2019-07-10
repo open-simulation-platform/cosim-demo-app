@@ -26,12 +26,12 @@
     :text    "20m"}])
 
 (def common-layout
-  {:autosize true
+  {:autosize           true
    :use-resize-handler true
-   :showlegend true
-   :uirevision true
-   :margin {:l 40 :r 40 :t 20 :pad 5}
-   :legend {:orientation "h"}})
+   :showlegend         true
+   :uirevision         true
+   :margin             {:l 40 :r 40 :t 20 :pad 5}
+   :legend             {:orientation "h"}})
 
 (def trend-layout
   (merge common-layout
@@ -87,11 +87,51 @@
   "Expects label to be a string on format 'Time series #a9123ddc-..'"
   (str/trim (first (str/split label "#"))))
 
+(defn- time-series-legend-name [{:keys [module signal causality type]}]
+  (str/join " - " [module signal causality type]))
+
+(defn- xy-plot-legend-name [plot]
+  (let [first-signal  ((keyword (str first-signal-ns "/" 'signal)) plot)
+        second-signal ((keyword (str second-signal-ns "/" 'signal)) plot)]
+    (str/join " / " [first-signal second-signal])))
+
+(defn- delete-series [dom-node]
+  (let [num-series (-> dom-node .-data .-length)]
+    (doseq [_ (range num-series)]
+      (js/Plotly.deleteTraces dom-node 0))))
+
+(defn- add-traces [dom-node plots legend-fn]
+  (doseq [plot plots]
+    (js/Plotly.addTraces dom-node (clj->js {:name (legend-fn plot) :x [] :y []}))))
+
+(defn- maybe-update-series [dom-node trend-values]
+  (let [num-series (-> dom-node .-data .-length)]
+    (when (not= num-series (count trend-values))
+      (doseq [_ (range num-series)]
+        (js/Plotly.deleteTraces dom-node 0))
+      (case (:plot-type @(rf/subscribe [::active-trend]))
+        "trend" (add-traces dom-node trend-values time-series-legend-name)
+        "scatter" (add-traces dom-node trend-values xy-plot-legend-name)))))
+
+(defn- update-chart-data [dom-node trend-values trend-id]
+  (when-not (= trend-id @id-store)
+    (reset! id-store trend-id)
+    (delete-series dom-node))
+  (s/assert ::trend-values trend-values)
+  (let [init-data {:x [] :y []}
+        data      (reduce (fn [data {:keys [xvals yvals]}]
+                            (-> data
+                                (update :x conj xvals)
+                                (update :y conj yvals)))
+                          init-data trend-values)]
+    (maybe-update-series dom-node trend-values)
+    (js/Plotly.update dom-node (clj->js data))))
+
 (defn- relayout-callback [js-event]
-  (let [event (js->clj js-event)
-        begin (get event "xaxis.range[0]")
-        end (get event "xaxis.range[1]")
-        auto? (get event "xaxis.autorange")
+  (let [event        (js->clj js-event)
+        begin        (get event "xaxis.range[0]")
+        end          (get event "xaxis.range[1]")
+        auto?        (get event "xaxis.autorange")
         active-trend @(rf/subscribe [::active-trend])]
     (when (= (:plot-type active-trend) "trend")
       (cond
@@ -103,63 +143,54 @@
 (defn- set-dom-element-height! [dom-node height]
   (-> dom-node .-style .-height (set! height)))
 
-(defn- time-series-legend-name [{:keys [module signal causality type]}]
-  (str/join " - " [module signal causality type]))
-
-(defn- xy-plot-legend-name [plot]
-  (let [first-signal ((keyword (str first-signal-ns "/" 'signal)) plot)
-        second-signal ((keyword (str second-signal-ns "/" 'signal)) plot)]
-    (str/join " / " [first-signal second-signal])))
-
 (defn- trend-inner []
-  (let [render-plot (fn [comp]
-                      (let [{:keys [trend-values plot-type]} (r/props comp)
-                            dom-node (r/dom-node comp)
-                            _ (set-dom-element-height! dom-node plot-container-height)
-                            layout (layout-selector plot-type)
-                            plot-data (map (fn [trend] {:x (:xvals trend)
-                                                        :y (:yvals trend)
-                                                        :name (case plot-type
-                                                                "trend" (time-series-legend-name trend)
-                                                                "scatter" (xy-plot-legend-name trend))
-                                                        :mode "lines"
-                                                        :type "scatter"}) trend-values)]
-                        (js/Plotly.react dom-node
-                                         (clj->js plot-data)
-                                         (clj->js layout)
-                                         (clj->js {:responsive true}))))]
+  (let [update-plot (fn [comp]
+                      (let [{:keys [trend-values trend-id]} (r/props comp)]
+                        (update-chart-data (r/dom-node comp) trend-values trend-id)))
+        render-plot (fn [comp]
+                      (let [{:keys [plot-type]} (r/props comp)
+                            dom-node  (r/dom-node comp)
+                            _         (set-dom-element-height! dom-node plot-container-height)
+                            layout    (layout-selector plot-type)]
+                        (js/Plotly.newPlot dom-node
+                                           (clj->js [{:x    []
+                                                      :y    []
+                                                      :mode "lines"
+                                                      :type "scatter"}])
+                                           (clj->js layout)
+                                           (clj->js {:responsive true}))))]
     (r/create-class
-     {:component-did-mount  (fn [comp]
-                              (render-plot comp)
-                              (.on (r/dom-node comp) "plotly_relayout" relayout-callback))
-      :component-did-update render-plot
-      :reagent-render       (fn []
-                              [:div.column])})))
+      {:component-did-mount  (fn [comp]
+                               (render-plot comp)
+                               (.on (r/dom-node comp) "plotly_relayout" relayout-callback))
+       :component-did-update update-plot
+       :reagent-render       (fn []
+                               [:div.column])})))
 
 (defn trend-outer []
-  (let [trend-range (rf/subscribe [::trend-range])
-        active-trend (rf/subscribe [::active-trend])
+  (let [trend-range        (rf/subscribe [::trend-range])
+        active-trend       (rf/subscribe [::active-trend])
         active-trend-index (rf/subscribe [:active-trend-index])]
     (fn []
       (let [{:keys [id plot-type label trend-values]} @active-trend
             active-trend-index (int @active-trend-index)
-            name (plot-type-from-label label)]
+            name               (plot-type-from-label label)]
         [:div.ui.one.column.grid
-         [c/text-editor name [::controller/set-label]]
+         [c/text-editor name [::controller/set-label] "Rename plot"]
          [:div.two.column.row
           [:div.column
            (doall (map (partial range-selector @trend-range) range-configs))]
           [:div.column
            [:button.ui.button.right.floated {:on-click #(rf/dispatch [::controller/removetrend active-trend-index])}
             [:i.trash.gray.icon]
-           "Remove plot"]
+            "Remove plot"]
            [:button.ui.button.right.floated {:on-click #(rf/dispatch [::controller/untrend active-trend-index])}
             [:i.eye.slash.gray.icon]
             "Remove variables from plot"]]]
          [:div.one.column.row
           [trend-inner {:trend-values (format-data-for-plotting plot-type trend-values)
-                        :plot-type plot-type
-                        :trend-id id}]]]))))
+                        :plot-type    plot-type
+                        :trend-id     id}]]]))))
 
 (rf/reg-sub ::active-trend #(get-in % [:state :trends (-> % :active-trend-index int)]))
 
