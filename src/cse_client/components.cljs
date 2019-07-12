@@ -14,7 +14,8 @@
         save-if-changed (fn [value]
                           (if (not= value @internal-value)
                             (save)
-                            (reset! editing? false)))]
+                            (reset! editing? false)))
+        has-manipulator? (rf/subscribe [:has-manipulator? index type value-reference])]
     (fn [_ _ value]
       (if @editing?
         [:div.ui.action.input.fluid
@@ -39,18 +40,21 @@
           {:on-click #(reset! editing? false)}
           [:i.times.link.icon]]]
         [:div
-         [:span.plotname-edit
-          {:on-click     (fn []
-                           (reset! edited? false)
-                           (rf/dispatch [::controller/reset-value (str index) type (str value-reference)]))
-           :data-tooltip "Remove override"}
-          [:i.eraser.icon]]
+         (when @has-manipulator?
+           [:span.plotname-edit
+            {:on-click     (fn []
+                             (reset! edited? false)
+                             (rf/dispatch [::controller/reset-value (str index) type (str value-reference)]))
+             :data-tooltip "Remove override"}
+            [:i.eraser.icon]])
          [:span.plotname-edit
           {:on-click     (fn []
                            (reset! editing? true)
                            (reset! internal-value value))
            :data-tooltip "Override value"}
-          [:i.edit.link.icon]]
+          (if @has-manipulator?
+            [:i.edit.red.link.icon]
+            [:i.edit.link.icon])]
          (if (and @edited? (= "pause" @(rf/subscribe [:status])))
            @internal-value
            (str value))]))))

@@ -143,7 +143,7 @@
                                  first
                                  :variables
                                  (filter (fn [{:keys [name]}]
-                                            (= name (:variable event))))
+                                           (= name (:variable event))))
                                  seq
                                  boolean)]
     (-> event
@@ -198,6 +198,14 @@
               (-> db :state key)))
 
 (rf/reg-sub :scenario-id #(:scenario-id %))
+
+(rf/reg-sub :has-manipulator?
+            (fn [db [_ index gui-type value-reference]]
+              (let [manip-vars (-> db :state :manipulatedVariables)]
+                (seq (filter (fn [{:keys [slaveIndex type valueReference]}]
+                               (and (= index slaveIndex)
+                                    (= gui-type type)
+                                    (= value-reference valueReference))) manip-vars)))))
 
 (k/start! {:routes         routes
            :hash-routing?  true
