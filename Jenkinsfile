@@ -3,7 +3,7 @@ pipeline {
 
     triggers {
         upstream(
-            upstreamProjects: 'open-simulation-platform/cse-core/v0.3.0, open-simulation-platform/cse-client/v0.3.0',
+            upstreamProjects: 'open-simulation-platform/cse-core/master, open-simulation-platform/cse-client/master',
             threshold: hudson.model.Result.SUCCESS)
     }
 
@@ -32,7 +32,7 @@ pipeline {
                         stage ('Get dependencies') {
                             steps {
                                 copyArtifacts(
-                                    projectName: 'open-simulation-platform/cse-client/v0.3.0',
+                                    projectName: 'open-simulation-platform/cse-client/master',
                                     filter: 'resources/public/**/*',
                                     target: 'src/cse-server-go')
 
@@ -58,7 +58,7 @@ pipeline {
                             steps {
                                 dir ('src/cse-server-go/dist/bin') {
                                     sh 'cp -rf ../../cse-server-go.exe .'
-                                    sh 'curl https://github.com/NTNU-IHB/FMU-proxy/releases/download/v0.5.0/fmu-proxy.jar -o fmu-proxy.jar -L'
+                                    sh 'curl https://github.com/NTNU-IHB/FMU-proxy/releases/download/v0.5.1/fmu-proxy.jar -o fmu-proxy.jar -L'
                                 }
                                 dir ('src/cse-server-go/dist') {
                                     sh 'cp -rf ../run-windows.cmd .'
@@ -124,7 +124,7 @@ pipeline {
                         stage ('Get dependencies') {
                             steps {
                                 copyArtifacts(
-                                    projectName: 'open-simulation-platform/cse-client/v0.3.0',
+                                    projectName: 'open-simulation-platform/cse-client/master',
                                     filter: 'resources/public/**/*',
                                     target: 'src/cse-server-go')
 
@@ -149,7 +149,7 @@ pipeline {
                             steps {
                                 dir ('src/cse-server-go/dist/bin') {
                                     sh 'cp -rf ../../cse-server-go .'
-                                    sh 'curl https://github.com/NTNU-IHB/FMU-proxy/releases/download/v0.5.0/fmu-proxy.jar -o fmu-proxy.jar -L'
+                                    sh 'curl https://github.com/NTNU-IHB/FMU-proxy/releases/download/v0.5.1/fmu-proxy.jar -o fmu-proxy.jar -L'
                                 }
                                 dir ('src/cse-server-go/dist') {
                                     sh 'cp ../run-linux .'
