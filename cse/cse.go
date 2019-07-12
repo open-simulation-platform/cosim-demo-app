@@ -364,40 +364,39 @@ func addVariableMetadata(execution *C.cse_execution, fmu *structs.FMU) error {
 	return nil
 }
 
-func fetchManipulatedVariables(execution *C.cse_execution) ([]structs.ManipulatedVariable, string) {
-	nVars := C.cse_get_num_modified_variables(execution)
-	if int(nVars) < 0 {
-		return nil, "Could not get number of manipulated variables"
+func fetchManipulatedVariables(execution *C.cse_execution) []structs.ManipulatedVariable {
+	nVars := int(C.cse_get_num_modified_variables(execution))
+	if nVars <= 0 {
+		return nil
 	}
 
-	var variables = make([]C.cse_variable_id, int(nVars))
-	var varStructs = make([]structs.ManipulatedVariable, int(nVars))
+	var variables = make([]C.cse_variable_id, nVars)
+	numVars := int(C.cse_get_modified_variables(execution, &variables[0], C.size_t(nVars)))
 
-	if int(nVars) == 0 {
-		varStructs = nil
-		return varStructs, "Simulation does not have any manipulated variables"
+	if numVars < 0 {
+		log.Println("Error while fetching modified variables: ", lastErrorMessage())
+		return nil
 	}
 
-	numVars := C.cse_get_modified_variables(execution, &variables[0], C.size_t(nVars))
-
-	if int(numVars) < int(nVars) {
-		return nil, "Could not fetch all modified variables from execution"
-	}
-
-	for n, variable := range variables[0:int(nVars)] {
+	var varStructs = make([]structs.ManipulatedVariable, numVars)
+	for n, variable := range variables[0:numVars] {
 		slaveIndex := int(variable.slave_index)
 		valueReference := int(variable.variable_index)
 		variableType, err := parseType(variable._type)
 
 		if err != nil {
-			return nil, "Problem parsing variabletype"
+			log.Println("Problem parsing variable type: ", variable._type)
+			return nil
 		}
 
-		manipulatedVariable := structs.ManipulatedVariable{slaveIndex, variableType, valueReference}
-		varStructs[n] = manipulatedVariable
+		varStructs[n] = structs.ManipulatedVariable{
+			slaveIndex,
+			variableType,
+			valueReference,
+		}
 	}
 
-	return varStructs, ""
+	return varStructs
 }
 
 func simulationTeardown(sim *Simulation) (bool, string) {
@@ -694,10 +693,7 @@ func GenerateJsonResponse(status *structs.SimulationStatus, sim *Simulation, fee
 		response.Module = findModuleData(status, sim.MetaData, sim.Observer)
 		response.ConfigDir = status.ConfigDir
 		response.Trends = status.Trends
-
-		manipulatedVars, _ := fetchManipulatedVariables(sim.Execution)
-
-		response.ManipulatedVariables = manipulatedVars
+		response.ManipulatedVariables = fetchManipulatedVariables(sim.Execution)
 		if sim.ScenarioManager != nil && isScenarioRunning(sim.ScenarioManager) {
 			response.RunningScenario = status.CurrentScenario
 		}

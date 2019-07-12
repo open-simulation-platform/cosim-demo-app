@@ -7,12 +7,6 @@ type Signal struct {
 	Value     interface{} `json:"value"`
 }
 
-type ModifiedSignal struct {
-	SlaveIndex     int    `json:"slaveIndex"`
-	Type           string `json:"type"`
-	ValueReference int    `json:"valueReference"`
-}
-
 type Module struct {
 	Signals []Signal `json:"signals,omitempty"`
 	Name    string   `json:"name,omitempty"`
