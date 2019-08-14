@@ -9,7 +9,8 @@
             [cljs.core.async :refer [<! timeout]]
             [clojure.string :as str]
             [re-frame.core :as rf]
-            [cse-client.localstorage :as storage]))
+            [cse-client.localstorage :as storage]
+            [cse-client.msgpack-format]))
 
 ;; Prevent handler overwriting warnings during cljs reload.
 (re-frame-log/set-loggers!
@@ -50,7 +51,7 @@
                 (fn [_ _]
                   (merge {::websocket/open {:path         socket-url
                                             :dispatch     ::socket-message-received
-                                            :format       :json-kw
+                                            :format       :msgpack
                                             :wrap-message identity}}
                          (socket-command ["get-module-data"]))))
 

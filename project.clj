@@ -1,11 +1,15 @@
 (defproject cse-client "1.0-SNAPSHOT"
   :min-lein-version "2.0.0"
   :dependencies [[kee-frame "0.3.3"]
+                 [jarohen/chord "0.8.1"]
+                 [com.cognitect/transit-clj "0.8.309"]
+                 [com.cognitect/transit-cljs "0.8.256"]
                  [reagent "0.8.1"]
                  [re-frame "0.10.6" :exclusions [reagent]]
                  [cljsjs/plotly "1.36.1-0"]
                  [org.clojure/clojurescript "1.10.439"]
                  [org.clojure/clojure "1.9.0"]
+                 [org.clojure/tools.reader "1.3.0"]
                  [fulcrologic/fulcro "2.8.0"]
                  [fulcrologic/semantic-ui-react-wrappers "2.0.4"]
                  [cljsjs/semantic-ui-react "0.84.0-0"]
