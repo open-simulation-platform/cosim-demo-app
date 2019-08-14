@@ -9,7 +9,6 @@ import "C"
 import (
 	"cse-server-go/structs"
 	"errors"
-	"math"
 )
 
 func createObserver() (observer *C.cse_observer) {
@@ -40,18 +39,6 @@ func observerDestroy(observer *C.cse_observer) {
 	C.cse_observer_destroy(observer)
 }
 
-func uglyNanFix(value C.double) interface{} {
-	floatValue := float64(value)
-	if math.IsNaN(floatValue) {
-		return "NaN"
-	} else if math.IsInf(floatValue, 1) {
-		return "+Inf"
-	} else if math.IsInf(floatValue, -1) {
-		return "-Inf"
-	}
-	return floatValue
-}
-
 func observerGetReals(observer *C.cse_observer, variables []structs.Variable, slaveIndex int) (realSignals []structs.Signal) {
 	var realValueRefs []C.cse_variable_index
 	var realVariables []structs.Variable
@@ -75,7 +62,7 @@ func observerGetReals(observer *C.cse_observer, variables []structs.Variable, sl
 				Name:      realVariables[k].Name,
 				Causality: realVariables[k].Causality,
 				Type:      realVariables[k].Type,
-				Value:     uglyNanFix(realOutVal[k]),
+				Value:     realOutVal[k],
 			}
 		}
 	}
