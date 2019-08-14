@@ -815,3 +815,13 @@ type Simulation struct {
 func CreateEmptySimulation() Simulation {
 	return Simulation{}
 }
+
+func SetupLogging() {
+	success := C.cse_log_setup_simple_console_logging()
+	if int(success) < 0 {
+		log.Println("Could not set up console logging!")
+	} else {
+		C.cse_log_set_output_level(C.CSE_LOG_SEVERITY_INFO)
+		log.Println("Console logging set up with severity: INFO")
+	}
+}

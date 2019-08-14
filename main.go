@@ -7,6 +7,7 @@ import (
 )
 
 func main() {
+	cse.SetupLogging()
 	sim := cse.CreateEmptySimulation()
 
 	// Creating a command channel
