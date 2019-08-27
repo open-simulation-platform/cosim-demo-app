@@ -40,12 +40,12 @@ func observerDestroy(observer *C.cse_observer) {
 }
 
 func observerGetReals(observer *C.cse_observer, variables []structs.Variable, slaveIndex int) (realSignals []structs.Signal) {
-	var realValueRefs []C.cse_variable_index
+	var realValueRefs []C.cse_value_reference
 	var realVariables []structs.Variable
 	var numReals int
 	for _, variable := range variables {
 		if variable.Type == "Real" {
-			ref := C.cse_variable_index(variable.ValueReference)
+			ref := C.cse_value_reference(variable.ValueReference)
 			realValueRefs = append(realValueRefs, ref)
 			realVariables = append(realVariables, variable)
 			numReals++
@@ -70,12 +70,12 @@ func observerGetReals(observer *C.cse_observer, variables []structs.Variable, sl
 }
 
 func observerGetIntegers(observer *C.cse_observer, variables []structs.Variable, slaveIndex int) (intSignals []structs.Signal) {
-	var intValueRefs []C.cse_variable_index
+	var intValueRefs []C.cse_value_reference
 	var intVariables []structs.Variable
 	var numIntegers int
 	for _, variable := range variables {
 		if variable.Type == "Integer" {
-			ref := C.cse_variable_index(variable.ValueReference)
+			ref := C.cse_value_reference(variable.ValueReference)
 			intValueRefs = append(intValueRefs, ref)
 			intVariables = append(intVariables, variable)
 			numIntegers++
@@ -100,12 +100,12 @@ func observerGetIntegers(observer *C.cse_observer, variables []structs.Variable,
 }
 
 func observerGetBooleans(observer *C.cse_observer, variables []structs.Variable, slaveIndex int) (boolSignals []structs.Signal) {
-	var boolValueRefs []C.cse_variable_index
+	var boolValueRefs []C.cse_value_reference
 	var boolVariables []structs.Variable
 	var numBooleans int
 	for _, variable := range variables {
 		if variable.Type == "Boolean" {
-			ref := C.cse_variable_index(variable.ValueReference)
+			ref := C.cse_value_reference(variable.ValueReference)
 			boolValueRefs = append(boolValueRefs, ref)
 			boolVariables = append(boolVariables, variable)
 			numBooleans++
@@ -130,12 +130,12 @@ func observerGetBooleans(observer *C.cse_observer, variables []structs.Variable,
 }
 
 func observerGetStrings(observer *C.cse_observer, variables []structs.Variable, slaveIndex int) (stringSignals []structs.Signal) {
-	var stringValueRefs []C.cse_variable_index
+	var stringValueRefs []C.cse_value_reference
 	var stringVariables []structs.Variable
 	var numStrings int
 	for _, variable := range variables {
 		if variable.Type == "String" {
-			ref := C.cse_variable_index(variable.ValueReference)
+			ref := C.cse_value_reference(variable.ValueReference)
 			stringValueRefs = append(stringValueRefs, ref)
 			stringVariables = append(stringVariables, variable)
 			numStrings++
@@ -161,7 +161,7 @@ func observerGetStrings(observer *C.cse_observer, variables []structs.Variable, 
 
 func observerGetRealSamples(observer *C.cse_observer, signal *structs.TrendSignal, spec structs.TrendSpec) {
 	slaveIndex := C.cse_slave_index(signal.SlaveIndex)
-	variableIndex := C.cse_variable_index(signal.ValueReference)
+	valueRef := C.cse_value_reference(signal.ValueReference)
 
 	stepNumbers := make([]C.cse_step_number, 2)
 	var success C.int
@@ -184,7 +184,7 @@ func observerGetRealSamples(observer *C.cse_observer, signal *structs.TrendSigna
 	realOutVal := make([]C.double, numSamples)
 	timeVal := make([]C.cse_time_point, numSamples)
 	timeStamps := make([]C.cse_step_number, numSamples)
-	actualNumSamples := C.cse_observer_slave_get_real_samples(observer, slaveIndex, variableIndex, first, cnSamples, &realOutVal[0], &timeStamps[0], &timeVal[0])
+	actualNumSamples := C.cse_observer_slave_get_real_samples(observer, slaveIndex, valueRef, first, cnSamples, &realOutVal[0], &timeStamps[0], &timeVal[0])
 	ns := int(actualNumSamples)
 	if ns <= 0 {
 		return
@@ -201,10 +201,10 @@ func observerGetRealSamples(observer *C.cse_observer, signal *structs.TrendSigna
 
 func observerGetRealSynchronizedSamples(observer *C.cse_observer, signal1 *structs.TrendSignal, signal2 *structs.TrendSignal, spec structs.TrendSpec) {
 	slaveIndex1 := C.cse_slave_index(signal1.SlaveIndex)
-	variableIndex1 := C.cse_variable_index(signal1.ValueReference)
+	valueRef1 := C.cse_value_reference(signal1.ValueReference)
 
 	slaveIndex2 := C.cse_slave_index(signal2.SlaveIndex)
-	variableIndex2 := C.cse_variable_index(signal2.ValueReference)
+	valueRef2 := C.cse_value_reference(signal2.ValueReference)
 
 	stepNumbers := make([]C.cse_step_number, 2)
 	var success C.int
@@ -226,7 +226,7 @@ func observerGetRealSynchronizedSamples(observer *C.cse_observer, signal1 *struc
 	cnSamples := C.size_t(numSamples)
 	realOutVal1 := make([]C.double, numSamples)
 	realOutVal2 := make([]C.double, numSamples)
-	actualNumSamples := C.cse_observer_slave_get_real_synchronized_series(observer, slaveIndex1, variableIndex1, slaveIndex2, variableIndex2, first, cnSamples, &realOutVal1[0], &realOutVal2[0])
+	actualNumSamples := C.cse_observer_slave_get_real_synchronized_series(observer, slaveIndex1, valueRef1, slaveIndex2, valueRef2, first, cnSamples, &realOutVal1[0], &realOutVal2[0])
 	ns := int(actualNumSamples)
 	if ns <= 0 {
 		return
@@ -255,20 +255,20 @@ func toVariableType(valueType string) (C.cse_variable_type, error) {
 	return C.CSE_VARIABLE_TYPE_REAL, errors.New(strCat("Unknown variable type:", valueType))
 }
 
-func observerStartObserving(observer *C.cse_observer, slaveIndex int, valueType string, varIndex int) error {
+func observerStartObserving(observer *C.cse_observer, slaveIndex int, valueType string, valueRef int) error {
 	variableType, err := toVariableType(valueType)
 	if err != nil {
 		return err
 	}
-	C.cse_observer_start_observing(observer, C.cse_slave_index(slaveIndex), variableType, C.cse_variable_index(varIndex))
+	C.cse_observer_start_observing(observer, C.cse_slave_index(slaveIndex), variableType, C.cse_value_reference(valueRef))
 	return nil
 }
 
-func observerStopObserving(observer *C.cse_observer, slaveIndex int, valueType string, varIndex int) error {
+func observerStopObserving(observer *C.cse_observer, slaveIndex int, valueType string, valueRef int) error {
 	variableType, err := toVariableType(valueType)
 	if err != nil {
 		return err
 	}
-	C.cse_observer_stop_observing(observer, C.cse_slave_index(slaveIndex), variableType, C.cse_variable_index(varIndex))
+	C.cse_observer_stop_observing(observer, C.cse_slave_index(slaveIndex), variableType, C.cse_value_reference(valueRef))
 	return nil
 }
