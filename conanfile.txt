@@ -1,7 +1,7 @@
 [generators]
 
 [requires]
-cse-core/0.5.0@osp/rename-variable-index
+cse-core/0.5.0@osp/master
 
 [options]
 cse-core:fmuproxy=True
