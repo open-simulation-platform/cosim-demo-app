@@ -146,12 +146,12 @@ func executionSetCustomRealTimeFactor(execution *C.cse_execution, status *struct
 	return true, "Custom real time factor successfully set"
 }
 
-func setReal(manipulator *C.cse_manipulator, slaveIndex int, variableIndex int, value float64) (bool, string) {
-	vi := make([]C.cse_variable_index, 1)
-	vi[0] = C.cse_variable_index(variableIndex)
+func setReal(manipulator *C.cse_manipulator, slaveIndex int, valueRef int, value float64) (bool, string) {
+	vr := make([]C.cse_value_reference, 1)
+	vr[0] = C.cse_value_reference(valueRef)
 	v := make([]C.double, 1)
 	v[0] = C.double(value)
-	success := C.cse_manipulator_slave_set_real(manipulator, C.cse_slave_index(slaveIndex), &vi[0], C.size_t(1), &v[0])
+	success := C.cse_manipulator_slave_set_real(manipulator, C.cse_slave_index(slaveIndex), &vr[0], C.size_t(1), &v[0])
 	if int(success) < 0 {
 		return false, strCat("Unable to set real variable value: ", lastErrorMessage())
 	} else {
@@ -159,12 +159,12 @@ func setReal(manipulator *C.cse_manipulator, slaveIndex int, variableIndex int, 
 	}
 }
 
-func setInteger(manipulator *C.cse_manipulator, slaveIndex int, variableIndex int, value int) (bool, string) {
-	vi := make([]C.cse_variable_index, 1)
-	vi[0] = C.cse_variable_index(variableIndex)
+func setInteger(manipulator *C.cse_manipulator, slaveIndex int, valueRef int, value int) (bool, string) {
+	vr := make([]C.cse_value_reference, 1)
+	vr[0] = C.cse_value_reference(valueRef)
 	v := make([]C.int, 1)
 	v[0] = C.int(value)
-	success := C.cse_manipulator_slave_set_integer(manipulator, C.cse_slave_index(slaveIndex), &vi[0], C.size_t(1), &v[0])
+	success := C.cse_manipulator_slave_set_integer(manipulator, C.cse_slave_index(slaveIndex), &vr[0], C.size_t(1), &v[0])
 	if int(success) < 0 {
 		return false, strCat("Unable to set integer variable value: ", lastErrorMessage())
 	} else {
@@ -172,12 +172,12 @@ func setInteger(manipulator *C.cse_manipulator, slaveIndex int, variableIndex in
 	}
 }
 
-func setBoolean(manipulator *C.cse_manipulator, slaveIndex int, variableIndex int, value bool) (bool, string) {
-	vi := make([]C.cse_variable_index, 1)
-	vi[0] = C.cse_variable_index(variableIndex)
+func setBoolean(manipulator *C.cse_manipulator, slaveIndex int, valueRef int, value bool) (bool, string) {
+	vr := make([]C.cse_value_reference, 1)
+	vr[0] = C.cse_value_reference(valueRef)
 	v := make([]C.bool, 1)
 	v[0] = C.bool(value)
-	success := C.cse_manipulator_slave_set_boolean(manipulator, C.cse_slave_index(slaveIndex), &vi[0], C.size_t(1), &v[0])
+	success := C.cse_manipulator_slave_set_boolean(manipulator, C.cse_slave_index(slaveIndex), &vr[0], C.size_t(1), &v[0])
 	if int(success) < 0 {
 		return false, strCat("Unable to set boolean variable value: ", lastErrorMessage())
 	} else {
@@ -185,12 +185,12 @@ func setBoolean(manipulator *C.cse_manipulator, slaveIndex int, variableIndex in
 	}
 }
 
-func setString(manipulator *C.cse_manipulator, slaveIndex int, variableIndex int, value string) (bool, string) {
-	vi := make([]C.cse_variable_index, 1)
-	vi[0] = C.cse_variable_index(variableIndex)
+func setString(manipulator *C.cse_manipulator, slaveIndex int, valueRef int, value string) (bool, string) {
+	vr := make([]C.cse_value_reference, 1)
+	vr[0] = C.cse_value_reference(valueRef)
 	v := make([]*C.char, 1)
 	v[0] = C.CString(value)
-	success := C.cse_manipulator_slave_set_string(manipulator, C.cse_slave_index(slaveIndex), &vi[0], C.size_t(1), &v[0])
+	success := C.cse_manipulator_slave_set_string(manipulator, C.cse_slave_index(slaveIndex), &vr[0], C.size_t(1), &v[0])
 	if int(success) < 0 {
 		return false, strCat("Unable to set boolean variable value", lastErrorMessage())
 	} else {
@@ -203,7 +203,7 @@ func setVariableValue(sim *Simulation, slaveIndex string, valueType string, valu
 	if err != nil {
 		return false, strCat("Can't parse slave index as integer: ", slaveIndex)
 	}
-	varIndex, err := strconv.Atoi(valueReference)
+	valueRef, err := strconv.Atoi(valueReference)
 	if err != nil {
 		return false, strCat("Can't parse value reference as integer: ", valueReference)
 	}
@@ -214,7 +214,7 @@ func setVariableValue(sim *Simulation, slaveIndex string, valueType string, valu
 			log.Println(err)
 			return false, strCat("Can't parse value as double: ", value, ", error: ", err.Error())
 		} else {
-			return setReal(sim.OverrideManipulator, index, varIndex, val)
+			return setReal(sim.OverrideManipulator, index, valueRef, val)
 		}
 	case "Integer":
 		val, err := strconv.Atoi(value)
@@ -222,16 +222,16 @@ func setVariableValue(sim *Simulation, slaveIndex string, valueType string, valu
 			log.Println(err)
 			return false, strCat("Can't parse value as integer: ", value, ", error: ", err.Error())
 		} else {
-			return setInteger(sim.OverrideManipulator, index, varIndex, val)
+			return setInteger(sim.OverrideManipulator, index, valueRef, val)
 		}
 	case "Boolean":
 		var val = false
 		if "true" == value {
 			val = true
 		}
-		return setBoolean(sim.OverrideManipulator, index, varIndex, val)
+		return setBoolean(sim.OverrideManipulator, index, valueRef, val)
 	case "String":
-		return setString(sim.OverrideManipulator, index, varIndex, value)
+		return setString(sim.OverrideManipulator, index, valueRef, value)
 
 	default:
 		message := strCat("Can't set this value: ", value)
@@ -240,10 +240,10 @@ func setVariableValue(sim *Simulation, slaveIndex string, valueType string, valu
 	}
 }
 
-func resetVariable(manipulator *C.cse_manipulator, slaveIndex int, variableType C.cse_variable_type, variableIndex int) (bool, string) {
-	vi := make([]C.cse_variable_index, 1)
-	vi[0] = C.cse_variable_index(variableIndex)
-	success := C.cse_manipulator_slave_reset(manipulator, C.cse_slave_index(slaveIndex), variableType, &vi[0], C.size_t(1))
+func resetVariable(manipulator *C.cse_manipulator, slaveIndex int, variableType C.cse_variable_type, valueRef int) (bool, string) {
+	vr := make([]C.cse_value_reference, 1)
+	vr[0] = C.cse_value_reference(valueRef)
+	success := C.cse_manipulator_slave_reset(manipulator, C.cse_slave_index(slaveIndex), variableType, &vr[0], C.size_t(1))
 	if int(success) < 0 {
 		return false, strCat("Unable to reset variable value: ", lastErrorMessage())
 	} else {
@@ -256,19 +256,19 @@ func resetVariableValue(sim *Simulation, slaveIndex string, valueType string, va
 	if err != nil {
 		return false, strCat("Can't parse slave index as integer: ", slaveIndex)
 	}
-	varIndex, err := strconv.Atoi(valueReference)
+	valueRef, err := strconv.Atoi(valueReference)
 	if err != nil {
 		return false, strCat("Can't parse value reference as integer: ", valueReference)
 	}
 	switch valueType {
 	case "Real":
-		return resetVariable(sim.OverrideManipulator, index, C.CSE_VARIABLE_TYPE_REAL, varIndex)
+		return resetVariable(sim.OverrideManipulator, index, C.CSE_VARIABLE_TYPE_REAL, valueRef)
 	case "Integer":
-		return resetVariable(sim.OverrideManipulator, index, C.CSE_VARIABLE_TYPE_INTEGER, varIndex)
+		return resetVariable(sim.OverrideManipulator, index, C.CSE_VARIABLE_TYPE_INTEGER, valueRef)
 	case "Boolean":
-		return resetVariable(sim.OverrideManipulator, index, C.CSE_VARIABLE_TYPE_BOOLEAN, varIndex)
+		return resetVariable(sim.OverrideManipulator, index, C.CSE_VARIABLE_TYPE_BOOLEAN, valueRef)
 	case "String":
-		return resetVariable(sim.OverrideManipulator, index, C.CSE_VARIABLE_TYPE_STRING, varIndex)
+		return resetVariable(sim.OverrideManipulator, index, C.CSE_VARIABLE_TYPE_STRING, valueRef)
 	default:
 		message := strCat("Can't reset variable with type ", valueType, " and value reference ", valueReference, " for slave with index ", slaveIndex)
 		log.Println(message)
@@ -340,7 +340,7 @@ func addVariableMetadata(execution *C.cse_execution, fmu *structs.FMU) error {
 	}
 	for _, variable := range variables[0:int(nVariablesRead)] {
 		name := C.GoString(&variable.name[0])
-		index := int(variable.index)
+		ref := int(variable.reference)
 		causality, err := parseCausality(variable.causality)
 		if err != nil {
 			return errors.New(strCat("Problem parsing causality for slave ", fmu.Name, ", variable ", name))
@@ -355,7 +355,7 @@ func addVariableMetadata(execution *C.cse_execution, fmu *structs.FMU) error {
 		}
 		fmu.Variables = append(fmu.Variables, structs.Variable{
 			name,
-			index,
+			ref,
 			causality,
 			variability,
 			valueType,
@@ -381,7 +381,7 @@ func fetchManipulatedVariables(execution *C.cse_execution) []structs.Manipulated
 	var varStructs = make([]structs.ManipulatedVariable, numVars)
 	for n, variable := range variables[0:numVars] {
 		slaveIndex := int(variable.slave_index)
-		valueReference := int(variable.variable_index)
+		valueReference := int(variable.value_reference)
 		variableType, err := parseType(variable._type)
 
 		if err != nil {
