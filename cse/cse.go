@@ -43,7 +43,7 @@ func createConfigExecution(confDir string) (execution *C.cse_execution) {
 
 func createSsdExecution(ssdDir string) (execution *C.cse_execution) {
 	startTime := C.cse_time_point(0.0 * 1e9)
-	execution = C.cse_ssp_execution_create(C.CString(ssdDir), startTime)
+	execution = C.cse_ssp_execution_create(C.CString(ssdDir), true, startTime)
 	return execution
 }
 
@@ -65,8 +65,8 @@ func getExecutionStatus(execution *C.cse_execution) (execStatus executionStatus)
 	return
 }
 
-func createLocalSlave(fmuPath string) *C.cse_slave {
-	return C.cse_local_slave_create(C.CString(fmuPath))
+func createLocalSlave(fmuPath string, instanceName string) *C.cse_slave {
+	return C.cse_local_slave_create(C.CString(fmuPath), C.CString(instanceName))
 }
 
 func createOverrideManipulator() (manipulator *C.cse_manipulator) {
@@ -732,8 +732,10 @@ func StateUpdateLoop(state chan structs.JsonResponse, simulationStatus *structs.
 }
 
 func addFmu(execution *C.cse_execution, fmuPath string) (*C.cse_slave, error) {
-	log.Println("Loading: " + fmuPath)
-	localSlave := createLocalSlave(fmuPath)
+	baseName := filepath.Base(fmuPath)
+	instanceName := strings.TrimSuffix(baseName, filepath.Ext(baseName))
+	fmt.Printf("Creating instance %s from %s", instanceName, fmuPath)
+	localSlave := createLocalSlave(fmuPath, instanceName)
 	if localSlave == nil {
 		printLastError()
 		return nil, errors.New(strCat("Unable to create slave from fmu: ", fmuPath))
