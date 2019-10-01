@@ -464,7 +464,10 @@ func initializeSimulation(sim *Simulation, fmuDir string, logDir string) (bool, 
 	}
 	var execution *C.cse_execution
 	if hasFile(fmuDir, "OspSystemStructure.xml") {
-
+		execution = createConfigExecution(fmuDir)
+		if execution == nil {
+			return false, strCat("Could not create execution from OspSystemStructure.xml file: ", lastErrorMessage())
+		}
 	} else if hasFile(fmuDir, "SystemStructure.ssd") {
 		execution = createSsdExecution(fmuDir)
 		if execution == nil {
