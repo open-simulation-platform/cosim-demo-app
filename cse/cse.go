@@ -35,6 +35,12 @@ func createExecution() (execution *C.cse_execution) {
 	return execution
 }
 
+func createConfigExecution(confDir string) (execution *C.cse_execution) {
+	startTime := C.cse_time_point(0.0 * 1e9)
+	execution = C.cse_config_execution_create(C.CString(confDir), true, startTime)
+	return execution
+}
+
 func createSsdExecution(ssdDir string) (execution *C.cse_execution) {
 	startTime := C.cse_time_point(0.0 * 1e9)
 	execution = C.cse_ssp_execution_create(C.CString(ssdDir), true, startTime)
@@ -457,7 +463,12 @@ func initializeSimulation(sim *Simulation, fmuDir string, logDir string) (bool, 
 		FMUs: []structs.FMU{},
 	}
 	var execution *C.cse_execution
-	if hasFile(fmuDir, "SystemStructure.ssd") {
+	if hasFile(fmuDir, "OspSystemStructure.xml") {
+		execution = createConfigExecution(fmuDir)
+		if execution == nil {
+			return false, strCat("Could not create execution from OspSystemStructure.xml file: ", lastErrorMessage())
+		}
+	} else if hasFile(fmuDir, "SystemStructure.ssd") {
 		execution = createSsdExecution(fmuDir)
 		if execution == nil {
 			return false, strCat("Could not create execution from SystemStructure.ssd file: ", lastErrorMessage())
