@@ -37,7 +37,7 @@ func createExecution() (execution *C.cse_execution) {
 
 func createSsdExecution(ssdDir string) (execution *C.cse_execution) {
 	startTime := C.cse_time_point(0.0 * 1e9)
-	execution = C.cse_ssp_execution_create(C.CString(ssdDir), startTime)
+	execution = C.cse_ssp_execution_create(C.CString(ssdDir), true, startTime)
 	return execution
 }
 
