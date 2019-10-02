@@ -429,10 +429,19 @@ func simulationTeardown(sim *Simulation) (bool, string) {
 	return true, "Simulation teardown successful"
 }
 
-func validateConfigDir(fmuDir string) (bool, string) {
-	if _, err := os.Stat(fmuDir); os.IsNotExist(err) {
-		return false, strCat(fmuDir, " does not exist")
+func validateConfigPath(configPath string) (bool, string) {
+	if _, err := os.Stat(configPath); os.IsNotExist(err) {
+		return false, strCat(configPath, " does not exist")
 	}
+	return true, ""
+}
+
+func isDirectory(configPath string) bool {
+	fi, _ := os.Stat(configPath)
+	return fi.Mode().IsDir()
+}
+
+func validateConfigDir(fmuDir string) (bool, string) {
 	files, err := ioutil.ReadDir(fmuDir)
 	if err != nil {
 		return false, err.Error()
@@ -449,49 +458,96 @@ func validateConfigDir(fmuDir string) (bool, string) {
 			hasSSD = true
 		}
 	}
-	if !hasFMUs && !hasSSD {
-		return false, strCat(fmuDir, " does not contain any FMUs nor a SystemStructure.ssd file")
+	var hasOspXml = false
+	for _, f := range files {
+		if f.Name() == "OspSystemStructure.xml" {
+			hasOspXml = true
+		}
+	}
+	if !hasFMUs && !hasSSD && !hasOspXml {
+		return false, strCat(fmuDir, " does not contain any FMUs, OspSystemStructure.xml nor a SystemStructure.ssd file")
 	}
 	return true, ""
 }
 
-func initializeSimulation(sim *Simulation, fmuDir string, logDir string) (bool, string) {
-	if valid, message := validateConfigDir(fmuDir); !valid {
-		return false, message
+type configuration struct {
+	configFile  string
+	configDir   string
+	isSsdConfig bool
+	isCseConfig bool
+}
+
+func checkConfiguration(configPath string) (valid bool, message string, config configuration) {
+	if valid, message := validateConfigPath(configPath); !valid {
+		return false, message, config
 	}
-	metaData := structs.MetaData{
-		FMUs: []structs.FMU{},
-	}
-	var execution *C.cse_execution
-	if hasFile(fmuDir, "OspSystemStructure.xml") {
-		execution = createConfigExecution(fmuDir)
-		if execution == nil {
-			return false, strCat("Could not create execution from OspSystemStructure.xml file: ", lastErrorMessage())
+
+	if isDirectory(configPath) {
+		if valid, message := validateConfigDir(configPath); !valid {
+			return false, message, config
 		}
-	} else if hasFile(fmuDir, "SystemStructure.ssd") {
-		execution = createSsdExecution(fmuDir)
+		config.configDir = configPath
+		if hasFile(configPath, "OspSystemStructure.xml") {
+			config.configFile = filepath.Join(configPath, "OspSystemStructure.xml")
+			config.isCseConfig = true
+		} else if hasFile(configPath, "SystemStructure.ssd") {
+			config.configFile = filepath.Join(configPath, "SystemStructure.ssd")
+			config.isSsdConfig = true
+		}
+	} else {
+		config.configFile = configPath
+		config.configDir = filepath.Dir(configPath)
+		if strings.HasSuffix(configPath, ".xml") {
+			config.isCseConfig = true
+		} else if strings.HasSuffix(configPath, ".ssd") {
+			config.isSsdConfig = true
+		} else {
+			return false, "Given file path does not have a recognized format (xml, ssd): " + configPath, config
+		}
+	}
+
+	return true, "", config
+}
+
+func initializeSimulation(sim *Simulation, configPath string, logDir string) (bool, string, string) {
+	valid, message, config := checkConfiguration(configPath)
+	if !valid {
+		return false, message, ""
+	}
+
+	var execution *C.cse_execution
+	if config.isCseConfig {
+		execution = createConfigExecution(config.configFile)
 		if execution == nil {
-			return false, strCat("Could not create execution from SystemStructure.ssd file: ", lastErrorMessage())
+			return false, strCat("Could not create execution from OspSystemStructure.xml file: ", lastErrorMessage()), ""
+		}
+	} else if config.isSsdConfig {
+		execution = createSsdExecution(config.configFile)
+		if execution == nil {
+			return false, strCat("Could not create execution from SystemStructure.ssd file: ", lastErrorMessage()), ""
 		}
 	} else {
 		execution = createExecution()
 		if execution == nil {
-			return false, strCat("Could not create execution: ", lastErrorMessage())
+			return false, strCat("Could not create execution: ", lastErrorMessage()), ""
 		}
-		paths := getFmuPaths(fmuDir)
+		paths := getFmuPaths(config.configDir)
 		for _, path := range paths {
 			slave, err := addFmu(execution, path)
 			if err != nil {
-				return false, strCat("Could not add FMU to execution: ", err.Error())
+				return false, strCat("Could not add FMU to execution: ", err.Error()),""
 			} else {
 				sim.LocalSlaves = append(sim.LocalSlaves, slave)
 			}
 		}
 	}
 
+	metaData := structs.MetaData{
+		FMUs: []structs.FMU{},
+	}
 	err := addMetadata(execution, &metaData)
 	if err != nil {
-		return false, err.Error()
+		return false, err.Error(), ""
 	}
 
 	observer := createObserver()
@@ -502,8 +558,8 @@ func initializeSimulation(sim *Simulation, fmuDir string, logDir string) (bool, 
 
 	var fileObserver *C.cse_observer
 	if len(logDir) > 0 {
-		if hasFile(fmuDir, "LogConfig.xml") {
-			fileObserver = createFileObserverFromCfg(logDir, filepath.Join(fmuDir, "LogConfig.xml"))
+		if hasFile(config.configDir, "LogConfig.xml") {
+			fileObserver = createFileObserverFromCfg(logDir, filepath.Join(config.configDir, "LogConfig.xml"))
 		} else {
 			fileObserver = createFileObserver(logDir)
 		}
@@ -523,7 +579,7 @@ func initializeSimulation(sim *Simulation, fmuDir string, logDir string) (bool, 
 	sim.OverrideManipulator = manipulator
 	sim.ScenarioManager = scenarioManager
 	sim.MetaData = &metaData
-	return true, "Simulation loaded successfully"
+	return true, "Simulation loaded successfully", config.configDir
 }
 
 func executeCommand(cmd []string, sim *Simulation, status *structs.SimulationStatus) (shorty structs.ShortLivedData, feedback structs.CommandFeedback) {
@@ -531,10 +587,11 @@ func executeCommand(cmd []string, sim *Simulation, status *structs.SimulationSta
 	var message = "No feedback implemented for this command"
 	switch cmd[0] {
 	case "load":
-		success, message = initializeSimulation(sim, cmd[1], cmd[2])
+		var configDir string
+		success, message, configDir = initializeSimulation(sim, cmd[1], cmd[2])
 		if success {
 			status.Loaded = true
-			status.ConfigDir = cmd[1]
+			status.ConfigDir = configDir
 			status.Status = "pause"
 			shorty.ModuleData = sim.MetaData
 			scenarios := findScenarios(status)
