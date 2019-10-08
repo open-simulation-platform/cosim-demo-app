@@ -1,0 +1,34 @@
+{
+  "defaults": {
+    "model": "MyModelInstance1",
+    "variable": "realOut",
+    "action": "override"
+  },
+  "events": [
+    {
+      "time": 5.5,
+      "variable": "realIn",
+      "action": "bias",
+      "value": 1.001
+    },
+    {
+      "time": 8.2,
+      "value": -1.0
+    },
+    {
+      "time": 20.3,
+      "action": "reset"
+    },
+    {
+      "time": 30.65,
+      "variable": "intIn",
+      "value": 2
+    },
+    {
+      "time": 40.8,
+      "variable": "intOut",
+      "value": 5
+    }
+  ],
+  "end": 60.0
+}

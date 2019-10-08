@@ -264,22 +264,23 @@
         [:div.ui.two.column.grid
          [:div.two.column.row
           [:div.column
-           [:div.ui.fluid.right.labeled.input {:data-tooltip "Specify a directory containing FMUs (and optionally a SystemStructure.ssd file)"}
+           [:div.ui.fluid.right.labeled.input
+            {:data-tooltip "Specify the path to: an OspSystemStructure.xml, a SystemStructure.ssd, a directory containing either, or a directory containing FMUs"}
             [:input {:style       {:min-width "400px"}
                      :type        :text
-                     :placeholder "Load folder..."
+                     :placeholder "/path/to/configuration..."
                      :value       @load-dir
                      :on-change   #(reset! load-dir (-> % .-target .-value))}]
-            [:div.ui.label "FMUs"]]]]
+            [:div.ui.label "Configuration"]]]]
          [:div.two.column.row
           [:div.column
            [:div.ui.fluid.right.labeled.input {:data-tooltip "[Optional] Specify a directory where output log files will be stored"}
             [:input {:style       {:min-width "400px"}
                      :type        :text
-                     :placeholder "Log folder... (optional)"
+                     :placeholder "/path/to/logs... (optional)"
                      :value       @log-dir
                      :on-change   #(reset! log-dir (-> % .-target .-value))}]
-            [:div.ui.label "logs"]]]]
+            [:div.ui.label "Log output"]]]]
          [:div.two.column.row
           [:div.column
            [:button.ui.button.right.floated {:disabled (empty? @load-dir)
