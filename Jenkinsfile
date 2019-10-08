@@ -41,7 +41,7 @@ pipeline {
                                     sh 'conan remote add helmesjo https://api.bintray.com/conan/helmesjo/public-conan --force'
                                     sh 'conan remote add bincrafters https://api.bintray.com/conan/bincrafters/public-conan --force'
                                     sh 'conan user -p $OSP_CONAN_CREDS_PSW -r osp $OSP_CONAN_CREDS_USR'
-                                    sh 'conan install . -s build_type=Release -u'
+                                    sh 'conan install . -s build_type=Release -u -b missing'
                                 }
                             }
                         }
@@ -133,7 +133,7 @@ pipeline {
                                     sh 'conan remote add helmesjo https://api.bintray.com/conan/helmesjo/public-conan --force'
                                     sh 'conan remote add bincrafters https://api.bintray.com/conan/bincrafters/public-conan --force'
                                     sh 'conan user -p $OSP_CONAN_CREDS_PSW -r osp $OSP_CONAN_CREDS_USR'
-                                    sh 'conan install . -s build_type=Release -s compiler.libcxx=libstdc++11 -u'
+                                    sh 'conan install . -s build_type=Release -s compiler.libcxx=libstdc++11 -u -b missing'
                                 }
                             }
                         }
