@@ -56,7 +56,7 @@
                        [cellie model model-valid? validation-message]
                        [cellie variable variable-valid? validation-message]
                        [:td action]
-                       [:td value]])
+                       [:td (str value)]])
                     (:events scenario))]]
      [:div.ui.header "End time"]
      [:div (or (:end scenario)
