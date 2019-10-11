@@ -20,6 +20,9 @@ type ManipulatedVariable struct {
 
 type JsonResponse struct {
 	Loaded               bool                  `json:"loaded"`
+	ExecutionState       string                `json:"executionState"`
+	LastErrorCode        string                `json:"lastErrorCode"`
+	LastErrorMessage     string                `json:"lastErrorMessage"`
 	SimulationTime       float64               `json:"time"`
 	RealTimeFactor       float64               `json:"realTimeFactor"`
 	RealTimeFactorTarget float64               `json:"realTimeFactorTarget"`
