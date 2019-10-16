@@ -19,6 +19,7 @@ type ManipulatedVariable struct {
 }
 
 type JsonResponse struct {
+	Loading              bool                  `json:"loading"`
 	Loaded               bool                  `json:"loaded"`
 	SimulationTime       float64               `json:"time"`
 	RealTimeFactor       float64               `json:"realTimeFactor"`
@@ -69,6 +70,7 @@ type ShortLivedData struct {
 }
 
 type SimulationStatus struct {
+	Loading             bool
 	Loaded              bool
 	ConfigDir           string
 	Module              string

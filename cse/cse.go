@@ -587,6 +587,7 @@ func executeCommand(cmd []string, sim *Simulation, status *structs.SimulationSta
 	var message = "No feedback implemented for this command"
 	switch cmd[0] {
 	case "load":
+		status.Loading = true
 		var configDir string
 		success, message, configDir = initializeSimulation(sim, cmd[1], cmd[2])
 		if success {
@@ -597,6 +598,7 @@ func executeCommand(cmd []string, sim *Simulation, status *structs.SimulationSta
 			scenarios := findScenarios(status)
 			shorty.Scenarios = &scenarios
 		}
+		status.Loading = false
 	case "teardown":
 		status.Loaded = false
 		status.Status = "stopped"
@@ -749,6 +751,7 @@ func GetSignalValue(module string, cardinality string, signal string) int {
 
 func GenerateJsonResponse(status *structs.SimulationStatus, sim *Simulation, feedback structs.CommandFeedback, shorty structs.ShortLivedData) structs.JsonResponse {
 	var response = structs.JsonResponse{
+		Loading: status.Loading,
 		Loaded: status.Loaded,
 		Status: status.Status,
 	}
@@ -794,7 +797,7 @@ func StateUpdateLoop(state chan structs.JsonResponse, simulationStatus *structs.
 func addFmu(execution *C.cse_execution, fmuPath string) (*C.cse_slave, error) {
 	baseName := filepath.Base(fmuPath)
 	instanceName := strings.TrimSuffix(baseName, filepath.Ext(baseName))
-	fmt.Printf("Creating instance %s from %s", instanceName, fmuPath)
+	fmt.Printf("Creating instance %s from %s\n", instanceName, fmuPath)
 	localSlave := createLocalSlave(fmuPath, instanceName)
 	if localSlave == nil {
 		printLastError()
