@@ -28,6 +28,10 @@ func lastErrorMessage() string {
 	return C.GoString(msg)
 }
 
+func lastErrorCode() C.cse_errc {
+	return C.cse_last_error_code()
+}
+
 func createExecution() (execution *C.cse_execution) {
 	startTime := C.cse_time_point(0.0 * 1e9)
 	stepSize := C.cse_duration(0.1 * 1e9)
@@ -52,16 +56,68 @@ type executionStatus struct {
 	realTimeFactor       float64
 	realTimeFactorTarget float64
 	isRealTimeSimulation bool
+	state                string
+	lastErrorMessage     string
+	lastErrorCode        string
+}
+
+func translateState(state C.cse_execution_state) string {
+	switch state {
+	case C.CSE_EXECUTION_STOPPED:
+		return "CSE_EXECUTION_STOPPED"
+	case C.CSE_EXECUTION_RUNNING:
+		return "CSE_EXECUTION_RUNNING"
+	case C.CSE_EXECUTION_ERROR:
+		return "CSE_EXECUTION_ERROR"
+	}
+	return "UNKNOWN"
+}
+
+func translateErrorCode(code C.cse_errc) string {
+	switch code {
+	case C.CSE_ERRC_SUCCESS:
+		return "CSE_ERRC_SUCCESS"
+	case C.CSE_ERRC_UNSPECIFIED:
+		return "CSE_ERRC_UNSPECIFIED"
+	case C.CSE_ERRC_ERRNO:
+		return "CSE_ERRC_ERRNO"
+	case C.CSE_ERRC_INVALID_ARGUMENT:
+		return "CSE_ERRC_INVALID_ARGUMENT"
+	case C.CSE_ERRC_ILLEGAL_STATE:
+		return "CSE_ERRC_ILLEGAL_STATE"
+	case C.CSE_ERRC_OUT_OF_RANGE:
+		return "CSE_ERRC_OUT_OF_RANGE"
+	case C.CSE_ERRC_STEP_TOO_LONG:
+		return "CSE_ERRC_STEP_TOO_LONG"
+	case C.CSE_ERRC_BAD_FILE:
+		return "CSE_ERRC_BAD_FILE"
+	case C.CSE_ERRC_UNSUPPORTED_FEATURE:
+		return "CSE_ERRC_UNSUPPORTED_FEATURE"
+	case C.CSE_ERRC_DL_LOAD_ERROR:
+		return "CSE_ERRC_DL_LOAD_ERROR"
+	case C.CSE_ERRC_MODEL_ERROR:
+		return "CSE_ERRC_MODEL_ERROR"
+	case C.CSE_ERRC_SIMULATION_ERROR:
+		return "CSE_ERRC_SIMULATION_ERROR"
+	case C.CSE_ERRC_ZIP_ERROR:
+		return "CSE_ERRC_ZIP_ERROR"
+	}
+	return "UNKNOWN"
 }
 
 func getExecutionStatus(execution *C.cse_execution) (execStatus executionStatus) {
 	var status C.cse_execution_status
-	C.cse_execution_get_status(execution, &status)
+	success := int(C.cse_execution_get_status(execution, &status))
 	nanoTime := int64(status.current_time)
 	execStatus.time = float64(nanoTime) * 1e-9
 	execStatus.realTimeFactor = float64(status.real_time_factor)
 	execStatus.realTimeFactorTarget = float64(status.real_time_factor_target)
 	execStatus.isRealTimeSimulation = int(status.is_real_time_simulation) > 0
+	execStatus.state = translateState(status.state)
+	if success < 0 || status.state == C.CSE_EXECUTION_ERROR {
+		execStatus.lastErrorMessage = lastErrorMessage()
+		execStatus.lastErrorCode = translateErrorCode(lastErrorCode())
+	}
 	return
 }
 
@@ -535,7 +591,7 @@ func initializeSimulation(sim *Simulation, configPath string, logDir string) (bo
 		for _, path := range paths {
 			slave, err := addFmu(execution, path)
 			if err != nil {
-				return false, strCat("Could not add FMU to execution: ", err.Error()),""
+				return false, strCat("Could not add FMU to execution: ", err.Error()), ""
 			} else {
 				sim.LocalSlaves = append(sim.LocalSlaves, slave)
 			}
@@ -754,6 +810,9 @@ func GenerateJsonResponse(status *structs.SimulationStatus, sim *Simulation, fee
 	}
 	if status.Loaded {
 		execStatus := getExecutionStatus(sim.Execution)
+		response.ExecutionState = execStatus.state
+		response.LastErrorCode = execStatus.lastErrorCode
+		response.LastErrorMessage = execStatus.lastErrorMessage
 		response.SimulationTime = execStatus.time
 		response.RealTimeFactor = execStatus.realTimeFactor
 		response.RealTimeFactorTarget = execStatus.realTimeFactorTarget
