@@ -281,3 +281,7 @@
 (k/reg-event-fx ::abort-scenario
                 (fn [_ [file-name]]
                   (socket-command ["abort-scenario" file-name])))
+
+(k/reg-event-db ::toggle-dismiss-error
+                (fn [db]
+                  (update db :error-dismissed not)))

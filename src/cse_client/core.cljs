@@ -97,7 +97,7 @@
 (rf/reg-sub :pages
             (fn [db]
               (let [page-count (:page-count db)
-                    all-pages (range 1 (inc page-count))]
+                    all-pages  (range 1 (inc page-count))]
                 all-pages)))
 
 (rf/reg-sub :module-signals (fn [db]
@@ -136,8 +136,8 @@
 (rf/reg-sub :show-success-feedback-messages :show-success-feedback-messages)
 
 (defn validate-event [db event]
-  (let [module-tree (-> db :state :module-data :fmus)
-        model-valid? (->> module-tree (map :name) (filter #(= (:model event) %)) seq boolean)
+  (let [module-tree     (-> db :state :module-data :fmus)
+        model-valid?    (->> module-tree (map :name) (filter #(= (:model event) %)) seq boolean)
         variable-valid? (some->> module-tree
                                  (filter #(= (:model event) (:name %)))
                                  first
@@ -207,6 +207,13 @@
                                     (= gui-type type)
                                     (= value-reference valueReference))) manip-vars)))))
 
+(rf/reg-sub :error (fn [db]
+                     (when (-> db :state :executionState (= "CSE_EXECUTION_ERROR"))
+                       {:last-error-code    (-> db :state :lastErrorCode)
+                        :last-error-message (-> db :state :lastErrorMessage)})))
+
+(rf/reg-sub :error-dismissed #(:error-dismissed %))
+
 (k/start! {:routes         routes
            :hash-routing?  true
            :debug?         (if debug {:blacklist #{::controller/socket-message-received}} false)
@@ -216,3 +223,4 @@
                             :vars-per-page                  20
                             :prev-paths                     (reader/read-string (storage/get-item "cse-paths"))
                             :show-success-feedback-messages (reader/read-string (storage/get-item "show-success-feedback-message"))}})
+

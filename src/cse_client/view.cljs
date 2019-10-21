@@ -38,7 +38,7 @@
 
     "scatter" (when (xy-plottable? type)
                 (let [label-text (trend/plot-type-from-label label)
-                      axis (if (even? count) 'X 'Y)]
+                      axis       (if (even? count) 'X 'Y)]
                   (semantic/ui-dropdown-item
                     {:key     (str "trend-item-" id)
                      :text    label-text
@@ -54,8 +54,8 @@
         (map (partial trend-item current-module name causality type value-reference) trend-info)))))
 
 (defn pages-menu []
-  (let [current-page @(rf/subscribe [:current-page])
-        pages @(rf/subscribe [:pages])
+  (let [current-page  @(rf/subscribe [:current-page])
+        pages         @(rf/subscribe [:pages])
         vars-per-page @(rf/subscribe [:vars-per-page])]
     [:div.right.menu
      [:div.item
@@ -85,11 +85,11 @@
           [:button.ui.button {:on-click #(rf/dispatch [::controller/set-vars-per-page (+ vars-per-page 5)])} [:i.plus.icon] 5]]]]]]]))
 
 (defn tab-content [tabby]
-  (let [current-module @(rf/subscribe [:current-module])
+  (let [current-module       @(rf/subscribe [:current-module])
         current-module-index @(rf/subscribe [:current-module-index])
-        module-signals @(rf/subscribe [:module-signals])
-        active @(rf/subscribe [:active-causality])
-        trend-info @(rf/subscribe [:trend-info])]
+        module-signals       @(rf/subscribe [:module-signals])
+        active               @(rf/subscribe [:active-causality])
+        trend-info           @(rf/subscribe [:trend-info])]
     [:div.ui.bottom.attached.tab.segment {:data-tab tabby
                                           :class    (when (= tabby active) "active")}
      [:table.ui.compact.single.line.striped.selectable.table
@@ -109,8 +109,8 @@
             module-signals)]]]))
 
 (defn module-listing []
-  (let [causalities @(rf/subscribe [:causalities])
-        active @(rf/subscribe [:active-causality])
+  (let [causalities    @(rf/subscribe [:causalities])
+        active         @(rf/subscribe [:active-causality])
         module-active? @(rf/subscribe [:module-active?])
         current-module @(rf/subscribe [:current-module])]
     (if module-active?
@@ -136,14 +136,14 @@
   (if simulation-has-loaded? "Simulation status" "Simulation setup"))
 
 (defn sidebar []
-  (let [module-routes @(rf/subscribe [:module-routes])
-        route @(rf/subscribe [:kee-frame/route])
-        route-name (-> route :data :name)
-        route-module (-> route :path-params :module)
-        loaded? @(rf/subscribe [:loaded?])
-        trend-info @(rf/subscribe [:trend-info])
+  (let [module-routes      @(rf/subscribe [:module-routes])
+        route              @(rf/subscribe [:kee-frame/route])
+        route-name         (-> route :data :name)
+        route-module       (-> route :path-params :module)
+        loaded?            @(rf/subscribe [:loaded?])
+        trend-info         @(rf/subscribe [:trend-info])
         active-trend-index @(rf/subscribe [:active-trend-index])
-        scenarios @(rf/subscribe [:scenarios])]
+        scenarios          @(rf/subscribe [:scenarios])]
     [:div.ui.secondary.vertical.fluid.menu
      [:div.item
       [:a.header {:href  (k/path-for [:index])
@@ -254,10 +254,10 @@
      [:tr [:td "Simulation execution"] [:td [teardown-button]]]]]])
 
 (defn index-page []
-  (let [loaded? (rf/subscribe [:loaded?])
+  (let [loaded?    (rf/subscribe [:loaded?])
         prev-paths (rf/subscribe [:prev-paths])
-        load-dir (r/atom default-load-dir)
-        log-dir (r/atom default-log-dir)]
+        load-dir   (r/atom default-load-dir)
+        log-dir    (r/atom default-log-dir)]
     (fn []
       (if @loaded?
         [dashboard]
@@ -306,13 +306,15 @@
      [:span.additional (str "scenario data from ") file-name]]))
 
 (defn root-comp []
-  (let [socket-state (rf/subscribe [:kee-frame.websocket/state socket-url])
-        loaded? (rf/subscribe [:loaded?])
-        status (rf/subscribe [:status])
-        module (rf/subscribe [:current-module])
-        trends @(rf/subscribe [:trend-info])
+  (let [socket-state       (rf/subscribe [:kee-frame.websocket/state socket-url])
+        loaded?            (rf/subscribe [:loaded?])
+        status             (rf/subscribe [:status])
+        module             (rf/subscribe [:current-module])
+        trends             @(rf/subscribe [:trend-info])
         active-trend-index @(rf/subscribe [:active-trend-index])
-        scenario-name @(rf/subscribe [:scenario-id])]
+        scenario-name      @(rf/subscribe [:scenario-id])
+        error              (rf/subscribe [:error])
+        error-dismissed    (rf/subscribe [:error-dismissed])]
     [:div
      [:div.ui.inverted.huge.borderless.fixed.menu
       [:a.header.item {:href "/"} "Core Simulation Environment - demo application"]
@@ -320,6 +322,8 @@
        (when (= :disconnected (:state @socket-state))
          [:div.item
           [:div "Lost server connection!"]])
+       (when @error
+         [:a.item {:on-click #(rf/dispatch [::controller/toggle-dismiss-error])} "Error!"])
        (when @loaded?
          [:div.item
           [:div "RTF: " @(rf/subscribe [:real-time-factor])]])
@@ -366,7 +370,7 @@
            :scenarios [scenario/overview]
            :scenario [scenario/one]
            nil [:div "Loading..."]]]]]]]
-     (when (not= :connected (:state @socket-state))
+     (if (not= :connected (:state @socket-state))
        [:div.ui.page.dimmer.transition.active
         {:style {:display :flex}}
         [:div.content
@@ -374,5 +378,17 @@
           [:h2.ui.inverted.icon.header
            [:i.heartbeat.icon]
            "Lost server connection!"]
-          [:div.sub.header "It looks like the server is down. Try restarting the server and hit F5"]]]])
+          [:div.sub.header "It looks like the server is down. Try restarting the server and hit F5"]]]]
+       (when (and @error (not @error-dismissed))
+         [:div.ui.page.dimmer.transition.active
+          {:style {:display :flex}}
+          [:div.content
+           [:div.center
+            [:h2.ui.inverted.icon.header
+             [:i.red.bug.icon]
+             "An error occured!"]
+            [:h3 (str "Last error code: " (:last-error-code @error))]
+            [:h3 (str "Last error message: " (:last-error-message @error))]
+            [:h4 "The simulation can no longer continue. Please restart the application."]
+            [:button.ui.button.inverted {:on-click #(rf/dispatch [::controller/toggle-dismiss-error])} "Dismiss"]]]]))
      [command-feedback-message]]))
