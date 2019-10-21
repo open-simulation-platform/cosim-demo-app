@@ -107,14 +107,14 @@ func translateErrorCode(code C.cse_errc) string {
 
 func getExecutionStatus(execution *C.cse_execution) (execStatus executionStatus) {
 	var status C.cse_execution_status
-	C.cse_execution_get_status(execution, &status)
+	success := int(C.cse_execution_get_status(execution, &status))
 	nanoTime := int64(status.current_time)
 	execStatus.time = float64(nanoTime) * 1e-9
 	execStatus.realTimeFactor = float64(status.real_time_factor)
 	execStatus.realTimeFactorTarget = float64(status.real_time_factor_target)
 	execStatus.isRealTimeSimulation = int(status.is_real_time_simulation) > 0
 	execStatus.state = translateState(status.state)
-	if execStatus.state == "CSE_EXECUTION_ERROR" {
+	if success < 0 || status.state == C.CSE_EXECUTION_ERROR {
 		execStatus.lastErrorMessage = lastErrorMessage()
 		execStatus.lastErrorCode = translateErrorCode(lastErrorCode())
 	}
