@@ -744,23 +744,24 @@ func setSignalSubscriptions(status *structs.SimulationStatus, cmd []string) (boo
 	var success = true
 	if len(cmd) > 1 {
 		status.Module = cmd[1]
-		for i, signal := range cmd {
-			if i > 1 {
-				parts := strings.Split(signal, ",")
-				valRef, err := strconv.Atoi(parts[3])
-				if err != nil {
-					message = strCat("Could not parse value reference from: ", signal, ", ", err.Error())
-					log.Println(message)
-					success = false
-				} else {
-					variables = append(variables,
-						structs.Variable{
-							Name:           parts[0],
-							Causality:      parts[1],
-							Type:           parts[2],
-							ValueReference: valRef,
-						})
-				}
+		for j := 2; j < (len(cmd) - 3); j += 4 {
+			name := cmd[j]
+			caus := cmd[j+1]
+			typ := cmd[j+2]
+			vr := cmd[j+3]
+			valRef, err := strconv.Atoi(vr)
+			if err != nil {
+				message = strCat("Could not parse value reference from: ", vr, ", ", err.Error())
+				log.Println(message)
+				success = false
+			} else {
+				variables = append(variables,
+					structs.Variable{
+						Name:           name,
+						Causality:      caus,
+						Type:           typ,
+						ValueReference: valRef,
+					})
 			}
 		}
 	} else {
