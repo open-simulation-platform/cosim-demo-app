@@ -87,9 +87,6 @@
                 (fn [_ _]
                   (socket-command ["get-module-data"])))
 
-(defn encode-variable [{:keys [name causality type value-reference]}]
-  (str/join "," [name causality type value-reference]))
-
 (defn page-size [db]
   (or (:vars-per-page db)
       10))
@@ -124,15 +121,21 @@
                 (fn [db [header]]
                   (assoc db :active-guide-tab header)))
 
+(defn encode-variables [variables]
+  (->> variables
+       (map (fn [{:keys [name causality type value-reference]}]
+              [name causality type (str value-reference)]))
+       (flatten)))
+
 (k/reg-event-fx ::fetch-signals
                 (fn [{:keys [db]} _]
                   (let [{:keys [current-module active-causality page current-module-meta vars-per-page]} db
-                        groups (variable-groups current-module-meta active-causality vars-per-page)
+                        groups  (variable-groups current-module-meta active-causality vars-per-page)
                         viewing (filter-signals groups page)]
                     (merge
                       {:db (assoc db :viewing (map editable? viewing)
                                      :page-count (count groups))}
-                      (socket-command (concat ["signals" current-module] (map encode-variable viewing)))))))
+                      (socket-command (concat ["signals" current-module] (encode-variables viewing)))))))
 
 (k/reg-event-fx ::module-enter
                 (fn [{:keys [db]} [{:keys [module causality]}]]
@@ -224,8 +227,8 @@
 
 (k/reg-event-fx ::removetrend
                 (fn [{:keys [db]} [id]]
-                  (let [route-name (:name (:data (:kee-frame/route db)))
-                        route-param-index (int (:index (:path-params (:kee-frame/route db))))
+                  (let [route-name                 (:name (:data (:kee-frame/route db)))
+                        route-param-index          (int (:index (:path-params (:kee-frame/route db))))
                         current-path-to-be-deleted (and (= :trend route-name) (= route-param-index id))]
                     (merge
                       (when current-path-to-be-deleted {:navigate-to [:index]})
