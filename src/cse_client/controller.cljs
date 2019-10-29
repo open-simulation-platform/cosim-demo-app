@@ -145,9 +145,10 @@
 
 (k/reg-event-fx ::module-leave
                 (fn [{:keys [db]} _]
-                  (merge
-                    {:db (dissoc db :current-module :current-module-meta)}
-                    (socket-command ["signals"]))))
+                  (when (not= (:current-module db)
+                              (get-in db [:kee-frame/route :path-params :module]))
+                    (merge {:db (dissoc db :current-module :current-module-meta)}
+                           (socket-command ["signals"])))))
 
 (k/reg-event-fx ::trend-enter
                 (fn [{:keys [db]} [{:keys [index]}]]
