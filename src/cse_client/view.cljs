@@ -254,7 +254,8 @@
      [:tr [:td "Simulation execution"] [:td [teardown-button]]]]]])
 
 (defn index-page []
-  (let [loaded?    (rf/subscribe [:loaded?])
+  (let [loading?   (rf/subscribe [:loading?])
+        loaded?    (rf/subscribe [:loaded?])
         prev-paths (rf/subscribe [:prev-paths])
         load-dir   (r/atom default-load-dir)
         log-dir    (r/atom default-log-dir)]
@@ -283,7 +284,8 @@
             [:div.ui.label "Log output"]]]]
          [:div.two.column.row
           [:div.column
-           [:button.ui.button.right.floated {:disabled (empty? @load-dir)
+           [:button.ui.button.right.floated {:disabled (or (empty? @load-dir) @loading?)
+                                             :class    (when @loading? "loading")
                                              :on-click #(rf/dispatch [::controller/load @load-dir @log-dir])} "Load simulation"]]]
          [:div.two.column.row
           [:div.column
@@ -310,85 +312,86 @@
         loaded?            (rf/subscribe [:loaded?])
         status             (rf/subscribe [:status])
         module             (rf/subscribe [:current-module])
-        trends             @(rf/subscribe [:trend-info])
-        active-trend-index @(rf/subscribe [:active-trend-index])
-        scenario-name      @(rf/subscribe [:scenario-id])
+        trends             (rf/subscribe [:trend-info])
+        active-trend-index (rf/subscribe [:active-trend-index])
+        scenario-name      (rf/subscribe [:scenario-id])
         error              (rf/subscribe [:error])
         error-dismissed    (rf/subscribe [:error-dismissed])]
-    [:div
-     [:div.ui.inverted.huge.borderless.fixed.menu
-      [:a.header.item {:href "/"} "Core Simulation Environment - demo application"]
-      [:div.right.menu
-       (when (= :disconnected (:state @socket-state))
-         [:div.item
-          [:div "Lost server connection!"]])
-       (when @error
-         [:a.item {:on-click #(rf/dispatch [::controller/toggle-dismiss-error])} "Error!"])
-       (when @loaded?
-         [:div.item
-          [:div "RTF: " @(rf/subscribe [:real-time-factor])]])
-       (when @loaded?
-         [:div.item
-          [:div "Time: " @(rf/subscribe [:time])]])
-       (when (and @loaded? (= @status "pause"))
-         [:a.item {:on-click #(rf/dispatch [::controller/play])} "Play"])
-       (when (and @loaded? (= @status "play"))
-         [:a.item {:on-click #(rf/dispatch [::controller/pause])} "Pause"])
-       [:div.ui.simple.dropdown.item
-        [:i.question.circle.icon]
-        [:div.menu
-         [:a.item {:href "/guide"} [:i.file.alternate.icon] "User guide"]
-         [:a.item {:href "mailto:issue@opensimulationplatform.com?subject=Feedback to CSE Team"} [:i.mail.icon] "Provide feedback"]
-         [:a.item {:href "https://meet.dnvgl.com/sites/open-simulation-platform-jip" :target "_blank"} [:i.icon.linkify] "JIP site"]
-         [:a.item {:on-click #(rf/dispatch [::controller/toggle-show-success-feedback-messages])}
-          (if @(rf/subscribe [:show-success-feedback-messages]) [:i.toggle.on.icon.green] [:i.toggle.off.icon])
-          "Show success command feedback"]]]]]
-     [:div.ui.grid
-      [:div.row
-       [:div#sidebar.column
-        [sidebar]]
-       [:div#content.column
-        [:div.ui.grid
-         [:div.row
-          [:h1.ui.huge.header [k/switch-route (comp :name :data)
-                               :module (or @module "")
-                               :trend (if (and (number? (int active-trend-index)) (not-empty trends))
-                                        (trend/plot-type-from-label (:label (nth trends (int active-trend-index))))
-                                        "")
-                               :guide "User guide"
-                               :index (simulation-status-header-text @loaded?)
-                               :scenarios "Scenarios"
-                               :scenario (scenario-header scenario-name)
-                               nil [:div "Loading..."]]]]
-         [:div.ui.divider]
-         [:div.row
-          [k/switch-route (comp :name :data)
-           :trend [trend/trend-outer]
-           :guide [guide/form]
-           :module [module-listing]
-           :index [index-page]
-           :scenarios [scenario/overview]
-           :scenario [scenario/one]
-           nil [:div "Loading..."]]]]]]]
-     (if (not= :connected (:state @socket-state))
-       [:div.ui.page.dimmer.transition.active
-        {:style {:display :flex}}
-        [:div.content
-         [:div.center
-          [:h2.ui.inverted.icon.header
-           [:i.heartbeat.icon]
-           "Lost server connection!"]
-          [:div.sub.header "It looks like the server is down. Try restarting the server and hit F5"]]]]
-       (when (and @error (not @error-dismissed))
+    (fn []
+      [:div
+       [:div.ui.inverted.huge.borderless.fixed.menu
+        [:a.header.item {:href "/"} "Core Simulation Environment - demo application"]
+        [:div.right.menu
+         (when (= :disconnected (:state @socket-state))
+           [:div.item
+            [:div "Lost server connection!"]])
+         (when @error
+           [:a.item {:on-click #(rf/dispatch [::controller/toggle-dismiss-error])} "Error!"])
+         (when @loaded?
+           [:div.item
+            [:div "RTF: " @(rf/subscribe [:real-time-factor])]])
+         (when @loaded?
+           [:div.item
+            [:div "Time: " @(rf/subscribe [:time])]])
+         (when (and @loaded? (= @status "pause"))
+           [:a.item {:on-click #(rf/dispatch [::controller/play])} "Play"])
+         (when (and @loaded? (= @status "play"))
+           [:a.item {:on-click #(rf/dispatch [::controller/pause])} "Pause"])
+         [:div.ui.simple.dropdown.item
+          [:i.question.circle.icon]
+          [:div.menu
+           [:a.item {:href "/guide"} [:i.file.alternate.icon] "User guide"]
+           [:a.item {:href "mailto:issue@opensimulationplatform.com?subject=Feedback to CSE Team"} [:i.mail.icon] "Provide feedback"]
+           [:a.item {:href "https://meet.dnvgl.com/sites/open-simulation-platform-jip" :target "_blank"} [:i.icon.linkify] "JIP site"]
+           [:a.item {:on-click #(rf/dispatch [::controller/toggle-show-success-feedback-messages])}
+            (if @(rf/subscribe [:show-success-feedback-messages]) [:i.toggle.on.icon.green] [:i.toggle.off.icon])
+            "Show success command feedback"]]]]]
+       [:div.ui.grid
+        [:div.row
+         [:div#sidebar.column
+          [sidebar]]
+         [:div#content.column
+          [:div.ui.grid
+           [:div.row
+            [:h1.ui.huge.header [k/switch-route (comp :name :data)
+                                 :module (or @module "")
+                                 :trend (if (and (number? (int @active-trend-index)) (not-empty @trends))
+                                          (trend/plot-type-from-label (:label (nth @trends (int @active-trend-index))))
+                                          "")
+                                 :guide "User guide"
+                                 :index (simulation-status-header-text @loaded?)
+                                 :scenarios "Scenarios"
+                                 :scenario (scenario-header @scenario-name)
+                                 nil [:div "Loading..."]]]]
+           [:div.ui.divider]
+           [:div.row
+            [k/switch-route (comp :name :data)
+             :trend [trend/trend-outer]
+             :guide [guide/form]
+             :module [module-listing]
+             :index [index-page]
+             :scenarios [scenario/overview]
+             :scenario [scenario/one]
+             nil [:div "Loading..."]]]]]]]
+       (if (not= :connected (:state @socket-state))
          [:div.ui.page.dimmer.transition.active
           {:style {:display :flex}}
           [:div.content
            [:div.center
             [:h2.ui.inverted.icon.header
-             [:i.red.bug.icon]
-             "An error occured!"]
-            [:h3 (str "Last error code: " (:last-error-code @error))]
-            [:h3 (str "Last error message: " (:last-error-message @error))]
-            [:h4 "The simulation can no longer continue. Please restart the application."]
-            [:button.ui.button.inverted {:on-click #(rf/dispatch [::controller/toggle-dismiss-error])} "Dismiss"]]]]))
-     [command-feedback-message]]))
+             [:i.heartbeat.icon]
+             "Lost server connection!"]
+            [:div.sub.header "It looks like the server is down. Try restarting the server and hit F5"]]]]
+         (when (and @error (not @error-dismissed))
+           [:div.ui.page.dimmer.transition.active
+            {:style {:display :flex}}
+            [:div.content
+             [:div.center
+              [:h2.ui.inverted.icon.header
+               [:i.red.bug.icon]
+               "An error occured!"]
+              [:h3 (str "Last error code: " (:last-error-code @error))]
+              [:h3 (str "Last error message: " (:last-error-message @error))]
+              [:h4 "The simulation can no longer continue. Please restart the application."]
+              [:button.ui.button.inverted {:on-click #(rf/dispatch [::controller/toggle-dismiss-error])} "Dismiss"]]]]))
+       [command-feedback-message]])))

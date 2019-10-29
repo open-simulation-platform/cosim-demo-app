@@ -74,6 +74,7 @@
 
 (rf/reg-sub :overview status-data)
 (rf/reg-sub :time simulation-time)
+(rf/reg-sub :loading? (comp :loading :state))
 (rf/reg-sub :loaded? (comp :loaded :state))
 (rf/reg-sub :prev-paths (fn [db]
                           (:prev-paths db)))
