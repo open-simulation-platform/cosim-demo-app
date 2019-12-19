@@ -565,7 +565,7 @@ func checkConfiguration(configPath string) (valid bool, message string, config c
 	return true, "", config
 }
 
-func initializeSimulation(sim *Simulation, configPath string, logDir string) (bool, string, string) {
+func initializeSimulation(sim *Simulation, status *structs.SimulationStatus, configPath string, logDir string) (bool, string, string) {
 	valid, message, config := checkConfiguration(configPath)
 	if !valid {
 		return false, message, ""
@@ -635,6 +635,9 @@ func initializeSimulation(sim *Simulation, configPath string, logDir string) (bo
 	sim.OverrideManipulator = manipulator
 	sim.ScenarioManager = scenarioManager
 	sim.MetaData = &metaData
+
+	setupPlotsFromConfig(sim, status, config.configDir)
+
 	return true, "Simulation loaded successfully", config.configDir
 }
 
@@ -645,7 +648,7 @@ func executeCommand(cmd []string, sim *Simulation, status *structs.SimulationSta
 	case "load":
 		status.Loading = true
 		var configDir string
-		success, message, configDir = initializeSimulation(sim, cmd[1], cmd[2])
+		success, message, configDir = initializeSimulation(sim, status, cmd[1], cmd[2])
 		if success {
 			status.Loaded = true
 			status.ConfigDir = configDir
@@ -678,7 +681,7 @@ func executeCommand(cmd []string, sim *Simulation, status *structs.SimulationSta
 	case "newtrend":
 		success, message = addNewTrend(status, cmd[1], cmd[2])
 	case "addtotrend":
-		success, message = addToTrend(sim, status, cmd[1], cmd[2], cmd[3], cmd[4], cmd[5], cmd[6])
+		success, message = addToTrend(sim, status, cmd[1], cmd[2], cmd[3])
 	case "untrend":
 		success, message = removeAllFromTrend(sim, status, cmd[1])
 	case "removetrend":
@@ -773,19 +776,35 @@ func setSignalSubscriptions(status *structs.SimulationStatus, cmd []string) (boo
 	return success, message
 }
 
-func findFmu(metaData *structs.MetaData, moduleName string) (foundFmu structs.FMU) {
+func findFmu(metaData *structs.MetaData, moduleName string) (foundFmu structs.FMU, err error) {
 	for _, fmu := range metaData.FMUs {
 		if fmu.Name == moduleName {
 			foundFmu = fmu
+			return foundFmu, nil
 		}
 	}
-	return
+	return foundFmu, errors.New("Simulator with name " + moduleName + " does not exist.")
+}
+
+func findVariable(fmu structs.FMU, variableName string) (foundVariable structs.Variable, err error) {
+	for _, variable := range fmu.Variables {
+		if variable.Name == variableName {
+			foundVariable = variable
+			return foundVariable, nil
+		}
+	}
+	return foundVariable, errors.New("Variable with name " + variableName + " does not exist for simulator " + fmu.Name)
 }
 
 func findModuleData(status *structs.SimulationStatus, metaData *structs.MetaData, observer *C.cse_observer) (module structs.Module) {
 	if len(status.SignalSubscriptions) > 0 {
 
-		slaveIndex := findFmu(metaData, status.Module).ExecutionIndex
+		slave, err := findFmu(metaData, status.Module)
+		if err != nil {
+			log.Println(err.Error())
+			return
+		}
+		slaveIndex := slave.ExecutionIndex
 		realSignals := observerGetReals(observer, status.SignalSubscriptions, slaveIndex)
 		intSignals := observerGetIntegers(observer, status.SignalSubscriptions, slaveIndex)
 		boolSignals := observerGetBooleans(observer, status.SignalSubscriptions, slaveIndex)
@@ -809,8 +828,8 @@ func GetSignalValue(module string, cardinality string, signal string) int {
 func GenerateJsonResponse(status *structs.SimulationStatus, sim *Simulation, feedback structs.CommandFeedback, shorty structs.ShortLivedData) structs.JsonResponse {
 	var response = structs.JsonResponse{
 		Loading: status.Loading,
-		Loaded: status.Loaded,
-		Status: status.Status,
+		Loaded:  status.Loaded,
+		Status:  status.Status,
 	}
 	if status.Loaded {
 		execStatus := getExecutionStatus(sim.Execution)

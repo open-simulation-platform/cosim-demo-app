@@ -107,3 +107,18 @@ type CommandFeedback struct {
 	Message string `json:"message"`
 	Command string `json:"command"`
 }
+
+type PlotVariable struct {
+	Simulator string `json:"simulator"`
+	Variable string `json:"variable"`
+}
+
+type Plot struct {
+	Label string `json:"label"`
+	PlotType string `json:"plotType"`
+	PlotVariables []PlotVariable `json:"variables"`
+}
+
+type PlotConfig struct {
+	Plots []Plot `json:"plots"`
+}
