@@ -2,7 +2,11 @@ package cse
 
 import (
 	"cse-server-go/structs"
+	"encoding/json"
+	"io/ioutil"
 	"log"
+	"os"
+	"path/filepath"
 	"strconv"
 	"time"
 )
@@ -32,25 +36,30 @@ func addNewTrend(status *structs.SimulationStatus, plotType string, label string
 	return true, "Added new trend"
 }
 
-func addToTrend(sim *Simulation, status *structs.SimulationStatus, module string, signal string, causality string, valueType string, valueReference string, plotIndex string) (bool, string) {
+func addToTrend(sim *Simulation, status *structs.SimulationStatus, module string, signal string, plotIndex string) (bool, string) {
 
 	idx, err := strconv.Atoi(plotIndex)
-	fmu := findFmu(sim.MetaData, module)
-
 	if err != nil {
 		message := strCat("Cannot parse plotIndex as integer", plotIndex, ", ", err.Error())
 		log.Println(message)
 		return false, message
 	}
 
-	varIndex, err := strconv.Atoi(valueReference)
+	fmu, err := findFmu(sim.MetaData, module)
 	if err != nil {
-		message := strCat("Cannot parse valueReference as integer ", valueReference, ", ", err.Error())
+		message := err.Error()
 		log.Println(message)
 		return false, message
 	}
 
-	err = observerStartObserving(sim.TrendObserver, fmu.ExecutionIndex, valueType, varIndex)
+	variable, err := findVariable(fmu, signal)
+	if err != nil {
+		message := err.Error()
+		log.Println(message)
+		return false, message
+	}
+
+	err = observerStartObserving(sim.TrendObserver, fmu.ExecutionIndex, variable.Type, variable.ValueReference)
 	if err != nil {
 		message := strCat("Cannot start observing variable ", lastErrorMessage())
 		log.Println(message)
@@ -61,9 +70,9 @@ func addToTrend(sim *Simulation, status *structs.SimulationStatus, module string
 		Module:         module,
 		SlaveIndex:     fmu.ExecutionIndex,
 		Signal:         signal,
-		Causality:      causality,
-		Type:           valueType,
-		ValueReference: varIndex})
+		Causality:      variable.Causality,
+		Type:           variable.Type,
+		ValueReference: variable.ValueReference})
 
 	return true, "Added variable to trend"
 }
@@ -149,5 +158,57 @@ func TrendLoop(sim *Simulation, status *structs.SimulationStatus) {
 			}
 		}
 		time.Sleep(1000 * time.Millisecond)
+	}
+}
+
+func parsePlotConfig(pathToFile string) (data structs.PlotConfig, err error) {
+	jsonFile, err := os.Open(pathToFile)
+
+	if err != nil {
+		log.Println("Can't open file:", err.Error(), pathToFile)
+		return data, err
+	}
+
+	defer jsonFile.Close()
+
+	bytes, err := ioutil.ReadAll(jsonFile)
+	if err != nil {
+		log.Println("Can't read file:", err.Error(), pathToFile)
+		return data, err
+	}
+	err = json.Unmarshal(bytes, &data)
+	if err != nil {
+		log.Println("Can't unmarshal PlotConfig json contents:", err.Error())
+		return data, err
+	}
+	return data, nil
+}
+
+func setupPlotsFromConfig(sim *Simulation, status *structs.SimulationStatus, configDir string) {
+	if hasFile(configDir, "PlotConfig.json") {
+		log.Println("We have a PlotConfig")
+		pathToFile := filepath.Join(configDir, "PlotConfig.json")
+		plotConfig, err := parsePlotConfig(pathToFile)
+
+		if err != nil {
+			log.Println("Can't parse PlotConfig.json:", err.Error())
+			return
+		}
+
+		for idx, plot := range plotConfig.Plots {
+			success, message := addNewTrend(status, plot.PlotType, plot.Label)
+			if !success {
+				log.Println("Could not add new plot:", message)
+			} else {
+				plotIdx := strconv.Itoa(idx)
+				for _, variable := range plot.PlotVariables {
+					success, message := addToTrend(sim, status, variable.Simulator, variable.Variable, plotIdx)
+					if !success {
+						log.Println("Could not add variable to plot:", message)
+					}
+				}
+			}
+		}
+
 	}
 }
