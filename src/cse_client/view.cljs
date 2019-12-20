@@ -27,14 +27,14 @@
 (defn plottable? [type]
   (#{"Real" "Integer"} type))
 
-(defn trend-item [current-module name causality type value-reference {:keys [id index count label plot-type]}]
+(defn trend-item [current-module name type {:keys [id index count label plot-type]}]
   (case plot-type
 
     "trend" (semantic/ui-dropdown-item
               {:key     (str "trend-item-" id)
                :text    (trend/plot-type-from-label label)
                :label   "Time series"
-               :onClick #(rf/dispatch [::controller/add-to-trend current-module name causality type value-reference index])})
+               :onClick #(rf/dispatch [::controller/add-to-trend current-module name index])})
 
     "scatter" (when (xy-plottable? type)
                 (let [label-text (trend/plot-type-from-label label)
@@ -43,15 +43,15 @@
                     {:key     (str "trend-item-" id)
                      :text    label-text
                      :label   (str "XY plot - " axis " axis")
-                     :onClick #(rf/dispatch [::controller/add-to-trend current-module name causality type value-reference index])})))))
+                     :onClick #(rf/dispatch [::controller/add-to-trend current-module name index])})))))
 
-(defn action-dropdown [current-module name causality type value-reference trend-info]
+(defn action-dropdown [current-module name type trend-info]
   (when (and (seq trend-info) (plottable? type))
     (semantic/ui-dropdown
       {:button false :text "Add to plot"}
       (semantic/ui-dropdown-menu
         {:direction 'left}
-        (map (partial trend-item current-module name causality type value-reference) trend-info)))))
+        (map (partial trend-item current-module name type) trend-info)))))
 
 (defn pages-menu []
   (let [current-page  @(rf/subscribe [:current-page])
@@ -100,12 +100,12 @@
         [:th "Value"]
         [:th.one.wide "Actions"]]]
       [:tbody
-       (map (fn [{:keys [name causality type value-reference] :as variable}]
+       (map (fn [{:keys [name causality type] :as variable}]
               [:tr {:key (str current-module "-" causality "-" name)}
                [:td name]
                [:td type]
                [:td [variable-display current-module current-module-index variable]]
-               [:td (action-dropdown current-module name causality type value-reference trend-info)]])
+               [:td (action-dropdown current-module name type trend-info)]])
             module-signals)]]]))
 
 (defn module-listing []

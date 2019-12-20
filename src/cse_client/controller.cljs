@@ -239,8 +239,8 @@
                   (socket-command ["newtrend" type label])))
 
 (k/reg-event-fx ::add-to-trend
-                (fn [_ [module signal causality type value-reference plot-index]]
-                  (socket-command ["addtotrend" module signal causality type (str value-reference) (str plot-index)])))
+                (fn [_ [module signal plot-index]]
+                  (socket-command ["addtotrend" module signal (str plot-index)])))
 
 (k/reg-event-fx ::set-label
                 (fn [{:keys [db]} [label]]
