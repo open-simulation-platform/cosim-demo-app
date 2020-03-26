@@ -113,7 +113,7 @@
         "trend" (add-traces dom-node trend-values time-series-legend-name)
         "scatter" (add-traces dom-node trend-values xy-plot-legend-name)))))
 
-(defn- update-chart-data [dom-node trend-values trend-id]
+(defn- update-chart-data [dom-node trend-values layout trend-id]
   (when-not (= trend-id @id-store)
     (reset! id-store trend-id)
     (delete-series dom-node))
@@ -125,7 +125,7 @@
                                 (update :y conj yvals)))
                           init-data trend-values)]
     (maybe-update-series dom-node trend-values)
-    (js/Plotly.update dom-node (clj->js data))))
+    (js/Plotly.update dom-node (clj->js data) (clj->js layout))))
 
 (defn- relayout-callback [js-event]
   (let [event        (js->clj js-event)
@@ -145,8 +145,9 @@
 
 (defn- trend-inner []
   (let [update-plot (fn [comp]
-                      (let [{:keys [trend-values trend-id]} (r/props comp)]
-                        (update-chart-data (r/dom-node comp) trend-values trend-id)))
+                      (let [{:keys [trend-values trend-id plot-type]} (r/props comp)
+                            layout (layout-selector plot-type)]
+                        (update-chart-data (r/dom-node comp) trend-values layout trend-id)))
         render-plot (fn [comp]
                       (let [{:keys [plot-type]} (r/props comp)
                             dom-node  (r/dom-node comp)

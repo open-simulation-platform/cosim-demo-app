@@ -6,7 +6,7 @@
                  [com.cognitect/transit-cljs "0.8.256"]
                  [reagent "0.8.1"]
                  [re-frame "0.10.6" :exclusions [reagent]]
-                 [cljsjs/plotly "1.36.1-0"]
+                 [cljsjs/plotly "1.45.3-0"]
                  [org.clojure/clojurescript "1.10.439"]
                  [org.clojure/clojure "1.9.0"]
                  [org.clojure/tools.reader "1.3.0"]
