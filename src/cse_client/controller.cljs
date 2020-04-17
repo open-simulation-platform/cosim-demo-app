@@ -227,11 +227,12 @@
 
 (k/reg-event-fx ::removetrend
                 (fn [{:keys [db]} [id]]
-                  (let [route-name                 (:name (:data (:kee-frame/route db)))
-                        route-param-index          (int (:index (:path-params (:kee-frame/route db))))
-                        current-path-to-be-deleted (and (= :trend route-name) (= route-param-index id))]
+                  (let [route-name                  (:name (:data (:kee-frame/route db)))
+                        route-param-index           (int (:index (:path-params (:kee-frame/route db))))
+                        current-path-to-be-deleted  (and (= :trend route-name) (= route-param-index id))
+                        smaller-index-to-be-deleted (and (= :trend route-name) (> route-param-index id))]
                     (merge
-                      (when current-path-to-be-deleted {:navigate-to [:index]})
+                      (when (or current-path-to-be-deleted smaller-index-to-be-deleted) {:navigate-to [:index]})
                       (socket-command ["removetrend" (str id)])))))
 
 (k/reg-event-fx ::new-trend
