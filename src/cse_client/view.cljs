@@ -136,7 +136,7 @@
   (if simulation-has-loaded? "Simulation status" "Simulation setup"))
 
 (defn sidebar []
-  (let [module-routes      @(rf/subscribe [:module-routes])
+  (let [module-routes      (sort-by :name @(rf/subscribe [:module-routes]))
         route              @(rf/subscribe [:kee-frame/route])
         route-name         (-> route :data :name)
         route-module       (-> route :path-params :module)
