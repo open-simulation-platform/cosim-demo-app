@@ -31,7 +31,8 @@
    :use-resize-handler true
    :showlegend         true
    :uirevision         true
-   :margin             {:l 40 :r 40 :t 20 :pad 5}
+   :margin             {:l 0 :r 0 :t 25 :pad 5}
+   :yaxis              {:automargin true}
    :legend             {:orientation "h"}})
 
 (def trend-layout
