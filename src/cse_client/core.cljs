@@ -225,3 +225,5 @@
                             :prev-paths                     (reader/read-string (storage/get-item "cse-paths"))
                             :show-success-feedback-messages (reader/read-string (storage/get-item "show-success-feedback-message"))}})
 
+
+(rf/reg-sub :plot-height #(:plot-height %))

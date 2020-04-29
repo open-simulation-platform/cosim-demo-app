@@ -225,6 +225,10 @@
                 (fn [_ [id]]
                   (socket-command ["untrend" (str id)])))
 
+(k/reg-event-fx ::untrend-single
+                (fn [_ [trend-id variable-id]]
+                  (print (str "Untrend " variable-id " from trend " trend-id))))
+
 (k/reg-event-fx ::removetrend
                 (fn [{:keys [db]} [id]]
                   (let [route-name                  (:name (:data (:kee-frame/route db)))
@@ -290,3 +294,7 @@
 (k/reg-event-db ::toggle-dismiss-error
                 (fn [db]
                   (update db :error-dismissed not)))
+
+(k/reg-event-db ::set-plot-height
+                (fn [db [height]]
+                  (assoc db :plot-height height)))

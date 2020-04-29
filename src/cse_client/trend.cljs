@@ -9,7 +9,8 @@
 
 (def id-store (atom nil))
 
-(def plot-container-height "70vh")
+(def plot-heights {:collapsed "50vh"
+                   :expanded  "75vh"})
 
 (def range-configs
   [{:seconds 10
@@ -43,9 +44,22 @@
                   :autotick  true
                   :ticks     ""}}))
 
+(defn- plotly-expand-button [plot-height plot-expanded?]
+  (if @plot-expanded?
+    [:button.ui.button.right.floated {:on-click (fn []
+                                                  (rf/dispatch [::controller/set-plot-height (:collapsed plot-heights)])
+                                                  (swap! plot-expanded? not))}
+     [:i.compress.icon]
+     "Compress plot"]
+    [:button.ui.button.right.floated {:on-click (fn []
+                                                  (rf/dispatch [::controller/set-plot-height (:expanded plot-heights)])
+                                                  (swap! plot-expanded? not))}
+     [:i.expand.icon]
+     "Expand plot"]))
+
 (defn- layout-selector [plot-type]
   (case plot-type
-    "trend" trend-layout
+    "trend"   trend-layout
     "scatter" scatter-layout
     {}))
 
@@ -66,13 +80,13 @@
   The metadata fields are given namespaces to avoid loosing information when merging the pairs of values."
   [plot-type trend-values]
   (case plot-type
-    "trend" trend-values
+    "trend"   trend-values
     "scatter" (map (fn [[a b]]
                      (merge
-                       (select-keys a [:xvals :yvals])
-                       (select-keys b [:xvals :yvals])
-                       (namespaced (dissoc a :xvals :yvals) first-signal-ns)
-                       (namespaced (dissoc b :xvals :yvals) second-signal-ns)))
+                      (select-keys a [:xvals :yvals])
+                      (select-keys b [:xvals :yvals])
+                      (namespaced (dissoc a :xvals :yvals) first-signal-ns)
+                      (namespaced (dissoc b :xvals :yvals) second-signal-ns)))
                    (partition 2 trend-values))
     []))
 
@@ -110,7 +124,7 @@
       (doseq [_ (range num-series)]
         (js/Plotly.deleteTraces dom-node 0))
       (case (:plot-type @(rf/subscribe [::active-trend]))
-        "trend" (add-traces dom-node trend-values time-series-legend-name)
+        "trend"   (add-traces dom-node trend-values time-series-legend-name)
         "scatter" (add-traces dom-node trend-values xy-plot-legend-name)))))
 
 (defn- update-chart-data [dom-node trend-values layout trend-id]
@@ -145,14 +159,16 @@
 
 (defn- trend-inner []
   (let [update-plot (fn [comp]
-                      (let [{:keys [trend-values trend-id plot-type]} (r/props comp)
-                            layout (layout-selector plot-type)]
+                      (let [{:keys [trend-values trend-id plot-type plot-height]} (r/props comp)
+                            dom-node            (r/dom-node comp)
+                            _                   (set-dom-element-height! dom-node plot-height)
+                            layout                                    (layout-selector plot-type)]
                         (update-chart-data (r/dom-node comp) trend-values layout trend-id)))
         render-plot (fn [comp]
-                      (let [{:keys [plot-type]} (r/props comp)
-                            dom-node  (r/dom-node comp)
-                            _         (set-dom-element-height! dom-node plot-container-height)
-                            layout    (layout-selector plot-type)]
+                      (let [{:keys [plot-type plot-height]} (r/props comp)
+                            dom-node            (r/dom-node comp)
+                            _                   (set-dom-element-height! dom-node plot-height)
+                            layout              (layout-selector plot-type)]
                         (js/Plotly.newPlot dom-node
                                            (clj->js [{:x    []
                                                       :y    []
@@ -161,37 +177,78 @@
                                            (clj->js layout)
                                            (clj->js {:responsive true}))))]
     (r/create-class
-      {:component-did-mount  (fn [comp]
-                               (render-plot comp)
-                               (.on (r/dom-node comp) "plotly_relayout" relayout-callback))
-       :component-did-update update-plot
-       :reagent-render       (fn []
-                               [:div.column])})))
+     {:component-did-mount  (fn [comp]
+                              (render-plot comp)
+                              (.on (r/dom-node comp) "plotly_relayout" relayout-callback))
+      :component-did-update update-plot
+      :reagent-render       (fn []
+                              [:div.column])})))
+
+(defn variable-row []
+  (let [untrending? (r/atom false)]
+    (fn [trend-idx module signal causality val]
+      [:tr
+       [:td module]
+       [:td signal]
+       [:td causality]
+       [:td (when (and (some? val) (number? val))
+              (.toFixed val 4))]
+       #_[:td
+          (if @untrending?
+            [:i.fa.fa-spinner.fa-spin]
+            [:span {:style         {:float 'right :cursor 'pointer}
+                    :data-tooltip  "Remove variable from plot"
+                    :data-position "top center"}
+             [:i.eye.slash.gray.icon {:on-click #(rf/dispatch [::controller/untrend-single trend-idx (str module "." signal)])}]])]])))
+
+(defn variables-table [trend-idx trend-values]
+  [:table.ui.single.line.striped.table
+   [:thead
+    [:tr
+     [:th "Model"]
+     [:th "Variable"]
+     [:th "Causality"]
+     [:th "Value"]
+     #_[:th {:style {:text-align 'right}} "Remove"]]]
+   [:tbody
+    (doall
+     (for [{:keys [module signal causality yvals]} trend-values] ^{:key (str module signal)}
+       [variable-row trend-idx module signal causality (last yvals)]))]])
 
 (defn trend-outer []
   (let [trend-range        (rf/subscribe [::trend-range])
         active-trend       (rf/subscribe [::active-trend])
-        active-trend-index (rf/subscribe [:active-trend-index])]
+        active-trend-index (rf/subscribe [:active-trend-index])
+        plot-height        (rf/subscribe [:plot-height])
+        plot-expanded?     (r/atom false)]
     (fn []
       (let [{:keys [id plot-type label trend-values]} @active-trend
-            active-trend-index (int @active-trend-index)
-            name               (plot-type-from-label label)]
+            active-trend-index                        (int @active-trend-index)
+            name                                      (plot-type-from-label label)]
         [:div.ui.one.column.grid
+
          [c/text-editor name [::controller/set-label] "Rename plot"]
+
          [:div.two.column.row
           [:div.column
            (doall (map (partial range-selector @trend-range) range-configs))]
           [:div.column
+           [plotly-expand-button plot-height plot-expanded?]
            [:button.ui.button.right.floated {:on-click #(rf/dispatch [::controller/removetrend active-trend-index])}
             [:i.trash.gray.icon]
             "Remove plot"]
            [:button.ui.button.right.floated {:on-click #(rf/dispatch [::controller/untrend active-trend-index])}
             [:i.eye.slash.gray.icon]
-            "Remove variables from plot"]]]
+            "Remove all variables from plot"]]]
+
          [:div.one.column.row
           [trend-inner {:trend-values (format-data-for-plotting plot-type trend-values)
                         :plot-type    plot-type
-                        :trend-id     id}]]]))))
+                        :plot-height  (or @plot-height (:collapsed plot-heights))
+                        :trend-id     id}]]
+
+         (when (not @plot-expanded?)
+           [variables-table active-trend-index trend-values])]))))
 
 (rf/reg-sub ::active-trend #(get-in % [:state :trends (-> % :active-trend-index int)]))
 
