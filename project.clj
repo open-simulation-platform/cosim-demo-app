@@ -6,7 +6,6 @@
                  [com.cognitect/transit-cljs "0.8.256"]
                  [reagent "0.8.1"]
                  [re-frame "0.10.6" :exclusions [reagent]]
-                 [cljsjs/plotly "1.45.3-0"]
                  [org.clojure/clojurescript "1.10.439"]
                  [org.clojure/clojure "1.9.0"]
                  [org.clojure/tools.reader "1.3.0"]
@@ -36,12 +35,16 @@
                                                               cse-client.view/default-log-dir       ""
                                                               "re_frame.trace.trace_enabled_QMARK_" true}
                                        :preloads             [devtools.preload day8.re-frame-10x.preload]
-                                       :external-config      {:devtools/config {:features-to-install [:formatters]}}}}
+                                       :external-config      {:devtools/config {:features-to-install [:formatters]}}
+                                       :foreign-libs         [{:file     "resources/public/static/js/plotly.min.js"
+                                                               :provides ["cljsjs.plotly"]}]}}
                        {:id           "min"
                         :source-paths ["src"]
                         :compiler     {:output-to      "resources/public/static/js/compiled/app.js"
                                        :optimizations  :advanced
-                                       :parallel-build true}}]}
+                                       :parallel-build true
+                                       :foreign-libs   [{:file     "resources/public/static/js/plotly.min.js"
+                                                         :provides ["cljsjs.plotly"]}]}}]}
 
   :figwheel {:css-dirs ["resources/public/static/css"]}
 
