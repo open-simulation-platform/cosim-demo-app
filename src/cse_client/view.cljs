@@ -176,7 +176,8 @@
                            :data-position "top center"}
                     [:i.eye.slash.gray.icon {:on-click #(rf/dispatch [::controller/untrend index])}]])])
               trend-info)]])
-     (when loaded?
+     (when (and loaded?
+                (seq scenarios))
        [:div.item
         [:a.header
          {:href  (k/path-for [:scenarios])
