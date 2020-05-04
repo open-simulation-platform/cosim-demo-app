@@ -1,13 +1,13 @@
 [generators]
 
 [requires]
-cse-core/0.6.0@osp/master
+libcosimc/0.7.0@osp/testing
 
 [options]
 cse-core:fmuproxy=True
 
 [imports]
-include, cse.h                  -> ./include
+include, cosim.h                -> ./include
 
 bin, boost_chrono*.dll          -> ./dist\bin
 bin, boost_context*.dll         -> ./dist\bin
@@ -17,7 +17,8 @@ bin, boost_filesystem*.dll      -> ./dist\bin
 bin, boost_log*.dll             -> ./dist\bin
 bin, boost_system*.dll          -> ./dist\bin
 bin, boost_thread*.dll          -> ./dist\bin
-bin, cse*.dll                   -> ./dist\bin
+bin, cosimc.dll                 -> ./dist\bin
+bin, csecorecpp.dll             -> ./dist\bin
 bin, zip.dll                    -> ./dist\bin
 
 lib, libboost_chrono.so.*       -> ./dist/lib
@@ -28,5 +29,6 @@ lib, libboost_filesystem.so.*   -> ./dist/lib
 lib, libboost_log.so.*          -> ./dist/lib
 lib, libboost_system.so.*       -> ./dist/lib
 lib, libboost_thread.so*        -> ./dist/lib
-lib, libcse*.so                 -> ./dist/lib
+lib, libcosimc.so*              -> ./dist/lib
+lib, libcsecorecpp.so*          -> ./dist/lib
 lib, libzip.so*                 -> ./dist/lib

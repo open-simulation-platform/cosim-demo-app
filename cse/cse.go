@@ -2,8 +2,8 @@ package cse
 
 /*
 	#cgo CFLAGS: -I${SRCDIR}/../include
-	#cgo LDFLAGS: -L${SRCDIR}/../dist/bin -L${SRCDIR}/../dist/lib -lcsecorec -lstdc++
-	#include <cse.h>
+	#cgo LDFLAGS: -L${SRCDIR}/../dist/bin -L${SRCDIR}/../dist/lib -lcosimc -lstdc++
+	#include <cosim.h>
 */
 import "C"
 import (
@@ -20,34 +20,34 @@ import (
 )
 
 func printLastError() {
-	fmt.Printf("Error code %d: %s\n", int(C.cse_last_error_code()), C.GoString(C.cse_last_error_message()))
+	fmt.Printf("Error code %d: %s\n", int(C.cosim_last_error_code()), C.GoString(C.cosim_last_error_message()))
 }
 
 func lastErrorMessage() string {
-	msg := C.cse_last_error_message()
+	msg := C.cosim_last_error_message()
 	return C.GoString(msg)
 }
 
-func lastErrorCode() C.cse_errc {
-	return C.cse_last_error_code()
+func lastErrorCode() C.cosim_errc {
+	return C.cosim_last_error_code()
 }
 
-func createExecution() (execution *C.cse_execution) {
-	startTime := C.cse_time_point(0.0 * 1e9)
-	stepSize := C.cse_duration(0.1 * 1e9)
-	execution = C.cse_execution_create(startTime, stepSize)
+func createExecution() (execution *C.cosim_execution) {
+	startTime := C.cosim_time_point(0.0 * 1e9)
+	stepSize := C.cosim_duration(0.1 * 1e9)
+	execution = C.cosim_execution_create(startTime, stepSize)
 	return execution
 }
 
-func createConfigExecution(confDir string) (execution *C.cse_execution) {
-	startTime := C.cse_time_point(0.0 * 1e9)
-	execution = C.cse_config_execution_create(C.CString(confDir), false, startTime)
+func createConfigExecution(confDir string) (execution *C.cosim_execution) {
+	startTime := C.cosim_time_point(0.0 * 1e9)
+	execution = C.cosim_osp_config_execution_create(C.CString(confDir), false, startTime)
 	return execution
 }
 
-func createSsdExecution(ssdDir string) (execution *C.cse_execution) {
-	startTime := C.cse_time_point(0.0 * 1e9)
-	execution = C.cse_ssp_execution_create(C.CString(ssdDir), false, startTime)
+func createSsdExecution(ssdDir string) (execution *C.cosim_execution) {
+	startTime := C.cosim_time_point(0.0 * 1e9)
+	execution = C.cosim_ssp_execution_create(C.CString(ssdDir), false, startTime)
 	return execution
 }
 
@@ -61,90 +61,90 @@ type executionStatus struct {
 	lastErrorCode        string
 }
 
-func translateState(state C.cse_execution_state) string {
+func translateState(state C.cosim_execution_state) string {
 	switch state {
-	case C.CSE_EXECUTION_STOPPED:
-		return "CSE_EXECUTION_STOPPED"
-	case C.CSE_EXECUTION_RUNNING:
-		return "CSE_EXECUTION_RUNNING"
-	case C.CSE_EXECUTION_ERROR:
-		return "CSE_EXECUTION_ERROR"
+	case C.COSIM_EXECUTION_STOPPED:
+		return "COSIM_EXECUTION_STOPPED"
+	case C.COSIM_EXECUTION_RUNNING:
+		return "COSIM_EXECUTION_RUNNING"
+	case C.COSIM_EXECUTION_ERROR:
+		return "COSIM_EXECUTION_ERROR"
 	}
 	return "UNKNOWN"
 }
 
-func translateErrorCode(code C.cse_errc) string {
+func translateErrorCode(code C.cosim_errc) string {
 	switch code {
-	case C.CSE_ERRC_SUCCESS:
-		return "CSE_ERRC_SUCCESS"
-	case C.CSE_ERRC_UNSPECIFIED:
-		return "CSE_ERRC_UNSPECIFIED"
-	case C.CSE_ERRC_ERRNO:
-		return "CSE_ERRC_ERRNO"
-	case C.CSE_ERRC_INVALID_ARGUMENT:
-		return "CSE_ERRC_INVALID_ARGUMENT"
-	case C.CSE_ERRC_ILLEGAL_STATE:
-		return "CSE_ERRC_ILLEGAL_STATE"
-	case C.CSE_ERRC_OUT_OF_RANGE:
-		return "CSE_ERRC_OUT_OF_RANGE"
-	case C.CSE_ERRC_STEP_TOO_LONG:
-		return "CSE_ERRC_STEP_TOO_LONG"
-	case C.CSE_ERRC_BAD_FILE:
-		return "CSE_ERRC_BAD_FILE"
-	case C.CSE_ERRC_UNSUPPORTED_FEATURE:
-		return "CSE_ERRC_UNSUPPORTED_FEATURE"
-	case C.CSE_ERRC_DL_LOAD_ERROR:
-		return "CSE_ERRC_DL_LOAD_ERROR"
-	case C.CSE_ERRC_MODEL_ERROR:
-		return "CSE_ERRC_MODEL_ERROR"
-	case C.CSE_ERRC_SIMULATION_ERROR:
-		return "CSE_ERRC_SIMULATION_ERROR"
-	case C.CSE_ERRC_ZIP_ERROR:
-		return "CSE_ERRC_ZIP_ERROR"
+	case C.COSIM_ERRC_SUCCESS:
+		return "COSIM_ERRC_SUCCESS"
+	case C.COSIM_ERRC_UNSPECIFIED:
+		return "COSIM_ERRC_UNSPECIFIED"
+	case C.COSIM_ERRC_ERRNO:
+		return "COSIM_ERRC_ERRNO"
+	case C.COSIM_ERRC_INVALID_ARGUMENT:
+		return "COSIM_ERRC_INVALID_ARGUMENT"
+	case C.COSIM_ERRC_ILLEGAL_STATE:
+		return "COSIM_ERRC_ILLEGAL_STATE"
+	case C.COSIM_ERRC_OUT_OF_RANGE:
+		return "COSIM_ERRC_OUT_OF_RANGE"
+	case C.COSIM_ERRC_STEP_TOO_LONG:
+		return "COSIM_ERRC_STEP_TOO_LONG"
+	case C.COSIM_ERRC_BAD_FILE:
+		return "COSIM_ERRC_BAD_FILE"
+	case C.COSIM_ERRC_UNSUPPORTED_FEATURE:
+		return "COSIM_ERRC_UNSUPPORTED_FEATURE"
+	case C.COSIM_ERRC_DL_LOAD_ERROR:
+		return "COSIM_ERRC_DL_LOAD_ERROR"
+	case C.COSIM_ERRC_MODEL_ERROR:
+		return "COSIM_ERRC_MODEL_ERROR"
+	case C.COSIM_ERRC_SIMULATION_ERROR:
+		return "COSIM_ERRC_SIMULATION_ERROR"
+	case C.COSIM_ERRC_ZIP_ERROR:
+		return "COSIM_ERRC_ZIP_ERROR"
 	}
 	return "UNKNOWN"
 }
 
-func getExecutionStatus(execution *C.cse_execution) (execStatus executionStatus) {
-	var status C.cse_execution_status
-	success := int(C.cse_execution_get_status(execution, &status))
+func getExecutionStatus(execution *C.cosim_execution) (execStatus executionStatus) {
+	var status C.cosim_execution_status
+	success := int(C.cosim_execution_get_status(execution, &status))
 	nanoTime := int64(status.current_time)
 	execStatus.time = float64(nanoTime) * 1e-9
 	execStatus.realTimeFactor = float64(status.real_time_factor)
 	execStatus.realTimeFactorTarget = float64(status.real_time_factor_target)
 	execStatus.isRealTimeSimulation = int(status.is_real_time_simulation) > 0
 	execStatus.state = translateState(status.state)
-	if success < 0 || status.state == C.CSE_EXECUTION_ERROR {
+	if success < 0 || status.state == C.COSIM_EXECUTION_ERROR {
 		execStatus.lastErrorMessage = lastErrorMessage()
 		execStatus.lastErrorCode = translateErrorCode(lastErrorCode())
 	}
 	return
 }
 
-func createLocalSlave(fmuPath string, instanceName string) *C.cse_slave {
-	return C.cse_local_slave_create(C.CString(fmuPath), C.CString(instanceName))
+func createLocalSlave(fmuPath string, instanceName string) *C.cosim_slave {
+	return C.cosim_local_slave_create(C.CString(fmuPath), C.CString(instanceName))
 }
 
-func createOverrideManipulator() (manipulator *C.cse_manipulator) {
-	manipulator = C.cse_override_manipulator_create()
+func createOverrideManipulator() (manipulator *C.cosim_manipulator) {
+	manipulator = C.cosim_override_manipulator_create()
 	return
 }
 
-func executionAddManipulator(execution *C.cse_execution, manipulator *C.cse_manipulator) {
-	C.cse_execution_add_manipulator(execution, manipulator)
+func executionAddManipulator(execution *C.cosim_execution, manipulator *C.cosim_manipulator) {
+	C.cosim_execution_add_manipulator(execution, manipulator)
 }
 
-func executionAddSlave(execution *C.cse_execution, slave *C.cse_slave) int {
-	slaveIndex := C.cse_execution_add_slave(execution, slave)
+func executionAddSlave(execution *C.cosim_execution, slave *C.cosim_slave) int {
+	slaveIndex := C.cosim_execution_add_slave(execution, slave)
 	if slaveIndex < 0 {
 		printLastError()
-		C.cse_execution_destroy(execution)
+		C.cosim_execution_destroy(execution)
 	}
 	return int(slaveIndex)
 }
 
-func executionStart(execution *C.cse_execution) (bool, string) {
-	success := C.cse_execution_start(execution)
+func executionStart(execution *C.cosim_execution) (bool, string) {
+	success := C.cosim_execution_start(execution)
 	if int(success) < 0 {
 		return false, strCat("Unable to start simulation: ", lastErrorMessage())
 	} else {
@@ -152,20 +152,20 @@ func executionStart(execution *C.cse_execution) (bool, string) {
 	}
 }
 
-func executionDestroy(execution *C.cse_execution) {
-	C.cse_execution_destroy(execution)
+func executionDestroy(execution *C.cosim_execution) {
+	C.cosim_execution_destroy(execution)
 }
 
-func localSlaveDestroy(slave *C.cse_slave) {
-	C.cse_local_slave_destroy(slave)
+func localSlaveDestroy(slave *C.cosim_slave) {
+	C.cosim_local_slave_destroy(slave)
 }
 
-func manipulatorDestroy(manipulator *C.cse_manipulator) {
-	C.cse_manipulator_destroy(manipulator)
+func manipulatorDestroy(manipulator *C.cosim_manipulator) {
+	C.cosim_manipulator_destroy(manipulator)
 }
 
-func executionStop(execution *C.cse_execution) (bool, string) {
-	success := C.cse_execution_stop(execution)
+func executionStop(execution *C.cosim_execution) (bool, string) {
+	success := C.cosim_execution_stop(execution)
 	if int(success) < 0 {
 		return false, strCat("Unable to stop simulation: ", lastErrorMessage())
 	} else {
@@ -173,8 +173,8 @@ func executionStop(execution *C.cse_execution) (bool, string) {
 	}
 }
 
-func executionEnableRealTime(execution *C.cse_execution) (bool, string) {
-	success := C.cse_execution_enable_real_time_simulation(execution)
+func executionEnableRealTime(execution *C.cosim_execution) (bool, string) {
+	success := C.cosim_execution_enable_real_time_simulation(execution)
 	if int(success) < 0 {
 		return false, strCat("Unable to enable real time: ", lastErrorMessage())
 	} else {
@@ -182,8 +182,8 @@ func executionEnableRealTime(execution *C.cse_execution) (bool, string) {
 	}
 }
 
-func executionDisableRealTime(execution *C.cse_execution) (bool, string) {
-	success := C.cse_execution_disable_real_time_simulation(execution)
+func executionDisableRealTime(execution *C.cosim_execution) (bool, string) {
+	success := C.cosim_execution_disable_real_time_simulation(execution)
 	if int(success) < 0 {
 		return false, strCat("Unable to disable real time: ", lastErrorMessage())
 	} else {
@@ -191,7 +191,7 @@ func executionDisableRealTime(execution *C.cse_execution) (bool, string) {
 	}
 }
 
-func executionSetCustomRealTimeFactor(execution *C.cse_execution, status *structs.SimulationStatus, realTimeFactor string) (bool, string) {
+func executionSetCustomRealTimeFactor(execution *C.cosim_execution, status *structs.SimulationStatus, realTimeFactor string) (bool, string) {
 	val, err := strconv.ParseFloat(realTimeFactor, 64)
 
 	if err != nil {
@@ -203,17 +203,17 @@ func executionSetCustomRealTimeFactor(execution *C.cse_execution, status *struct
 		return false, "Real time factor target must be greater than 0.0"
 	}
 
-	C.cse_execution_set_real_time_factor_target(execution, C.double(val))
+	C.cosim_execution_set_real_time_factor_target(execution, C.double(val))
 
 	return true, "Custom real time factor successfully set"
 }
 
-func setReal(manipulator *C.cse_manipulator, slaveIndex int, valueRef int, value float64) (bool, string) {
-	vr := make([]C.cse_value_reference, 1)
-	vr[0] = C.cse_value_reference(valueRef)
+func setReal(manipulator *C.cosim_manipulator, slaveIndex int, valueRef int, value float64) (bool, string) {
+	vr := make([]C.cosim_value_reference, 1)
+	vr[0] = C.cosim_value_reference(valueRef)
 	v := make([]C.double, 1)
 	v[0] = C.double(value)
-	success := C.cse_manipulator_slave_set_real(manipulator, C.cse_slave_index(slaveIndex), &vr[0], C.size_t(1), &v[0])
+	success := C.cosim_manipulator_slave_set_real(manipulator, C.cosim_slave_index(slaveIndex), &vr[0], C.size_t(1), &v[0])
 	if int(success) < 0 {
 		return false, strCat("Unable to set real variable value: ", lastErrorMessage())
 	} else {
@@ -221,12 +221,12 @@ func setReal(manipulator *C.cse_manipulator, slaveIndex int, valueRef int, value
 	}
 }
 
-func setInteger(manipulator *C.cse_manipulator, slaveIndex int, valueRef int, value int) (bool, string) {
-	vr := make([]C.cse_value_reference, 1)
-	vr[0] = C.cse_value_reference(valueRef)
+func setInteger(manipulator *C.cosim_manipulator, slaveIndex int, valueRef int, value int) (bool, string) {
+	vr := make([]C.cosim_value_reference, 1)
+	vr[0] = C.cosim_value_reference(valueRef)
 	v := make([]C.int, 1)
 	v[0] = C.int(value)
-	success := C.cse_manipulator_slave_set_integer(manipulator, C.cse_slave_index(slaveIndex), &vr[0], C.size_t(1), &v[0])
+	success := C.cosim_manipulator_slave_set_integer(manipulator, C.cosim_slave_index(slaveIndex), &vr[0], C.size_t(1), &v[0])
 	if int(success) < 0 {
 		return false, strCat("Unable to set integer variable value: ", lastErrorMessage())
 	} else {
@@ -234,12 +234,12 @@ func setInteger(manipulator *C.cse_manipulator, slaveIndex int, valueRef int, va
 	}
 }
 
-func setBoolean(manipulator *C.cse_manipulator, slaveIndex int, valueRef int, value bool) (bool, string) {
-	vr := make([]C.cse_value_reference, 1)
-	vr[0] = C.cse_value_reference(valueRef)
+func setBoolean(manipulator *C.cosim_manipulator, slaveIndex int, valueRef int, value bool) (bool, string) {
+	vr := make([]C.cosim_value_reference, 1)
+	vr[0] = C.cosim_value_reference(valueRef)
 	v := make([]C.bool, 1)
 	v[0] = C.bool(value)
-	success := C.cse_manipulator_slave_set_boolean(manipulator, C.cse_slave_index(slaveIndex), &vr[0], C.size_t(1), &v[0])
+	success := C.cosim_manipulator_slave_set_boolean(manipulator, C.cosim_slave_index(slaveIndex), &vr[0], C.size_t(1), &v[0])
 	if int(success) < 0 {
 		return false, strCat("Unable to set boolean variable value: ", lastErrorMessage())
 	} else {
@@ -247,12 +247,12 @@ func setBoolean(manipulator *C.cse_manipulator, slaveIndex int, valueRef int, va
 	}
 }
 
-func setString(manipulator *C.cse_manipulator, slaveIndex int, valueRef int, value string) (bool, string) {
-	vr := make([]C.cse_value_reference, 1)
-	vr[0] = C.cse_value_reference(valueRef)
+func setString(manipulator *C.cosim_manipulator, slaveIndex int, valueRef int, value string) (bool, string) {
+	vr := make([]C.cosim_value_reference, 1)
+	vr[0] = C.cosim_value_reference(valueRef)
 	v := make([]*C.char, 1)
 	v[0] = C.CString(value)
-	success := C.cse_manipulator_slave_set_string(manipulator, C.cse_slave_index(slaveIndex), &vr[0], C.size_t(1), &v[0])
+	success := C.cosim_manipulator_slave_set_string(manipulator, C.cosim_slave_index(slaveIndex), &vr[0], C.size_t(1), &v[0])
 	if int(success) < 0 {
 		return false, strCat("Unable to set boolean variable value", lastErrorMessage())
 	} else {
@@ -302,10 +302,10 @@ func setVariableValue(sim *Simulation, slaveIndex string, valueType string, valu
 	}
 }
 
-func resetVariable(manipulator *C.cse_manipulator, slaveIndex int, variableType C.cse_variable_type, valueRef int) (bool, string) {
-	vr := make([]C.cse_value_reference, 1)
-	vr[0] = C.cse_value_reference(valueRef)
-	success := C.cse_manipulator_slave_reset(manipulator, C.cse_slave_index(slaveIndex), variableType, &vr[0], C.size_t(1))
+func resetVariable(manipulator *C.cosim_manipulator, slaveIndex int, variableType C.cosim_variable_type, valueRef int) (bool, string) {
+	vr := make([]C.cosim_value_reference, 1)
+	vr[0] = C.cosim_value_reference(valueRef)
+	success := C.cosim_manipulator_slave_reset(manipulator, C.cosim_slave_index(slaveIndex), variableType, &vr[0], C.size_t(1))
 	if int(success) < 0 {
 		return false, strCat("Unable to reset variable value: ", lastErrorMessage())
 	} else {
@@ -324,13 +324,13 @@ func resetVariableValue(sim *Simulation, slaveIndex string, valueType string, va
 	}
 	switch valueType {
 	case "Real":
-		return resetVariable(sim.OverrideManipulator, index, C.CSE_VARIABLE_TYPE_REAL, valueRef)
+		return resetVariable(sim.OverrideManipulator, index, C.COSIM_VARIABLE_TYPE_REAL, valueRef)
 	case "Integer":
-		return resetVariable(sim.OverrideManipulator, index, C.CSE_VARIABLE_TYPE_INTEGER, valueRef)
+		return resetVariable(sim.OverrideManipulator, index, C.COSIM_VARIABLE_TYPE_INTEGER, valueRef)
 	case "Boolean":
-		return resetVariable(sim.OverrideManipulator, index, C.CSE_VARIABLE_TYPE_BOOLEAN, valueRef)
+		return resetVariable(sim.OverrideManipulator, index, C.COSIM_VARIABLE_TYPE_BOOLEAN, valueRef)
 	case "String":
-		return resetVariable(sim.OverrideManipulator, index, C.CSE_VARIABLE_TYPE_STRING, valueRef)
+		return resetVariable(sim.OverrideManipulator, index, C.COSIM_VARIABLE_TYPE_STRING, valueRef)
 	default:
 		message := strCat("Can't reset variable with type ", valueType, " and value reference ", valueReference, " for slave with index ", slaveIndex)
 		log.Println(message)
@@ -338,56 +338,56 @@ func resetVariableValue(sim *Simulation, slaveIndex string, valueType string, va
 	}
 }
 
-func parseCausality(causality C.cse_variable_causality) (string, error) {
+func parseCausality(causality C.cosim_variable_causality) (string, error) {
 	switch causality {
-	case C.CSE_VARIABLE_CAUSALITY_INPUT:
+	case C.COSIM_VARIABLE_CAUSALITY_INPUT:
 		return "input", nil
-	case C.CSE_VARIABLE_CAUSALITY_OUTPUT:
+	case C.COSIM_VARIABLE_CAUSALITY_OUTPUT:
 		return "output", nil
-	case C.CSE_VARIABLE_CAUSALITY_PARAMETER:
+	case C.COSIM_VARIABLE_CAUSALITY_PARAMETER:
 		return "parameter", nil
-	case C.CSE_VARIABLE_CAUSALITY_CALCULATEDPARAMETER:
+	case C.COSIM_VARIABLE_CAUSALITY_CALCULATEDPARAMETER:
 		return "calculatedParameter", nil
-	case C.CSE_VARIABLE_CAUSALITY_LOCAL:
+	case C.COSIM_VARIABLE_CAUSALITY_LOCAL:
 		return "local", nil
-	case C.CSE_VARIABLE_CAUSALITY_INDEPENDENT:
+	case C.COSIM_VARIABLE_CAUSALITY_INDEPENDENT:
 		return "independent", nil
 	}
 	return "", errors.New("Unable to parse variable causality")
 }
 
-func parseVariability(variability C.cse_variable_variability) (string, error) {
+func parseVariability(variability C.cosim_variable_variability) (string, error) {
 	switch variability {
-	case C.CSE_VARIABLE_VARIABILITY_CONSTANT:
+	case C.COSIM_VARIABLE_VARIABILITY_CONSTANT:
 		return "constant", nil
-	case C.CSE_VARIABLE_VARIABILITY_FIXED:
+	case C.COSIM_VARIABLE_VARIABILITY_FIXED:
 		return "fixed", nil
-	case C.CSE_VARIABLE_VARIABILITY_TUNABLE:
+	case C.COSIM_VARIABLE_VARIABILITY_TUNABLE:
 		return "tunable", nil
-	case C.CSE_VARIABLE_VARIABILITY_DISCRETE:
+	case C.COSIM_VARIABLE_VARIABILITY_DISCRETE:
 		return "discrete", nil
-	case C.CSE_VARIABLE_VARIABILITY_CONTINUOUS:
+	case C.COSIM_VARIABLE_VARIABILITY_CONTINUOUS:
 		return "continuous", nil
 	}
 	return "", errors.New("Unable to parse variable variability")
 }
 
-func parseType(valueType C.cse_variable_type) (string, error) {
+func parseType(valueType C.cosim_variable_type) (string, error) {
 	switch valueType {
-	case C.CSE_VARIABLE_TYPE_REAL:
+	case C.COSIM_VARIABLE_TYPE_REAL:
 		return "Real", nil
-	case C.CSE_VARIABLE_TYPE_INTEGER:
+	case C.COSIM_VARIABLE_TYPE_INTEGER:
 		return "Integer", nil
-	case C.CSE_VARIABLE_TYPE_STRING:
+	case C.COSIM_VARIABLE_TYPE_STRING:
 		return "String", nil
-	case C.CSE_VARIABLE_TYPE_BOOLEAN:
+	case C.COSIM_VARIABLE_TYPE_BOOLEAN:
 		return "Boolean", nil
 	}
 	return "", errors.New("unable to parse variable type")
 }
 
-func addVariableMetadata(execution *C.cse_execution, fmu *structs.FMU) error {
-	nVariables := C.cse_slave_get_num_variables(execution, C.cse_slave_index(fmu.ExecutionIndex))
+func addVariableMetadata(execution *C.cosim_execution, fmu *structs.FMU) error {
+	nVariables := C.cosim_slave_get_num_variables(execution, C.cosim_slave_index(fmu.ExecutionIndex))
 	if int(nVariables) < 0 {
 		return errors.New("invalid slave index to find variables for")
 	} else if int(nVariables) == 0 {
@@ -395,8 +395,8 @@ func addVariableMetadata(execution *C.cse_execution, fmu *structs.FMU) error {
 		return nil
 	}
 
-	var variables = make([]C.cse_variable_description, int(nVariables))
-	nVariablesRead := C.cse_slave_get_variables(execution, C.cse_slave_index(fmu.ExecutionIndex), &variables[0], C.size_t(nVariables))
+	var variables = make([]C.cosim_variable_description, int(nVariables))
+	nVariablesRead := C.cosim_slave_get_variables(execution, C.cosim_slave_index(fmu.ExecutionIndex), &variables[0], C.size_t(nVariables))
 	if int(nVariablesRead) < 0 {
 		return errors.New(strCat("Unable to get variables for slave with name ", fmu.Name))
 	}
@@ -426,14 +426,14 @@ func addVariableMetadata(execution *C.cse_execution, fmu *structs.FMU) error {
 	return nil
 }
 
-func fetchManipulatedVariables(execution *C.cse_execution) []structs.ManipulatedVariable {
-	nVars := int(C.cse_get_num_modified_variables(execution))
+func fetchManipulatedVariables(execution *C.cosim_execution) []structs.ManipulatedVariable {
+	nVars := int(C.cosim_get_num_modified_variables(execution))
 	if nVars <= 0 {
 		return nil
 	}
 
-	var variables = make([]C.cse_variable_id, nVars)
-	numVars := int(C.cse_get_modified_variables(execution, &variables[0], C.size_t(nVars)))
+	var variables = make([]C.cosim_variable_id, nVars)
+	numVars := int(C.cosim_get_modified_variables(execution, &variables[0], C.size_t(nVars)))
 
 	if numVars < 0 {
 		log.Println("Error while fetching modified variables: ", lastErrorMessage())
@@ -475,7 +475,7 @@ func simulationTeardown(sim *Simulation) (bool, string) {
 	}
 
 	sim.Execution = nil
-	sim.LocalSlaves = []*C.cse_slave{}
+	sim.LocalSlaves = []*C.cosim_slave{}
 	sim.Observer = nil
 	sim.TrendObserver = nil
 	sim.FileObserver = nil
@@ -571,7 +571,7 @@ func initializeSimulation(sim *Simulation, status *structs.SimulationStatus, con
 		return false, message, ""
 	}
 
-	var execution *C.cse_execution
+	var execution *C.cosim_execution
 	if config.isCseConfig {
 		execution = createConfigExecution(config.configFile)
 		if execution == nil {
@@ -612,7 +612,7 @@ func initializeSimulation(sim *Simulation, status *structs.SimulationStatus, con
 	trendObserver := createTrendObserver()
 	executionAddObserver(execution, trendObserver)
 
-	var fileObserver *C.cse_observer
+	var fileObserver *C.cosim_observer
 	if len(logDir) > 0 {
 		if hasFile(config.configDir, "LogConfig.xml") {
 			fileObserver = createFileObserverFromCfg(logDir, filepath.Join(config.configDir, "LogConfig.xml"))
@@ -796,7 +796,7 @@ func findVariable(fmu structs.FMU, variableName string) (foundVariable structs.V
 	return foundVariable, errors.New("Variable with name " + variableName + " does not exist for simulator " + fmu.Name)
 }
 
-func findModuleData(status *structs.SimulationStatus, metaData *structs.MetaData, observer *C.cse_observer) (module structs.Module) {
+func findModuleData(status *structs.SimulationStatus, metaData *structs.MetaData, observer *C.cosim_observer) (module structs.Module) {
 	if len(status.SignalSubscriptions) > 0 {
 
 		slave, err := findFmu(metaData, status.Module)
@@ -873,7 +873,7 @@ func StateUpdateLoop(state chan structs.JsonResponse, simulationStatus *structs.
 	}
 }
 
-func addFmu(execution *C.cse_execution, fmuPath string) (*C.cse_slave, error) {
+func addFmu(execution *C.cosim_execution, fmuPath string) (*C.cosim_slave, error) {
 	baseName := filepath.Base(fmuPath)
 	instanceName := strings.TrimSuffix(baseName, filepath.Ext(baseName))
 	fmt.Printf("Creating instance %s from %s\n", instanceName, fmuPath)
@@ -889,10 +889,10 @@ func addFmu(execution *C.cse_execution, fmuPath string) (*C.cse_slave, error) {
 	return localSlave, nil
 }
 
-func addMetadata(execution *C.cse_execution, metaData *structs.MetaData) error {
-	nSlaves := C.cse_execution_get_num_slaves(execution)
-	var slaveInfos = make([]C.cse_slave_info, int(nSlaves))
-	C.cse_execution_get_slave_infos(execution, &slaveInfos[0], nSlaves)
+func addMetadata(execution *C.cosim_execution, metaData *structs.MetaData) error {
+	nSlaves := C.cosim_execution_get_num_slaves(execution)
+	var slaveInfos = make([]C.cosim_slave_info, int(nSlaves))
+	C.cosim_execution_get_slave_infos(execution, &slaveInfos[0], nSlaves)
 	for _, info := range slaveInfos {
 		name := C.GoString(&info.name[0])
 		index := int(info.index)
@@ -954,14 +954,14 @@ func hasFile(folder string, fileName string) bool {
 }
 
 type Simulation struct {
-	Execution           *C.cse_execution
-	Observer            *C.cse_observer
-	TrendObserver       *C.cse_observer
-	FileObserver        *C.cse_observer
-	OverrideManipulator *C.cse_manipulator
-	ScenarioManager     *C.cse_manipulator
+	Execution           *C.cosim_execution
+	Observer            *C.cosim_observer
+	TrendObserver       *C.cosim_observer
+	FileObserver        *C.cosim_observer
+	OverrideManipulator *C.cosim_manipulator
+	ScenarioManager     *C.cosim_manipulator
 	MetaData            *structs.MetaData
-	LocalSlaves         []*C.cse_slave
+	LocalSlaves         []*C.cosim_slave
 }
 
 func CreateEmptySimulation() Simulation {
@@ -969,11 +969,11 @@ func CreateEmptySimulation() Simulation {
 }
 
 func SetupLogging() {
-	success := C.cse_log_setup_simple_console_logging()
+	success := C.cosim_log_setup_simple_console_logging()
 	if int(success) < 0 {
 		log.Println("Could not set up console logging!")
 	} else {
-		C.cse_log_set_output_level(C.CSE_LOG_SEVERITY_INFO)
+		C.cosim_log_set_output_level(C.COSIM_LOG_SEVERITY_INFO)
 		log.Println("Console logging set up with severity: INFO")
 	}
 }
