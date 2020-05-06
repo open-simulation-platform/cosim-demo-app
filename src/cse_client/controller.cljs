@@ -265,7 +265,8 @@
 
 (k/reg-event-fx ::trend-zoom-reset
                 (fn [{:keys [db]} _]
-                  (socket-command ["trend-zoom-reset" (:active-trend-index db) (-> db :trend-range str)])))
+                  (let [trend-range (or (:trend-range db) 10)]
+                    (socket-command ["trend-zoom-reset" (:active-trend-index db) (str trend-range)]))))
 
 (k/reg-event-fx ::trend-range
                 (fn [{:keys [db]} [new-range]]
