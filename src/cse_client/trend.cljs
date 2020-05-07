@@ -64,6 +64,12 @@
     "scatter" scatter-layout
     {}))
 
+(defn- autoscale! []
+  (js/Plotly.relayout
+   "plotly"
+   (clj->js {:xaxis {:autorange true}
+             :yaxis {:autorange true}})))
+
 (defn- namespaced
   "Takes a map and a symbol name or string and creates a new map with namespaced keys as defined by the symbol.
   E.g. (namespaced {:a 1} 'my-ns) -> {:my-ns/a 1}"
@@ -119,19 +125,19 @@
   (doseq [plot plots]
     (js/Plotly.addTraces dom-node (clj->js {:name (legend-fn plot) :x [] :y []}))))
 
-(defn- maybe-update-series [dom-node trend-values]
+(defn- update-traces [dom-node trend-values]
   (let [num-series (-> dom-node .-data .-length)]
-    (when (not= num-series (count trend-values))
-      (doseq [_ (range num-series)]
-        (js/Plotly.deleteTraces dom-node 0))
-      (case (:plot-type @(rf/subscribe [::active-trend]))
-        "trend"   (add-traces dom-node trend-values time-series-legend-name)
-        "scatter" (add-traces dom-node trend-values xy-plot-legend-name)))))
+    (doseq [_ (range num-series)]
+      (js/Plotly.deleteTraces dom-node 0))
+    (case (:plot-type @(rf/subscribe [::active-trend]))
+      "trend" (add-traces dom-node trend-values time-series-legend-name)
+      "scatter" (add-traces dom-node trend-values xy-plot-legend-name))))
 
 (defn- update-chart-data [dom-node trend-values layout trend-id]
   (when-not (= trend-id @id-store)
     (reset! id-store trend-id)
-    (delete-series dom-node))
+    (delete-series dom-node)
+    (autoscale!))
   (s/assert ::trend-values trend-values)
   (let [init-data {:x [] :y []}
         data      (reduce (fn [data {:keys [xvals yvals]}]
@@ -139,7 +145,7 @@
                                 (update :x conj xvals)
                                 (update :y conj yvals)))
                           init-data trend-values)]
-    (maybe-update-series dom-node trend-values)
+    (update-traces dom-node trend-values)
     (js/Plotly.update dom-node (clj->js data) (clj->js layout))))
 
 (defn- relayout-callback [js-event]
@@ -183,7 +189,7 @@
                               (.on (r/dom-node comp) "plotly_relayout" relayout-callback))
       :component-did-update update-plot
       :reagent-render       (fn []
-                              [:div.column])})))
+                              [:div#plotly.column])})))
 
 (defn variable-row []
   (let [untrending? (r/atom false)]
