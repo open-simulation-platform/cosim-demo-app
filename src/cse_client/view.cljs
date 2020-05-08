@@ -31,27 +31,27 @@
   (case plot-type
 
     "trend" (semantic/ui-dropdown-item
-              {:key     (str "trend-item-" id)
-               :text    (trend/plot-type-from-label label)
-               :label   "Time series"
-               :onClick #(rf/dispatch [::controller/add-to-trend current-module name index])})
+             {:key     (str "trend-item-" id)
+              :text    (trend/plot-type-from-label label)
+              :label   "Time series"
+              :onClick #(rf/dispatch [::controller/add-to-trend current-module name index])})
 
     "scatter" (when (xy-plottable? type)
                 (let [label-text (trend/plot-type-from-label label)
                       axis       (if (even? count) 'X 'Y)]
                   (semantic/ui-dropdown-item
-                    {:key     (str "trend-item-" id)
-                     :text    label-text
-                     :label   (str "XY plot - " axis " axis")
-                     :onClick #(rf/dispatch [::controller/add-to-trend current-module name index])})))))
+                   {:key     (str "trend-item-" id)
+                    :text    label-text
+                    :label   (str "XY plot - " axis " axis")
+                    :onClick #(rf/dispatch [::controller/add-to-trend current-module name index])})))))
 
 (defn action-dropdown [current-module name type trend-info]
   (when (and (seq trend-info) (plottable? type))
     (semantic/ui-dropdown
-      {:button false :text "Add to plot"}
-      (semantic/ui-dropdown-menu
-        {:direction 'left}
-        (map (partial trend-item current-module name type) trend-info)))))
+     {:button false :text "Add to plot"}
+     (semantic/ui-dropdown-menu
+      {:direction 'left}
+      (map (partial trend-item current-module name type) trend-info)))))
 
 (defn pages-menu []
   (let [current-page  @(rf/subscribe [:current-page])
@@ -151,14 +151,18 @@
        (simulation-status-header-text loaded?)]]
      (when loaded?
        [:div.item
-        [:div.header "Plots"]
+        [:div.header "Plots"
+         (when (not (empty? trend-info))
+           [:a {:style {:float 'right :cursor 'pointer :color 'gray}
+                :title (str "Save the current plots with variables as \"PlotConfig.json\""
+                            "\nto " @(rf/subscribe [:config-dir]) ".\n"
+                            "This will overwrite any existing PlotConfig.json file in this directory.")}
+            [:i.download.gray.icon {:on-click #(rf/dispatch [::controller/save-trends-configuration])}]])]
         [:div.menu
          [:a.item {:onClick #(rf/dispatch [::controller/new-trend "trend" (str "Time series #" (random-uuid))])}
-          "Create new time series"
-          [:i.chart.line.gray.icon]]
+          "Create new time series"]
          [:a.item {:onClick #(rf/dispatch [::controller/new-trend "scatter" (str "XY plot #" (random-uuid))])}
-          "Create new XY plot"
-          [:i.chart.line.gray.icon]]
+          "Create new XY plot"]
          (map (fn [{:keys [index label count plot-type]}]
                 [:div.item {:key label}
                  [:a.itemstyle {:class (when (and (= index (int active-trend-index)) (= route-name :trend)) "active")

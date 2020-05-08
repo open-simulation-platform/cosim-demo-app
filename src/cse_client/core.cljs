@@ -227,3 +227,5 @@
 
 
 (rf/reg-sub :plot-height #(:plot-height %))
+
+(rf/reg-sub :config-dir (comp :configDir :state))

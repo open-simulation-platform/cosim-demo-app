@@ -4,6 +4,7 @@
   (:require [kee-frame.core :as k]
             [kee-frame.websocket :as websocket]
             [cse-client.config :refer [socket-url]]
+            [ajax.core :as ajax]
             [re-frame.loggers :as re-frame-log]
             [cljs.spec.alpha :as s]
             [cljs.core.async :refer [<! timeout]]
@@ -299,3 +300,24 @@
 (k/reg-event-db ::set-plot-height
                 (fn [db [height]]
                   (assoc db :plot-height height)))
+
+(k/reg-event-fx ::save-trends-failure
+                (fn [_ [error]]
+                  {:dispatch [::feedback-message {:success false
+                                                  :message error
+                                                  :command "save-plot-config"}]}))
+
+(k/reg-event-fx ::save-trends-success
+                (fn [_ [response]]
+                  {:dispatch [::feedback-message {:success true
+                                                  :message response
+                                                  :command "save-plot-config"}]}))
+
+(k/reg-event-fx ::save-trends-configuration
+                (fn [_ _]
+                  {:http-xhrio {:method          :post
+                                :uri             "http://localhost:8000/plot-config"
+                                :format          (ajax/json-request-format)
+                                :on-failure      [::save-trends-failure]
+                                :on-success      [::save-trends-success]
+                                :response-format (ajax/json-response-format {:keywords? true})}}))
