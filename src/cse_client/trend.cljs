@@ -32,18 +32,27 @@
    :showlegend         true
    :uirevision         true
    :margin             {:l 0 :r 0 :t 25 :pad 5}
+   :xaxis              {:automargin true}
    :yaxis              {:automargin true}
-   :legend             {:orientation "h"}})
+   :legend             {:orientation "h"
+                        :uirevision true}})
 
 (def trend-layout
   (merge common-layout
-         {:xaxis {:title "Time [s]"}}))
+         {:xaxis {:automargin true
+                  :title {:text "Time [s]"
+                          :font {:size 14}}}}))
 
 (def scatter-layout
   (merge common-layout
          {:xaxis {:autorange true
                   :autotick  true
-                  :ticks     ""}}))
+                  :ticks     ""
+                  :automargin true}}))
+
+(def options
+  {:responsive true
+   :toImageButtonOptions {:width 1280 :height 768}})
 
 (defn- plotly-expand-button [plot-height plot-expanded?]
   (if @plot-expanded?
@@ -146,7 +155,7 @@
                                 (update :y conj yvals)))
                           init-data trend-values)]
     (update-traces dom-node trend-values)
-    (js/Plotly.update dom-node (clj->js data) (clj->js layout))))
+    (js/Plotly.update dom-node (clj->js data) (clj->js layout) (clj->js options))))
 
 (defn- relayout-callback [js-event]
   (let [event        (js->clj js-event)
@@ -182,7 +191,7 @@
                                                       :mode "lines"
                                                       :type "scatter"}])
                                            (clj->js layout)
-                                           (clj->js {:responsive true}))))]
+                                           (clj->js options))))]
     (r/create-class
      {:component-did-mount  (fn [comp]
                               (render-plot comp)
@@ -255,6 +264,7 @@
                         :trend-id     id}]]
 
          (when (not @plot-expanded?)
+
            [variables-table active-trend-index trend-values])]))))
 
 (rf/reg-sub ::active-trend #(get-in % [:state :trends (-> % :active-trend-index int)]))
