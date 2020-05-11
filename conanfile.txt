@@ -1,7 +1,7 @@
 [generators]
 
 [requires]
-libcosimc/0.7.0@osp/testing
+libcosimc/0.7.0@osp/feature_4-split-win-linux-workflows
 
 [options]
 cse-core:fmuproxy=True
