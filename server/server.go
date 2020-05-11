@@ -52,7 +52,9 @@ func Server(command chan []string, state chan structs.JsonResponse, simulationSt
 		if err != nil {
 			log.Println("Could not write PlotConfig to file, data: ", plotConfig, ", error was:", err)
 		}
-		json.NewEncoder(w).Encode("Wrote plot configuration to " + configDir + "/" + "PlotConfig.json")
+		msg := "Wrote plot configuration to " + configDir + "/" + "PlotConfig.json"
+		log.Println(msg)
+		json.NewEncoder(w).Encode(msg)
 	}).Methods("POST")
 
 	router.HandleFunc("/value/{module}/{cardinality}/{signal}", func(w http.ResponseWriter, r *http.Request) {
