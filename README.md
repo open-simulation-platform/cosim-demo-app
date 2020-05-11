@@ -14,16 +14,6 @@ How to build
 
 Throughout this guide, we will use Conan to manage C++ dependencies. However, you can also install the C++ dependencies manually.
 
-**Note: About the installation of MinGW-w64 (Windows)**
-
-An easier way to install it is to download the Mingw-w64 automated installer from 
-[here](https://sourceforge.net/projects/mingw-w64/files/Toolchains%20targetting%20Win32/Personal%20Builds/mingw-builds/installer/mingw-w64-install.exe/download) 
-and follow the steps in the wizard. It is essential that the installation path does not contain any spaces. 
-Install a current version and specify win32 as thread when requested. Additionally, choose the architecture x86_64.
-  
-After installing it, you need to add it to the PATH environment variable (add the path where
-your MinGW-w64 has been installed to e.g., C:\mingw\mingw64\bin). 
-
 ### Step 1: Configure Conan
 
 First, add the OSP Conan repository as a remote and configure the username and
