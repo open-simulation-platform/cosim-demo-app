@@ -1,0 +1,25 @@
+name: server-go CI
+
+# This workflow is triggered on pushes to the repository.
+on: [push]
+
+env:
+  CONAN_LOGIN_USERNAME_OSP: ${{ secrets.osp_conan_usr }}
+  CONAN_PASSWORD_OSP: ${{ secrets.osp_conan_pwd }}
+  CONAN_REVISIONS_ENABLED: 1
+  CONAN_NON_INTERACTIVE: True
+
+jobs:
+  linux:
+    name: Go
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-18.04, windows-2016, windows-2019]
+
+    steps:
+      - name: Go
+        run: go version
+      - name: Gcc
+        run: gcc --version
