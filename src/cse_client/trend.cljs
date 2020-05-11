@@ -228,7 +228,7 @@
      #_[:th {:style {:text-align 'right}} "Remove"]]]
    [:tbody
     (doall
-     (for [{:keys [module signal causality yvals]} trend-values] ^{:key (str module signal)}
+     (for [{:keys [module signal causality yvals]} trend-values] ^{:key (str module signal (rand-int 9999))}
        [variable-row trend-idx module signal causality (last yvals)]))]])
 
 (defn trend-outer []
