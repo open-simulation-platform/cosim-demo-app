@@ -19,6 +19,15 @@ jobs:
         os: [ubuntu-18.04, windows-2016, windows-2019]
 
     steps:
+      - uses: actions/checkout@v2
+      - name: Install prerequisites
+        run: |
+          sudo pip3 install --upgrade setuptools pip
+          sudo pip3 install conan
+      - name: Configure Conan
+        run: conan remote add osp https://osp-conan.azurewebsites.net/artifactory/api/conan/public --force
+      - name: Conan install
+        run: conan install -s build_type=Release -
       - name: Go
         run: go version
       - name: Gcc
