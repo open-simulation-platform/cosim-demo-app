@@ -44,4 +44,4 @@ jobs:
       - name: Go build
         run: go build -v
         env:
-          CGO_LDFLAGS: '-Wl,-rpath,$$ORIGIN/../lib'
+          CGO_LDFLAGS: '-Wl,-rpath,$ORIGIN/../lib'
