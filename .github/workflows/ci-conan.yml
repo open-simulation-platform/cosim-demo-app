@@ -22,9 +22,12 @@ jobs:
       - uses: actions/checkout@v2
       - name: Install prerequisites
         run: |
-          sudo pip3 install --upgrade setuptools pip
-          sudo pip3 install conan
+          pip3 install --upgrade setuptools pip
+          pip3 install conan
       - name: Configure Conan
+        run: conan profile update settings.compiler.libcxx=libstdc++11 default
+        if: runner.os == 'Linux'
+      - name: Add Conan remote
         run: conan remote add osp https://osp-conan.azurewebsites.net/artifactory/api/conan/public --force
       - name: Conan install
         run: conan install -s build_type=Release -
