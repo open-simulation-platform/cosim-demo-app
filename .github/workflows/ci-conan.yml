@@ -32,11 +32,14 @@ jobs:
           conan profile new default --detect
           conan profile update settings.compiler.libcxx=libstdc++11 default
         if: runner.os == 'Linux'
+      - name: Configure compiler.version for Windows
+        run: conan profile update settings.compiler.version=15 default
+        if: runner.os == 'Windows'
       - name: Add Conan remote
         run: conan remote add osp https://osp-conan.azurewebsites.net/artifactory/api/conan/public --force
       - name: Install Conan deps
         run: conan install -s build_type=Release .
         env:
-          CGO_LDFLAGS: "-Wl,-rpath,$ORIGIN/../lib"
+          CGO_LDFLAGS: '-Wl,-rpath,$ORIGIN/../lib'
       - name: Go build
         run: go build -v
