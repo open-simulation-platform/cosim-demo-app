@@ -41,7 +41,7 @@ jobs:
         run: conan remote add osp https://osp-conan.azurewebsites.net/artifactory/api/conan/public --force
       - name: Install Conan deps
         run: conan install -s build_type=Release .
-        env:
-          CGO_LDFLAGS: '-Wl,-rpath,$$ORIGIN/../lib'
       - name: Go build
         run: go build -v
+        env:
+          CGO_LDFLAGS: '-Wl,-rpath,$$ORIGIN/../lib'
