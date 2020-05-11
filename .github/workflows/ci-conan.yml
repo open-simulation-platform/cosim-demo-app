@@ -31,7 +31,9 @@ jobs:
           pip3 install conan
         if: runner.os == 'Windows'
       - name: Configure libcxx for Linux
-        run: conan profile update settings.compiler.libcxx=libstdc++11 default
+        run: |
+          conan profile new default --detect
+          conan profile update settings.compiler.libcxx=libstdc++11 default
         if: runner.os == 'Linux'
       - name: Add Conan remote
         run: conan remote add osp https://osp-conan.azurewebsites.net/artifactory/api/conan/public --force
