@@ -24,9 +24,7 @@ jobs:
         with:
           python-version: '3.x'
       - name: Install prerequisites
-        run: |
-          pip install --upgrade setuptools pip
-          pip install conan
+        run: pip install conan
       - name: Configure libcxx for Linux
         run: |
           conan profile new default --detect
@@ -48,5 +46,5 @@ jobs:
       - name: Upload artifact
         uses: actions/upload-artifact@v2
         with:
-          name: cse-server-go-{{ runner.os }}
+          name: cse-server-go-${{ runner.os }}
           path: dist
