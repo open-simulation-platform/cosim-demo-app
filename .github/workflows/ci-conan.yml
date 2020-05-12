@@ -16,7 +16,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        os: [ubuntu-18.04, windows-2016, windows-2019]
+        os: [ubuntu-18.04, windows-2019]
 
     steps:
       - uses: actions/checkout@v2
@@ -43,11 +43,17 @@ jobs:
         run: go build -v
         env:
           CGO_LDFLAGS: '-Wl,-rpath,$ORIGIN/../lib'
-      - name: Prepare distribution
+      - name: Prepare Windows distribution
         run: |
-          cp ./cse-server-go* dist/bin
-          cp ./run-linux ./dist
+          cp ./cse-server-go.exe dist/bin
           cp ./run-windows.cmd ./dist
+        if: runner.os == 'Windows'
+      - name: Prepare Linux distribution
+        run: |
+          cp ./cse-server-go dist/bin
+          cp ./run-linux ./dist
+          sh ./set-rpath ./dist/lib
+        if: runner.os == 'Linux'
       - name: Upload artifact
         uses: actions/upload-artifact@v2
         with:
