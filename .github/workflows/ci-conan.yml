@@ -47,7 +47,7 @@ jobs:
         run: |
           cp ./cse-server-go dist/bin
           cp ./run-linux ./dist
-          cp ./run-windows.cmd ./
+          cp ./run-windows.cmd ./dist
       - name: Upload artifact
         uses: actions/upload-artifact@v2
         with:
