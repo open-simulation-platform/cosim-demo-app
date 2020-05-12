@@ -45,7 +45,7 @@ jobs:
           CGO_LDFLAGS: '-Wl,-rpath,$ORIGIN/../lib'
       - name: Prepare distribution
         run: |
-          cp ./cse-server-go dist/bin
+          cp ./cse-server-go* dist/bin
           cp ./run-linux ./dist
           cp ./run-windows.cmd ./dist
       - name: Upload artifact
