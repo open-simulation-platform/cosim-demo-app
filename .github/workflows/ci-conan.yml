@@ -45,3 +45,8 @@ jobs:
         run: go build -v
         env:
           CGO_LDFLAGS: '-Wl,-rpath,$ORIGIN/../lib'
+      - name: Upload artifact
+        uses: actions/upload-artifact@v2
+        with:
+          name: cse-server-go
+          path: dist
