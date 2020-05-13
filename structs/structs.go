@@ -1,3 +1,7 @@
+// This Source Code Form is subject to the terms of the Mozilla Public
+// License, v. 2.0. If a copy of the MPL was not distributed with this
+// file, You can obtain one at https://mozilla.org/MPL/2.0/.
+
 package structs
 
 type Signal struct {
@@ -110,12 +114,12 @@ type CommandFeedback struct {
 
 type PlotVariable struct {
 	Simulator string `json:"simulator"`
-	Variable string `json:"variable"`
+	Variable  string `json:"variable"`
 }
 
 type Plot struct {
-	Label string `json:"label"`
-	PlotType string `json:"plotType"`
+	Label         string         `json:"label"`
+	PlotType      string         `json:"plotType"`
 	PlotVariables []PlotVariable `json:"variables"`
 }
 

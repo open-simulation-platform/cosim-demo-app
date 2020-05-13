@@ -1,3 +1,7 @@
+// This Source Code Form is subject to the terms of the Mozilla Public
+// License, v. 2.0. If a copy of the MPL was not distributed with this
+// file, You can obtain one at https://mozilla.org/MPL/2.0/.
+
 package server
 
 import (
@@ -38,7 +42,7 @@ func Server(command chan []string, state chan structs.JsonResponse, simulationSt
 		plots := []structs.Plot{}
 		for i := 0; i < len(trends); i++ {
 			trendValues := trends[i].TrendSignals
- 			variables := []structs.PlotVariable{}
+			variables := []structs.PlotVariable{}
 			for j := 0; j < len(trendValues); j++ {
 				plotVariable := structs.PlotVariable{trendValues[j].Module, trendValues[j].Signal}
 				variables = append(variables, plotVariable)
@@ -48,7 +52,7 @@ func Server(command chan []string, state chan structs.JsonResponse, simulationSt
 		}
 		plotConfig := structs.PlotConfig{plots}
 		plotConfigJson, _ := json.Marshal(plotConfig)
-		err := ioutil.WriteFile(configDir + "/" + "PlotConfig.json", plotConfigJson, 0644)
+		err := ioutil.WriteFile(configDir+"/"+"PlotConfig.json", plotConfigJson, 0644)
 		if err != nil {
 			log.Println("Could not write PlotConfig to file, data: ", plotConfig, ", error was:", err)
 		}
