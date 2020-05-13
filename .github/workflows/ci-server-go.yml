@@ -58,6 +58,9 @@ jobs:
         uses: actions/download-artifact@v1
         with:
           name: client
+      - uses: actions/setup-go@v2
+        with:
+          go-version: '1.14'
       - name: packr build
         run: packr build -v
         env:
