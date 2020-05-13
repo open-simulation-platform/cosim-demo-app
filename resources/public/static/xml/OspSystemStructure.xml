@@ -1,0 +1,42 @@
+<?xml version="1.0" encoding="utf-8"?>
+<OspSystemStructure xmlns="http://opensimulationplatform.com/MSMI/OSPSystemStructure">
+    <StartTime>0.0</StartTime>
+    <BaseStepSize>0.01</BaseStepSize>
+    <Algorithm>fixedStep</Algorithm>
+    <Simulators>
+        <Simulator name="MyModelInstance1" source="MyFmu1.fmu"/>
+        <Simulator name="MyModelInstance2" source="MyFmu2.fmu" stepSize="0.02">
+            <InitialValues>
+                <InitialValue variable="MyRealVariable">
+                    <Real value="5.3"/>
+                </InitialValue>
+            </InitialValues>
+        </Simulator>
+        <Simulator name="MyModelInstance3" source="fmu-proxy://localhost:9089?file=fmus/MyFmu3.fmu" stepSize="0.04">
+            <InitialValues>
+                <InitialValue variable="MyIntegerVariable">
+                    <Integer value="4"/>
+                </InitialValue>
+            </InitialValues>
+        </Simulator>
+    </Simulators>
+    <PlugSocketConnections/>
+    <BondConnections/>
+    <VariableConnections>
+        <ScalarConnection>
+            <Source simulator="MyModelInstance1" endpoint="Output1"/>
+            <Target simulator="MyModelInstance2" endpoint="Input1"/>
+        </ScalarConnection>
+        <ScalarConnection>
+            <Source simulator="MyModelInstance2" endpoint="OutputA"/>
+            <Target simulator="MyModelInstance3" endpoint="InputA"/>
+        </ScalarConnection>
+        <SumConnection>
+            <Sources>
+                <Source simulator="MyModelInstance1" endpoint="Output1"/>
+                <Source simulator="MyModelInstance2" endpoint="Output1"/>
+            </Sources>
+            <Target simulator="MyModelInstance3" endpoint="Input1"/>
+        </SumConnection>
+    </VariableConnections>
+</OspSystemStructure>
