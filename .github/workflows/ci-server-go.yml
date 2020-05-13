@@ -21,7 +21,7 @@ jobs:
       - uses: actions/upload-artifact@v1
         with:
           name: client
-          path: resources/public/js/compiled/app.js
+          path: resources/public/static/js/compiled/app.js
 
   server:
     name: Build Go Application with packr
