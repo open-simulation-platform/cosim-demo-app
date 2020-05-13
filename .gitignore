@@ -23,6 +23,11 @@ dist/
 conan_imports_manifest.txt
 conanbuildinfo.txt
 conaninfo.txt
+
+activate_run*
+deactivate_run*
+environment_run*
+
 graph_info.json
 
 # Created by .ignore support plugin (hsz.mobi)
