@@ -14,6 +14,8 @@ jobs:
         with:
           java-version: '11'
       - uses: DeLaGuardo/setup-clojure@2.0
+        with:
+          lein: latest
       - run: lein cljsbuild once min
       - run: lein cljsbuild test
       - uses: actions/upload-artifact@v1
