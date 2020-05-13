@@ -67,7 +67,7 @@ jobs:
           path: resources/public/static/js/compiled/
       - name: Display structure of downloaded files
         run: ls -R
-          working-directory: resources/public/js/compiled
+        working-directory: resources/public/js/compiled
       - uses: actions/setup-go@v2
         with:
           go-version: '1.14'
