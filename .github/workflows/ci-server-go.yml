@@ -16,6 +16,12 @@ jobs:
       - uses: DeLaGuardo/setup-clojure@2.0
         with:
           lein: latest
+      - uses: actions/cache@v1
+        with:
+          path: ~/.m2/repository
+          key: ${{ runner.os }}-m2-${{ hashFiles('**/project.clj') }}
+          restore-keys: |
+            ${{ runner.os }}-m2-
       - run: lein cljsbuild once min
       - run: lein cljsbuild test
       - uses: actions/upload-artifact@v1
