@@ -3,20 +3,38 @@ name: server-go CI
 # This workflow is triggered on pushes to the repository.
 on: [push]
 
-env:
-  CONAN_LOGIN_USERNAME_OSP: ${{ secrets.osp_conan_usr }}
-  CONAN_PASSWORD_OSP: ${{ secrets.osp_conan_pwd }}
-  CONAN_REVISIONS_ENABLED: 1
-  CONAN_NON_INTERACTIVE: True
-
 jobs:
-  linux:
-    name: Go
+  client:
+    name: Build client
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@2
+      - uses: actions/setup-java@v1
+        with:
+          java-version: '11'
+      - uses: DeLaGuardo/setup-clojure@2.0
+      - run: lein cljsbuild once min
+      - run: lein cljsbuild test
+      uses: actions/upload-artifact@v1
+        with:
+          name: client
+          path: resources/public/js/compiled/app.js
+
+  server:
+    name: Build Go Application with packr
+    needs: client
     runs-on: ${{ matrix.os }}
     strategy:
       fail-fast: false
       matrix:
-        os: [ubuntu-18.04, windows-2019]
+        os: [ubuntu-18.04, windows-2016]
+
+    env:
+      CONAN_LOGIN_USERNAME_OSP: ${{ secrets.osp_conan_usr }}
+      CONAN_PASSWORD_OSP: ${{ secrets.osp_conan_pwd }}
+      CONAN_REVISIONS_ENABLED: 1
+      CONAN_NON_INTERACTIVE: True
 
     steps:
       - uses: actions/checkout@v2
@@ -30,17 +48,16 @@ jobs:
           conan profile new default --detect
           conan profile update settings.compiler.libcxx=libstdc++11 default
         if: runner.os == 'Linux'
-      - name: Configure compiler.version for Windows
-        run: |
-          conan profile new default --detect
-          conan profile update settings.compiler.version=15 default
-        if: runner.os == 'Windows'
       - name: Add Conan remote
         run: conan remote add osp https://osp-conan.azurewebsites.net/artifactory/api/conan/public --force
       - name: Install Conan deps
         run: conan install -s build_type=Release .
-      - name: Go build
-        run: go build -v
+      - name: Download client
+        uses: actions/download-artifact@v1
+        with:
+          name: client
+      - name: packr build
+        run: packr build -v
         env:
           CGO_LDFLAGS: '-Wl,-rpath,$ORIGIN/../lib'
       - name: Prepare Windows distribution
