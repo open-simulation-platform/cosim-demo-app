@@ -82,6 +82,7 @@ jobs:
         if: runner.os == 'Windows'
       - name: Prepare Linux distribution
         run: |
+          mkdir -p dist/bin
           cp ./cse-server-go dist/bin
           cp ./run-linux ./dist
           cp ./run-fmuproxy ./dist

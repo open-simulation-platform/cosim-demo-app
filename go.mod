@@ -1,5 +1,7 @@
 module cse-server-go
 
+go 1.14
+
 require (
 	github.com/gobuffalo/buffalo-plugins v1.11.0 // indirect
 	github.com/gobuffalo/meta v0.0.0-20190120163247-50bbb1fa260d // indirect
