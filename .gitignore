@@ -14,10 +14,8 @@ cse-server-go
 # Output of the go coverage tool, specifically when used with LiteIDE
 *.out
 
-.idea
-
 # Client build directory and artifact
-resources/public/
+resources/public/static/js/compiled/*
 
 # Conan output
 include/
@@ -25,4 +23,19 @@ dist/
 conan_imports_manifest.txt
 conanbuildinfo.txt
 conaninfo.txt
+
+activate_run*
+deactivate_run*
+environment_run*
+
 graph_info.json
+
+# Created by .ignore support plugin (hsz.mobi)
+
+.idea
+*.iml
+
+target
+
+.nrepl-port
+figwheel_server.log

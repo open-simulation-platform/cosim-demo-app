@@ -33,15 +33,19 @@ password to access it:
     conan user -p "Open Simulation Platform" -r osp osp
 
 ### Step 2: Cse Client
+Providing graphical user interface for CSE.
 
-If you want to include the cse-client in the server you will have to manually copy in the client app. Latest build of
-the client is available here: https://osp-jenkins.azurewebsites.net/job/open-simulation-platform/job/cse-client/job/master/lastSuccessfulBuild/artifact/
+#### Development mode
+- Install a JDK https://www.oracle.com/technetwork/java/javase/downloads/jdk8-downloads-2133151.html
+- Install leiningen https://leiningen.org/
+- Run `lein figwheel`
+- View it in your browser at http://localhost:3449
 
-Extract the files into:
+You now have a framework running for live reloading of client code.
 
-    ./resources/public
-
-Alternatively you can run the client using figwheel as described in https://github.com/open-simulation-platform/cse-client
+#### Building the client
+- Run `lein cljsbuild once min`
+- The client application will be compiled to `/resources/js/compiled`
 
 ### Step 3: Build and run
 

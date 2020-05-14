@@ -1,0 +1,4 @@
+^{:watch-dirs   ["test" "src"]
+  :css-dirs     ["resources/public/static/css"]
+  :auto-testing true}
+{:main cse-client.core}
