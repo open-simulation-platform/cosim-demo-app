@@ -78,13 +78,17 @@ jobs:
         run: |
           cp ./cse-server-go.exe dist/bin
           cp ./run-windows.cmd ./dist
+          cp ./run-fmuproxy.cmd ./dist
         if: runner.os == 'Windows'
       - name: Prepare Linux distribution
         run: |
           cp ./cse-server-go dist/bin
           cp ./run-linux ./dist
+          cp ./run-fmuproxy ./dist
           sh ./set-rpath ./dist/lib
         if: runner.os == 'Linux'
+      - name: Download fmuproxy
+        run: curl https://github.com/NTNU-IHB/FMU-proxy/releases/download/v0.6.1/fmu-proxy.jar -o dist/bin/fmu-proxy.jar -L
       - name: Upload artifact
         uses: actions/upload-artifact@v2
         with:
