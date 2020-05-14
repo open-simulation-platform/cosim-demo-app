@@ -1,7 +1,7 @@
 package cse
 
 /*
-	#include <cse.h>
+	#include <cosim.h>
 */
 import "C"
 import (
@@ -15,13 +15,13 @@ import (
 	"strings"
 )
 
-func createScenarioManager() (manipulator *C.cse_manipulator) {
-	manipulator = C.cse_scenario_manager_create()
+func createScenarioManager() (manipulator *C.cosim_manipulator) {
+	manipulator = C.cosim_scenario_manager_create()
 	return
 }
 
-func isScenarioRunning(manipulator *C.cse_manipulator) bool {
-	intVal := C.cse_scenario_is_running(manipulator)
+func isScenarioRunning(manipulator *C.cosim_manipulator) bool {
+	intVal := C.cosim_scenario_is_running(manipulator)
 	return intVal > 0
 }
 
@@ -45,7 +45,7 @@ func loadScenario(sim *Simulation, status *structs.SimulationStatus, filename st
 	if !doesFileExist(pathToFile) {
 		return false, strCat("Can't find file ", pathToFile)
 	}
-	success := C.cse_execution_load_scenario(sim.Execution, sim.ScenarioManager, C.CString(pathToFile))
+	success := C.cosim_execution_load_scenario(sim.Execution, sim.ScenarioManager, C.CString(pathToFile))
 	if success < 0 {
 		return false, strCat("Problem loading scenario file: ", lastErrorMessage())
 	}
@@ -53,8 +53,8 @@ func loadScenario(sim *Simulation, status *structs.SimulationStatus, filename st
 	return true, strCat("Successfully loaded scenario ", pathToFile)
 }
 
-func abortScenario(manipulator *C.cse_manipulator) (bool, string) {
-	intVal := C.cse_scenario_abort(manipulator)
+func abortScenario(manipulator *C.cosim_manipulator) (bool, string) {
+	intVal := C.cosim_scenario_abort(manipulator)
 	if int(intVal) < 0 {
 		return false, strCat("Failed to abort scenario: ", lastErrorMessage())
 	} else {
