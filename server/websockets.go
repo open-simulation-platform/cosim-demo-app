@@ -1,3 +1,7 @@
+// This Source Code Form is subject to the terms of the Mozilla Public
+// License, v. 2.0. If a copy of the MPL was not distributed with this
+// file, You can obtain one at https://mozilla.org/MPL/2.0/.
+
 package server
 
 import (
@@ -11,10 +15,10 @@ import (
 )
 
 type JsonRequest struct {
-	Command     []string `json:"command,omitempty"`
+	Command []string `json:"command,omitempty"`
 }
 
-var upgrader = websocket.Upgrader{CheckOrigin: func(r *http.Request) bool { return true },}
+var upgrader = websocket.Upgrader{CheckOrigin: func(r *http.Request) bool { return true }}
 
 func commandLoop(command chan []string, conn *websocket.Conn) {
 	var (

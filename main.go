@@ -1,3 +1,7 @@
+// This Source Code Form is subject to the terms of the Mozilla Public
+// License, v. 2.0. If a copy of the MPL was not distributed with this
+// file, You can obtain one at https://mozilla.org/MPL/2.0/.
+
 package main
 
 import (
@@ -15,9 +19,9 @@ func main() {
 	state := make(chan structs.JsonResponse, 10)
 
 	simulationStatus := structs.SimulationStatus{
-		Loaded:   false,
-		Status:   "stopped",
-		Trends:   []structs.Trend{},
+		Loaded: false,
+		Status: "stopped",
+		Trends: []structs.Trend{},
 	}
 
 	// Passing the channel to the go routine
