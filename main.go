@@ -5,14 +5,14 @@
 package main
 
 import (
-	"cse-server-go/cse"
+	"cse-server-go/libcosim"
 	"cse-server-go/server"
 	"cse-server-go/structs"
 )
 
 func main() {
-	cse.SetupLogging()
-	sim := cse.CreateEmptySimulation()
+	libcosim.SetupLogging()
+	sim := libcosim.CreateEmptySimulation()
 
 	// Creating a command channel
 	cmd := make(chan []string, 10)
@@ -25,9 +25,9 @@ func main() {
 	}
 
 	// Passing the channel to the go routine
-	go cse.StateUpdateLoop(state, &simulationStatus, &sim)
-	go cse.CommandLoop(state, &sim, cmd, &simulationStatus)
-	go cse.TrendLoop(&sim, &simulationStatus)
+	go libcosim.StateUpdateLoop(state, &simulationStatus, &sim)
+	go libcosim.CommandLoop(state, &sim, cmd, &simulationStatus)
+	go libcosim.TrendLoop(&sim, &simulationStatus)
 
 	//Passing the channel to the server
 	server.Server(cmd, state, &simulationStatus, &sim)

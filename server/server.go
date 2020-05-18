@@ -5,7 +5,7 @@
 package server
 
 import (
-	"cse-server-go/cse"
+	"cse-server-go/libcosim"
 	"cse-server-go/structs"
 	"encoding/json"
 	"github.com/gobuffalo/packr"
@@ -15,13 +15,13 @@ import (
 	"net/http"
 )
 
-func Server(command chan []string, state chan structs.JsonResponse, simulationStatus *structs.SimulationStatus, sim *cse.Simulation) {
+func Server(command chan []string, state chan structs.JsonResponse, simulationStatus *structs.SimulationStatus, sim *libcosim.Simulation) {
 	router := mux.NewRouter()
 	box := packr.NewBox("../resources/public")
 
 	router.HandleFunc("/status", func(w http.ResponseWriter, r *http.Request) {
 		w.Header().Set("Content-Type", "application/json")
-		json.NewEncoder(w).Encode(cse.GenerateJsonResponse(simulationStatus, sim, structs.CommandFeedback{}, structs.ShortLivedData{}))
+		json.NewEncoder(w).Encode(libcosim.GenerateJsonResponse(simulationStatus, sim, structs.CommandFeedback{}, structs.ShortLivedData{}))
 	})
 
 	router.HandleFunc("/modules", func(w http.ResponseWriter, r *http.Request) {
@@ -67,7 +67,7 @@ func Server(command chan []string, state chan structs.JsonResponse, simulationSt
 		module := vars["module"]
 		cardinality := vars["cardinality"]
 		signal := vars["signal"]
-		json.NewEncoder(w).Encode(cse.GetSignalValue(module, cardinality, signal))
+		json.NewEncoder(w).Encode(libcosim.GetSignalValue(module, cardinality, signal))
 	})
 
 	router.HandleFunc("/command", func(w http.ResponseWriter, r *http.Request) {
