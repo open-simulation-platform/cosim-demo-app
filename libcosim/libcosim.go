@@ -11,7 +11,7 @@ package libcosim
 */
 import "C"
 import (
-	"cse-server-go/structs"
+	"cosim-demo-app/structs"
 	"errors"
 	"fmt"
 	"io/ioutil"
@@ -534,7 +534,7 @@ type configuration struct {
 	configFile  string
 	configDir   string
 	isSsdConfig bool
-	isCseConfig bool
+	isOspConfig bool
 }
 
 func checkConfiguration(configPath string) (valid bool, message string, config configuration) {
@@ -549,7 +549,7 @@ func checkConfiguration(configPath string) (valid bool, message string, config c
 		config.configDir = configPath
 		if hasFile(configPath, "OspSystemStructure.xml") {
 			config.configFile = filepath.Join(configPath, "OspSystemStructure.xml")
-			config.isCseConfig = true
+			config.isOspConfig = true
 		} else if hasFile(configPath, "SystemStructure.ssd") {
 			config.configFile = filepath.Join(configPath, "SystemStructure.ssd")
 			config.isSsdConfig = true
@@ -558,7 +558,7 @@ func checkConfiguration(configPath string) (valid bool, message string, config c
 		config.configFile = configPath
 		config.configDir = filepath.Dir(configPath)
 		if strings.HasSuffix(configPath, ".xml") {
-			config.isCseConfig = true
+			config.isOspConfig = true
 		} else if strings.HasSuffix(configPath, ".ssd") {
 			config.isSsdConfig = true
 		} else {
@@ -576,7 +576,7 @@ func initializeSimulation(sim *Simulation, status *structs.SimulationStatus, con
 	}
 
 	var execution *C.cosim_execution
-	if config.isCseConfig {
+	if config.isOspConfig {
 		execution = createConfigExecution(config.configFile)
 		if execution == nil {
 			return false, strCat("Could not create execution from OspSystemStructure.xml file: ", lastErrorMessage()), ""

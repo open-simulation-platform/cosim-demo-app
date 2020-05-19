@@ -5,8 +5,8 @@
 package server
 
 import (
-	"cse-server-go/libcosim"
-	"cse-server-go/structs"
+	"cosim-demo-app/libcosim"
+	"cosim-demo-app/structs"
 	"encoding/json"
 	"github.com/gobuffalo/packr"
 	"github.com/gorilla/mux"

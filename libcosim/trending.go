@@ -5,7 +5,7 @@
 package libcosim
 
 import (
-	"cse-server-go/structs"
+	"cosim-demo-app/structs"
 	"encoding/json"
 	"io/ioutil"
 	"log"

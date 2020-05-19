@@ -11,7 +11,7 @@ package libcosim
 */
 import "C"
 import (
-	"cse-server-go/structs"
+	"cosim-demo-app/structs"
 	"errors"
 )
 

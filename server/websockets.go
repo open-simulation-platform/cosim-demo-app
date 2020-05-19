@@ -5,7 +5,7 @@
 package server
 
 import (
-	"cse-server-go/structs"
+	"cosim-demo-app/structs"
 	"github.com/gorilla/websocket"
 	"github.com/ugorji/go/codec"
 	"io"

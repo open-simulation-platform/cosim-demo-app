@@ -5,9 +5,9 @@
 package main
 
 import (
-	"cse-server-go/libcosim"
-	"cse-server-go/server"
-	"cse-server-go/structs"
+	"cosim-demo-app/libcosim"
+	"cosim-demo-app/server"
+	"cosim-demo-app/structs"
 )
 
 func main() {
