@@ -31,12 +31,20 @@
 (defn one []
   (let [scenario @(rf/subscribe [:scenario])
         scenario-id @(rf/subscribe [:scenario-id])
+        scenario-percent @(rf/subscribe [:scenario-percent])
+        scenario-start-time @(rf/subscribe [:scenario-start-time])
         running? @(rf/subscribe [:scenario-running? scenario-id])
         any-running? @(rf/subscribe [:any-scenario-running?])]
     [:div
      [:div.ui.header "Actions"]
+     (if any-running?
+       (rf/dispatch [::controller/scenario-start])
+       (rf/dispatch [::controller/scenario-stop]))
      (if running?
-       [running-button scenario-id]
+       [:div
+        [running-button scenario-id]
+        [:div.ui.header (str "Script execution: " scenario-percent "%")]
+        [:div (str "Scenario start time: " scenario-start-time)]]
        [run-button scenario-id any-running? (not (:valid? scenario))])
      [:div.ui.header "Description"]
      [:div (or (:description scenario) "No description available")]

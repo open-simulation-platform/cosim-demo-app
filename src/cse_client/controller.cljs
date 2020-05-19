@@ -182,6 +182,16 @@
                 (fn [db _]
                   (dissoc db :scenario-id)))
 
+(k/reg-event-db ::scenario-start
+                (fn [db]
+                    (if (nil? (:scenario-start-time db))
+                      (assoc db :scenario-start-time (-> db :state :time))
+                      (assoc db :scenario-start-time (-> db :scenario-start-time)))))
+
+(k/reg-event-db ::scenario-stop
+                (fn [db]
+                    (dissoc db :scenario-start-time)))
+
 (k/reg-event-fx ::load
                 (fn [{:keys [db]} [folder log-folder]]
                   (let [paths (distinct (conj (:prev-paths db) folder))]

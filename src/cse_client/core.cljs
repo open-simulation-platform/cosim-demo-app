@@ -50,6 +50,16 @@
 (defn simulation-time [db]
   (some-> db :state :time (.toFixed 3)))
 
+(defn scenario-percent [db]
+      (let [simulation-time     (simulation-time db)
+            scenario-start-time (some-> db :scenario-start-time (.toFixed 3))
+            end-time            (some-> db :state :scenario :end (.toFixed 3))]
+           (if (not (nil? scenario-start-time))
+             (-> (/ (- simulation-time scenario-start-time) end-time)
+                 (* 100)
+                 (.toFixed 2))
+             0.00)))
+
 (defn real-time-factor [db]
   (some-> db :state :realTimeFactor (.toFixed 3)))
 
@@ -94,6 +104,8 @@
 (rf/reg-sub :current-module #(:current-module %))
 
 (rf/reg-sub :current-module-index #(-> % :current-module-meta :index))
+
+(rf/reg-sub :scenario-percent scenario-percent)
 
 (rf/reg-sub :pages
             (fn [db]
@@ -183,6 +195,10 @@
             (fn [db]
               (-> db :state :running-scenario seq)))
 
+
+(rf/reg-sub :scenario-start-time
+            (fn [db]
+                (:scenario-start-time db)))
 
 (rf/reg-sub :scenario (fn [db]
                         (->> db
