@@ -121,11 +121,11 @@
                                  :value)))
 
 (rf/reg-sub :trend-info (fn [db _]
-                          (map-indexed
-                            (fn [idx {:keys [trend-values] :as trend}]
-                              (-> (select-keys trend [:id :label :plot-type])
-                                  (assoc :index idx)
-                                  (assoc :count (count trend-values)))) (-> db :state :trends))))
+                          (map-indexed (fn [idx {:keys [trend-values] :as trend}]
+                                         (-> (select-keys trend [:id :label :plot-type])
+                                             (assoc :index idx)
+                                             (assoc :count (count trend-values))))
+                                       (-> db :state :trends))))
 
 (rf/reg-sub :active-guide-tab :active-guide-tab)
 
@@ -150,7 +150,7 @@
     (-> event
         (assoc :model-valid? model-valid? :variable-valid? variable-valid? :valid? (and model-valid? variable-valid?))
         (assoc :validation-message (cond
-                                     (not model-valid?) "Can't find a model with this name"
+                                     (not model-valid?)    "Can't find a model with this name"
                                      (not variable-valid?) "Can't find a variable with this name")))))
 
 (defn merge-defaults [db scenario]
@@ -223,9 +223,12 @@
                             :page                           1
                             :vars-per-page                  20
                             :prev-paths                     (reader/read-string (storage/get-item "cse-paths"))
-                            :show-success-feedback-messages (reader/read-string (storage/get-item "show-success-feedback-message"))}})
+                            :show-success-feedback-messages (reader/read-string (storage/get-item "show-success-feedback-message"))
+                            :plot-config-changed?           false}})
 
 
 (rf/reg-sub :plot-height #(:plot-height %))
 
 (rf/reg-sub :config-dir (comp :configDir :state))
+
+(rf/reg-sub :plot-config-changed? #(:plot-config-changed? %))
