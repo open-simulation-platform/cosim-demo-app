@@ -122,10 +122,6 @@
     (assoc variable :editable? true)
     variable))
 
-(k/reg-event-db ::guide-navigate
-                (fn [db [header]]
-                  (assoc db :active-guide-tab header)))
-
 (defn encode-variables [variables]
   (->> variables
        (map (fn [{:keys [name causality type value-reference]}]

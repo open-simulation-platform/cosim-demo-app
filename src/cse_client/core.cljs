@@ -21,7 +21,6 @@
   [["/" :index]
    ["/modules/:module/:causality" :module]
    ["/trend/:index" :trend]
-   ["/guide" :guide]
    ["/scenarios" :scenarios]
    ["/scenarios/:id" :scenario]])
 
@@ -131,8 +130,6 @@
                                   (assoc :index idx)
                                   (assoc :count (count trend-values)))) (-> db :state :trends))))
 
-(rf/reg-sub :active-guide-tab :active-guide-tab)
-
 (rf/reg-sub :current-page #(:page %))
 (rf/reg-sub :vars-per-page #(:vars-per-page %))
 
@@ -223,8 +220,7 @@
            :hash-routing?  true
            :debug?         (if debug {:blacklist #{::controller/socket-message-received}} false)
            :root-component [view/root-comp]
-           :initial-db     {:active-guide-tab               "About"
-                            :page                           1
+           :initial-db     {:page                           1
                             :vars-per-page                  20
                             :prev-paths                     (reader/read-string (storage/get-item "cse-paths"))
                             :show-success-feedback-messages (reader/read-string (storage/get-item "show-success-feedback-message"))}})
