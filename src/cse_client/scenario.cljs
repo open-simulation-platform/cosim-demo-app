@@ -28,23 +28,33 @@
    "Abort scenario"
    [:i.red.stop.icon]])
 
+(defn round-number
+      [f]
+      (/ (.round js/Math (* 100 f)) 100))
+
 (defn one []
   (let [scenario @(rf/subscribe [:scenario])
         scenario-id @(rf/subscribe [:scenario-id])
         scenario-percent @(rf/subscribe [:scenario-percent])
         scenario-start-time @(rf/subscribe [:scenario-start-time])
+        scenario-current-time @(rf/subscribe [:scenario-current-time])
         running? @(rf/subscribe [:scenario-running? scenario-id])
         any-running? @(rf/subscribe [:any-scenario-running?])]
     [:div
      [:div.ui.header "Actions"]
-     (if any-running?
-       (rf/dispatch [::controller/scenario-start])
-       (rf/dispatch [::controller/scenario-stop]))
+     (when (and any-running?
+                (nil? scenario-start-time))
+           (rf/dispatch [::controller/scenario-start]))
+     (when (and (not any-running?)
+                (not (nil? scenario-start-time)))
+           (rf/dispatch [::controller/scenario-stop]))
      (if running?
        [:div
         [running-button scenario-id]
-        [:div.ui.header (str "Script execution: " scenario-percent "%")]
-        [:div (str "Scenario start time: " scenario-start-time)]]
+        (when (not (nil? scenario-percent)) [:span
+                                             [:div (str "Scenario start time: " (round-number scenario-start-time) "s")]
+                                             [:div (str "Scenario current time: " (round-number scenario-current-time) "s")]
+                                             [:div (str "Scenario execution: " (round-number scenario-percent) "%")]])]
        [run-button scenario-id any-running? (not (:valid? scenario))])
      [:div.ui.header "Description"]
      [:div (or (:description scenario) "No description available")]
@@ -59,7 +69,10 @@
         [:th "Value"]]]
       [:tbody
        (map-indexed (fn [index {:keys [time model variable action value model-valid? variable-valid? validation-message] :as event}]
-                      [:tr {:key (str "scenario-" index "-event")}
+                      [:tr {:key   (str "scenario-" index "-event")
+                            :class (if (and running?
+                                            (not (nil? scenario-percent))
+                                            (< time scenario-current-time)) "positive" "")}
                        [:td time]
                        [cellie model model-valid? validation-message]
                        [cellie variable variable-valid? validation-message]

@@ -143,7 +143,8 @@
         loaded?            @(rf/subscribe [:loaded?])
         trend-info         @(rf/subscribe [:trend-info])
         active-trend-index @(rf/subscribe [:active-trend-index])
-        scenarios          @(rf/subscribe [:scenarios])]
+        scenarios          @(rf/subscribe [:scenarios])
+        scenario-percent   @(rf/subscribe [:scenario-percent])]
     [:div.ui.secondary.vertical.fluid.menu
      [:div.item
       [:a.header {:href  (k/path-for [:index])
@@ -189,10 +190,11 @@
          "Scenarios"]
         [:div.menu
          (map (fn [{:keys [id running?]}]
-                [:a.item {:class (when (= (-> route :path-params :id) id) "active")
-                          :key   id
-                          :href  (k/path-for [:scenario {:id id}])} (scenario/scenario-filename-to-name id)
-                 (when running? [:i.green.play.icon])])
+                  [:a.item {:class (when (= (-> route :path-params :id) id) "active")
+                            :key   id
+                            :href  (k/path-for [:scenario {:id id}])} (scenario/scenario-filename-to-name id)
+                   (when running? [:div {:style {:display 'inline-block :float 'right}} (str scenario-percent "%")
+                                   [:i.green.play.icon]])])
               scenarios)]])
      [:div.ui.divider]
      [:div.item

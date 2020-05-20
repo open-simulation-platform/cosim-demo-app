@@ -52,13 +52,11 @@
 
 (defn scenario-percent [db]
       (let [simulation-time     (simulation-time db)
-            scenario-start-time (some-> db :scenario-start-time (.toFixed 3))
-            end-time            (some-> db :state :scenario :end (.toFixed 3))]
-           (if (not (nil? scenario-start-time))
-             (-> (/ (- simulation-time scenario-start-time) end-time)
-                 (* 100)
-                 (.toFixed 2))
-             0.00)))
+            scenario-start-time (:scenario-start-time db)
+            scenario-end-time   (:scenario-end-time db)]
+           (if (or (nil? scenario-start-time) (nil? scenario-end-time))
+             nil
+             (-> (/ (- simulation-time scenario-start-time) scenario-end-time) (* 100) (.toFixed 2)))))
 
 (defn real-time-factor [db]
   (some-> db :state :realTimeFactor (.toFixed 3)))
@@ -199,6 +197,12 @@
 (rf/reg-sub :scenario-start-time
             (fn [db]
                 (:scenario-start-time db)))
+
+(rf/reg-sub :scenario-current-time
+            (fn [db]
+                (let [scenario-start-time (:scenario-start-time db)
+                      simulation-time (-> db :state :time)]
+                     (- simulation-time scenario-start-time))))
 
 (rf/reg-sub :scenario (fn [db]
                         (->> db

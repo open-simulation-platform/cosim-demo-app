@@ -184,9 +184,8 @@
 
 (k/reg-event-db ::scenario-start
                 (fn [db]
-                    (if (nil? (:scenario-start-time db))
-                      (assoc db :scenario-start-time (-> db :state :time))
-                      (assoc db :scenario-start-time (-> db :scenario-start-time)))))
+                    (assoc db :scenario-start-time (-> db :state :time)
+                              :scenario-end-time (some-> db :state :scenario :end))))
 
 (k/reg-event-db ::scenario-stop
                 (fn [db]
