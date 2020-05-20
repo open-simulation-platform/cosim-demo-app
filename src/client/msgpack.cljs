@@ -2,7 +2,7 @@
 ;; License, v. 2.0. If a copy of the MPL was not distributed with this
 ;; file, You can obtain one at https://mozilla.org/MPL/2.0/.
 
-(ns cse-client.msgpack
+(ns client.msgpack
   "Code copied from https://github.com/pkcsecurity/msgpack-cljs due to lack of
   hosting on clojars or other repositories. License at time of copy is APACHE
   2.0, see https://www.apache.org/licenses/LICENSE-2.0

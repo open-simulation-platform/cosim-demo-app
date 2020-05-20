@@ -2,9 +2,9 @@
 ;; License, v. 2.0. If a copy of the MPL was not distributed with this
 ;; file, You can obtain one at https://mozilla.org/MPL/2.0/.
 
-(ns cse-client.msgpack-format
+(ns client.msgpack-format
   (:require [chord.format :as f]
-            [cse-client.msgpack :as msgpack]))
+            [client.msgpack :as msgpack]))
 
 (defn unpack [s]
   (-> s

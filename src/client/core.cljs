@@ -2,15 +2,15 @@
 ;; License, v. 2.0. If a copy of the MPL was not distributed with this
 ;; file, You can obtain one at https://mozilla.org/MPL/2.0/.
 
-(ns cse-client.core
+(ns client.core
   (:require [kee-frame.core :as k]
             [re-frame.core :as rf]
-            [cse-client.view :as view]
-            [cse-client.controller :as controller]
-            [cse-client.config :refer [socket-url]]
+            [client.view :as view]
+            [client.controller :as controller]
+            [client.config :refer [socket-url]]
             [cljs.reader :as reader]
-            [cse-client.localstorage :as storage]
-            [cse-client.config :refer [socket-url]]
+            [client.localstorage :as storage]
+            [client.config :refer [socket-url]]
             [clojure.string :as str]))
 
 (enable-console-print!)
@@ -213,7 +213,7 @@
                                     (= value-reference valueReference))) manip-vars)))))
 
 (rf/reg-sub :error (fn [db]
-                     (when (-> db :state :executionState (= "CSE_EXECUTION_ERROR"))
+                     (when (-> db :state :executionState (= "COSIM_EXECUTION_ERROR"))
                        {:last-error-code    (-> db :state :lastErrorCode)
                         :last-error-message (-> db :state :lastErrorMessage)})))
 
@@ -232,6 +232,6 @@
            :initial-db     {:active-guide-tab               "About"
                             :page                           1
                             :vars-per-page                  20
-                            :prev-paths                     (reader/read-string (storage/get-item "cse-paths"))
+                            :prev-paths                     (reader/read-string (storage/get-item "cosim-paths"))
                             :show-success-feedback-messages (reader/read-string (storage/get-item "show-success-feedback-message"))
                             :plot-config-changed?           false}})

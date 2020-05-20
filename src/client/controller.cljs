@@ -2,19 +2,19 @@
 ;; License, v. 2.0. If a copy of the MPL was not distributed with this
 ;; file, You can obtain one at https://mozilla.org/MPL/2.0/.
 
-(ns cse-client.controller
+(ns client.controller
   (:require-macros [cljs.core.async.macros :refer [go go-loop]])
   (:require [kee-frame.core :as k]
             [kee-frame.websocket :as websocket]
-            [cse-client.config :refer [socket-url]]
+            [client.config :refer [socket-url]]
             [ajax.core :as ajax]
             [re-frame.loggers :as re-frame-log]
             [cljs.spec.alpha :as s]
             [cljs.core.async :refer [<! timeout]]
             [clojure.string :as str]
             [re-frame.core :as rf]
-            [cse-client.localstorage :as storage]
-            [cse-client.msgpack-format]))
+            [client.localstorage :as storage]
+            [client.msgpack-format]))
 
 ;; Prevent handler overwriting warnings during cljs reload.
 (re-frame-log/set-loggers! {:warn (fn [& args]
@@ -184,14 +184,14 @@
 (k/reg-event-fx ::load
                 (fn [{:keys [db]} [folder log-folder]]
                   (let [paths (distinct (conj (:prev-paths db) folder))]
-                    (storage/set-item! "cse-paths" (pr-str paths))
+                    (storage/set-item! "cosim-paths" (pr-str paths))
                     (merge {:db (assoc db :prev-paths paths :plot-config-changed? false)}
                            (socket-command ["load" folder (or log-folder "")])))))
 
 (k/reg-event-fx ::delete-prev
                 (fn [{:keys [db]} [path]]
                   (let [paths (remove #(= path %) (:prev-paths db))]
-                    (storage/set-item! "cse-paths" (pr-str paths))
+                    (storage/set-item! "cosim-paths" (pr-str paths))
                     {:db (assoc db :prev-paths paths)})))
 
 (k/reg-event-fx ::teardown

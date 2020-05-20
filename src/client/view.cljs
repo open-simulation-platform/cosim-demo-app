@@ -2,16 +2,16 @@
 ;; License, v. 2.0. If a copy of the MPL was not distributed with this
 ;; file, You can obtain one at https://mozilla.org/MPL/2.0/.
 
-(ns cse-client.view
-  (:require [cse-client.trend :as trend]
+(ns client.view
+  (:require [client.trend :as trend]
             [kee-frame.core :as k]
             [re-frame.core :as rf]
             [reagent.core :as r]
-            [cse-client.controller :as controller]
-            [cse-client.config :refer [socket-url]]
-            [cse-client.guide :as guide]
-            [cse-client.components :as c]
-            [cse-client.scenario :as scenario]
+            [client.controller :as controller]
+            [client.config :refer [socket-url]]
+            [client.guide :as guide]
+            [client.components :as c]
+            [client.scenario :as scenario]
             [clojure.string :as str]
             [fulcrologic.semantic-ui.factories :as semantic]
             [fulcrologic.semantic-ui.icons :as icons]))

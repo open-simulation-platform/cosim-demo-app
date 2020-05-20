@@ -2,9 +2,9 @@
 ;; License, v. 2.0. If a copy of the MPL was not distributed with this
 ;; file, You can obtain one at https://mozilla.org/MPL/2.0/.
 
-(ns cse-client.guide
+(ns client.guide
   (:require [re-frame.core :as rf]
-            [cse-client.controller :as controller]))
+            [client.controller :as controller]))
 
 (def about-content [:div
                     [:p "This application demonstrates the features of the Core Simulation Environment, with basic

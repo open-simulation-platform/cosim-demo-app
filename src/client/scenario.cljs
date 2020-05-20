@@ -2,11 +2,11 @@
 ;; License, v. 2.0. If a copy of the MPL was not distributed with this
 ;; file, You can obtain one at https://mozilla.org/MPL/2.0/.
 
-(ns cse-client.scenario
+(ns client.scenario
   (:require [re-frame.core :as rf]
             [kee-frame.core :as k]
             [clojure.string :as str]
-            [cse-client.controller :as controller]))
+            [client.controller :as controller]))
 
 (defn scenario-filename-to-name [file-name]
   (str/capitalize (first (str/split file-name "."))))
