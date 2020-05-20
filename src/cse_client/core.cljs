@@ -54,8 +54,7 @@
       (let [simulation-time     (simulation-time db)
             scenario-start-time (:scenario-start-time db)
             scenario-end-time   (:scenario-end-time db)]
-           (if (or (nil? scenario-start-time) (nil? scenario-end-time))
-             nil
+           (when (and scenario-start-time scenario-end-time)
              (-> (/ (- simulation-time scenario-start-time) scenario-end-time) (* 100) (.toFixed 2)))))
 
 (defn real-time-factor [db]
