@@ -42,12 +42,6 @@
         any-running? @(rf/subscribe [:any-scenario-running?])]
     [:div
      [:div.ui.header "Actions"]
-     (when (and any-running?
-                (nil? scenario-start-time))
-           (rf/dispatch [::controller/scenario-start]))
-     (when (and (not any-running?)
-                (not (nil? scenario-start-time)))
-           (rf/dispatch [::controller/scenario-stop]))
      (if running?
        [:div
         [running-button scenario-id]

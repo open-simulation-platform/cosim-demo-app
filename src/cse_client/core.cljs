@@ -55,7 +55,7 @@
             scenario-start-time (:scenario-start-time db)
             scenario-end-time   (:scenario-end-time db)]
            (when (and scenario-start-time scenario-end-time)
-             (-> (/ (- simulation-time scenario-start-time) scenario-end-time) (* 100) (.toFixed 2)))))
+             (-> (/ (- simulation-time scenario-start-time) scenario-end-time) (* 100) (.toFixed 2) (min 100)))))
 
 (defn real-time-factor [db]
   (some-> db :state :realTimeFactor (.toFixed 3)))

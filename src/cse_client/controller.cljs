@@ -182,15 +182,6 @@
                 (fn [db _]
                   (dissoc db :scenario-id)))
 
-(k/reg-event-db ::scenario-start
-                (fn [db]
-                    (assoc db :scenario-start-time (-> db :state :time)
-                              :scenario-end-time (some-> db :state :scenario :end))))
-
-(k/reg-event-db ::scenario-stop
-                (fn [db]
-                    (dissoc db :scenario-start-time)))
-
 (k/reg-event-fx ::load
                 (fn [{:keys [db]} [folder log-folder]]
                   (let [paths (distinct (conj (:prev-paths db) folder))]
@@ -295,12 +286,17 @@
                    :dispatch [::fetch-signals]}))
 
 (k/reg-event-fx ::load-scenario
-                (fn [_ [file-name]]
-                  (socket-command ["load-scenario" file-name])))
+                (fn [{:keys [db]} [file-name]]
+                    (merge
+                      {:db (assoc db :scenario-start-time (-> db :state :time)
+                                  :scenario-end-time (some-> db :state :scenario :end))}
+                      (socket-command ["load-scenario" file-name]))))
 
 (k/reg-event-fx ::abort-scenario
-                (fn [_ [file-name]]
-                  (socket-command ["abort-scenario" file-name])))
+                (fn [{:keys [db]} [file-name]]
+                    (merge
+                      {:db (dissoc db :scenario-start-time :scenario-end-time)}
+                      (socket-command ["abort-scenario" file-name]))))
 
 (k/reg-event-db ::toggle-dismiss-error
                 (fn [db]
