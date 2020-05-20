@@ -215,6 +215,12 @@
 
 (rf/reg-sub :error-dismissed #(:error-dismissed %))
 
+(rf/reg-sub :plot-height #(:plot-height %))
+
+(rf/reg-sub :config-dir (comp :configDir :state))
+
+(rf/reg-sub :plot-config-changed? #(:plot-config-changed? %))
+
 (k/start! {:routes         routes
            :hash-routing?  true
            :debug?         (if debug {:blacklist #{::controller/socket-message-received}} false)
@@ -225,10 +231,3 @@
                             :prev-paths                     (reader/read-string (storage/get-item "cse-paths"))
                             :show-success-feedback-messages (reader/read-string (storage/get-item "show-success-feedback-message"))
                             :plot-config-changed?           false}})
-
-
-(rf/reg-sub :plot-height #(:plot-height %))
-
-(rf/reg-sub :config-dir (comp :configDir :state))
-
-(rf/reg-sub :plot-config-changed? #(:plot-config-changed? %))
