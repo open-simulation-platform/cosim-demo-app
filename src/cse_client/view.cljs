@@ -9,7 +9,6 @@
             [reagent.core :as r]
             [cse-client.controller :as controller]
             [cse-client.config :refer [socket-url]]
-            [cse-client.guide :as guide]
             [cse-client.components :as c]
             [cse-client.scenario :as scenario]
             [clojure.string :as str]
@@ -359,9 +358,9 @@
          [:div.ui.simple.dropdown.item
           [:i.question.circle.icon]
           [:div.menu
-           [:a.item {:href "/guide"} [:i.file.alternate.icon] "User guide"]
-           [:a.item {:href "mailto:issue@opensimulationplatform.com?subject=Feedback to CSE Team"} [:i.mail.icon] "Provide feedback"]
-           [:a.item {:href "https://meet.dnvgl.com/sites/open-simulation-platform-jip" :target "_blank"} [:i.icon.linkify] "JIP site"]
+           [:a.item {:href "https://open-simulation-platform.github.io/cse-demo-app/cse-demo-app" :target "_blank"} [:i.file.alternate.icon] "User guide"]
+           [:a.item {:href "https://github.com/open-simulation-platform/cosim-demo-app/issues" :target "_blank"} [:i.icon.edit] "Report an issue"]
+           [:a.item {:href "http://open-simulation-platform.com" :target "_blank"} [:i.icon.linkify] "OSP site"]
            [:a.item {:on-click #(rf/dispatch [::controller/toggle-show-success-feedback-messages])}
             (if @(rf/subscribe [:show-success-feedback-messages]) [:i.toggle.on.icon.green] [:i.toggle.off.icon])
             "Show success command feedback"]]]]]
@@ -377,7 +376,6 @@
                                  :trend (if (and (number? (int @active-trend-index)) (not-empty @trends))
                                           (trend/plot-type-from-label (:label (nth @trends (int @active-trend-index))))
                                           "")
-                                 :guide "User guide"
                                  :index (simulation-status-header-text @loaded?)
                                  :scenarios "Scenarios"
                                  :scenario (scenario-header @scenario-name)
@@ -386,7 +384,6 @@
            [:div.row
             [k/switch-route (comp :name :data)
              :trend [trend/trend-outer]
-             :guide [guide/form]
              :module [module-listing]
              :index [index-page]
              :scenarios [scenario/overview]

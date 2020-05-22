@@ -1,9 +1,0 @@
-<simulators>
-    <simulator name="MyModelInstance1" decimationFactor="20"> <!-- Each 20th step will be logged -->
-        <variable name="realOut"/> <!-- Specify variables that will be logged -->
-        <variable name="intOut"/>
-        <variable name="booleanOut"/>
-        <variable name="stringOut"/>
-    </simulator>
-    <simulator name="MyModelInstance2"/> <!-- All variable for this simulator will be logged -->
-</simulators>
