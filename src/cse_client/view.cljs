@@ -145,7 +145,8 @@
         trend-info           (rf/subscribe [:trend-info])
         active-trend-index   (rf/subscribe [:active-trend-index])
         scenarios            (rf/subscribe [:scenarios])
-        plot-config-changed? (rf/subscribe [:plot-config-changed?])]
+        plot-config-changed? (rf/subscribe [:plot-config-changed?])
+        scenario-percent     (rf/subscribe [:scenario-percent])]
     (fn []
       (let [module-routes (sort-by :name @module-routes)
             route-name    (-> @route :data :name)
@@ -205,7 +206,8 @@
                      [:a.item {:class (when (= (-> @route :path-params :id) id) "active")
                                :key   id
                                :href  (k/path-for [:scenario {:id id}])} (scenario/scenario-filename-to-name id)
-                      (when running? [:i.green.play.icon])])
+                      (when running? [:div {:style {:display 'inline-block :float 'right}} (str @scenario-percent "%")
+                                      [:i.green.play.icon]])])
                    @scenarios))]])
          [:div.ui.divider]
          [:div.item
