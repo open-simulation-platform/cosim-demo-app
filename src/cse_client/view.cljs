@@ -1,3 +1,7 @@
+;; This Source Code Form is subject to the terms of the Mozilla Public
+;; License, v. 2.0. If a copy of the MPL was not distributed with this
+;; file, You can obtain one at https://mozilla.org/MPL/2.0/.
+
 (ns cse-client.view
   (:require [cse-client.trend :as trend]
             [kee-frame.core :as k]
@@ -5,7 +9,6 @@
             [reagent.core :as r]
             [cse-client.controller :as controller]
             [cse-client.config :refer [socket-url]]
-            [cse-client.guide :as guide]
             [cse-client.components :as c]
             [cse-client.scenario :as scenario]
             [clojure.string :as str]
@@ -136,75 +139,85 @@
   (if simulation-has-loaded? "Simulation status" "Simulation setup"))
 
 (defn sidebar []
-  (let [module-routes      (sort-by :name @(rf/subscribe [:module-routes]))
-        route              @(rf/subscribe [:kee-frame/route])
-        route-name         (-> route :data :name)
-        route-module       (-> route :path-params :module)
-        loaded?            @(rf/subscribe [:loaded?])
-        trend-info         @(rf/subscribe [:trend-info])
-        active-trend-index @(rf/subscribe [:active-trend-index])
-        scenarios          @(rf/subscribe [:scenarios])
-        scenario-percent   @(rf/subscribe [:scenario-percent])]
-    [:div.ui.secondary.vertical.fluid.menu
-     [:div.item
-      [:a.header {:href  (k/path-for [:index])
-                  :class (when (= route-name :index) "active")}
-       (simulation-status-header-text loaded?)]]
-     (when loaded?
-       [:div.item
-        [:div.header "Plots"
-         (when (not (empty? trend-info))
-           [:a {:style {:float 'right :cursor 'pointer :color 'gray}
-                :title (str "Save the current plots with variables as \"PlotConfig.json\""
-                            "\nto " @(rf/subscribe [:config-dir]) ".\n"
-                            "This will overwrite any existing PlotConfig.json file in this directory.")}
-            [:i.download.gray.icon {:on-click #(rf/dispatch [::controller/save-trends-configuration])}]])]
-        [:div.menu
-         [:a.item {:onClick #(rf/dispatch [::controller/new-trend "trend" (str "Time series #" (random-uuid))])}
-          "Create new time series"]
-         [:a.item {:onClick #(rf/dispatch [::controller/new-trend "scatter" (str "XY plot #" (random-uuid))])}
-          "Create new XY plot"]
-         (map (fn [{:keys [index label count plot-type]}]
-                [:div.item {:key label}
-                 [:a.itemstyle {:class (when (and (= index (int active-trend-index)) (= route-name :trend)) "active")
-                                :href  (k/path-for [:trend {:index index}])}
-                  (trend/plot-type-from-label label)]
-                 (let [display-number (if (= plot-type "trend") count (int (/ count 2)))]
-                   [:div.ui.teal.left.pointing.label display-number])
-                 [:span {:style         {:float 'right :cursor 'pointer :z-index 1000}
-                         :data-tooltip  "Remove plot"
-                         :data-position "top center"}
-                  [:i.trash.gray.icon {:on-click #(rf/dispatch [::controller/removetrend index])}]]
-                 (if (< 0 count)
-                   [:span {:style         {:float 'right :cursor 'pointer :z-index 1000}
-                           :data-tooltip  "Remove all variables from plot"
-                           :data-position "top center"}
-                    [:i.eye.slash.gray.icon {:on-click #(rf/dispatch [::controller/untrend index])}]])])
-              trend-info)]])
-     (when (and loaded?
-                (seq scenarios))
-       [:div.item
-        [:a.header
-         {:href  (k/path-for [:scenarios])
-          :class (when (= route-name :scenarios) "active")}
-         "Scenarios"]
-        [:div.menu
-         (map (fn [{:keys [id running?]}]
-                  [:a.item {:class (when (= (-> route :path-params :id) id) "active")
-                            :key   id
-                            :href  (k/path-for [:scenario {:id id}])} (scenario/scenario-filename-to-name id)
-                   (when running? [:div {:style {:display 'inline-block :float 'right}} (str scenario-percent "%")
-                                   [:i.green.play.icon]])])
-              scenarios)]])
-     [:div.ui.divider]
-     [:div.item
-      [:div.header "Models"]
-      [:div.menu
-       (map (fn [{:keys [name causality]}]
-              [:a.item {:class (when (= route-module name) "active")
-                        :key   name
-                        :href  (k/path-for [:module {:module name :causality causality}])} name])
-            module-routes)]]]))
+  (let [module-routes        (rf/subscribe [:module-routes])
+        route                (rf/subscribe [:kee-frame/route])
+        loaded?              (rf/subscribe [:loaded?])
+        trend-info           (rf/subscribe [:trend-info])
+        active-trend-index   (rf/subscribe [:active-trend-index])
+        scenarios            (rf/subscribe [:scenarios])
+        plot-config-changed? (rf/subscribe [:plot-config-changed?])
+        scenario-percent     (rf/subscribe [:scenario-percent])]
+    (fn []
+      (let [module-routes (sort-by :name @module-routes)
+            route-name    (-> @route :data :name)
+            route-module  (-> @route :path-params :module)]
+        [:div.ui.secondary.vertical.fluid.menu
+         [:div.item
+          [:a.header {:href  (k/path-for [:index])
+                      :class (when (= route-name :index) "active")}
+           (simulation-status-header-text @loaded?)]]
+         (when @loaded?
+           [:div.item
+            [:div.header "Plots"]
+            [:div.menu
+             (doall
+              (map (fn [{:keys [index label count plot-type]}]
+                     [:div.item {:key label}
+                      [:a.itemstyle {:class (when (and (= index (int @active-trend-index)) (= route-name :trend)) "active")
+                                     :href  (k/path-for [:trend {:index index}])}
+                       (trend/plot-type-from-label label)]
+                      (let [display-number (if (= plot-type "trend") count (int (/ count 2)))]
+                        [:div.ui.teal.left.pointing.label display-number])
+                      [:span {:style         {:float 'right :cursor 'pointer :z-index 1000}
+                              :data-tooltip  "Remove plot"
+                              :data-position "top center"}
+                       [:i.trash.gray.icon {:on-click #(rf/dispatch [::controller/removetrend index])}]]
+                      (if (< 0 count)
+                        [:span {:style         {:float 'right :cursor 'pointer :z-index 1000}
+                                :data-tooltip  "Remove all variables from plot"
+                                :data-position "top center"}
+                         [:i.eye.slash.gray.icon {:on-click #(rf/dispatch [::controller/untrend index])}]])])
+                   @trend-info))
+             [:div.item
+              [:button.ui.icon.button {:style {:margin-top 5}
+                                       :on-click #(rf/dispatch [::controller/new-trend "scatter" (str "XY plot #" (random-uuid))])}
+               [:i.plus.icon] "XY plot"]
+              [:button.ui.icon.button {:style {:margin-top 5}
+                                       :on-click #(rf/dispatch [::controller/new-trend "trend" (str "Time series #" (random-uuid))])}
+               [:i.plus.icon] "Time series"]
+              [:button.ui.icon.button {:style    {:margin-top 5}
+                                       :disabled (or (empty? @trend-info)
+                                                     (not @plot-config-changed?))
+                                       :on-click #(rf/dispatch [::controller/save-trends-configuration])
+                                       :title    (str "Save the current plots with variables as \"PlotConfig.json\""
+                                                      "\nto " @(rf/subscribe [:config-dir]) ".\n"
+                                                      "This will overwrite any existing PlotConfig.json file in this directory.")}
+               [:i.download.icon] "Save plots config"]]]])
+         (when (and loaded?
+                    (seq @scenarios))
+           [:div.item
+            [:a.header
+             {:href  (k/path-for [:scenarios])
+              :class (when (= route-name :scenarios) "active")}
+             "Scenarios"]
+            [:div.menu
+             (doall
+              (map (fn [{:keys [id running?]}]
+                     [:a.item {:class (when (= (-> @route :path-params :id) id) "active")
+                               :key   id
+                               :href  (k/path-for [:scenario {:id id}])} (scenario/scenario-filename-to-name id)
+                      (when running? [:div {:style {:display 'inline-block :float 'right}} (str @scenario-percent "%")
+                                      [:i.green.play.icon]])])
+                   @scenarios))]])
+         [:div.ui.divider]
+         [:div.item
+          [:div.header "Models"]
+          [:div.menu
+           (map (fn [{:keys [name causality]}]
+                  [:a.item {:class (when (= route-module name) "active")
+                            :key   name
+                            :href  (k/path-for [:module {:module name :causality causality}])} name])
+                module-routes)]]]))))
 
 (defn realtime-button []
   (if @(rf/subscribe [:realtime?])
@@ -347,9 +360,9 @@
          [:div.ui.simple.dropdown.item
           [:i.question.circle.icon]
           [:div.menu
-           [:a.item {:href "/guide"} [:i.file.alternate.icon] "User guide"]
-           [:a.item {:href "mailto:issue@opensimulationplatform.com?subject=Feedback to CSE Team"} [:i.mail.icon] "Provide feedback"]
-           [:a.item {:href "https://meet.dnvgl.com/sites/open-simulation-platform-jip" :target "_blank"} [:i.icon.linkify] "JIP site"]
+           [:a.item {:href "https://open-simulation-platform.github.io/cse-demo-app/cse-demo-app" :target "_blank"} [:i.file.alternate.icon] "User guide"]
+           [:a.item {:href "https://github.com/open-simulation-platform/cosim-demo-app/issues" :target "_blank"} [:i.icon.edit] "Report an issue"]
+           [:a.item {:href "http://open-simulation-platform.com" :target "_blank"} [:i.icon.linkify] "OSP site"]
            [:a.item {:on-click #(rf/dispatch [::controller/toggle-show-success-feedback-messages])}
             (if @(rf/subscribe [:show-success-feedback-messages]) [:i.toggle.on.icon.green] [:i.toggle.off.icon])
             "Show success command feedback"]]]]]
@@ -365,7 +378,6 @@
                                  :trend (if (and (number? (int @active-trend-index)) (not-empty @trends))
                                           (trend/plot-type-from-label (:label (nth @trends (int @active-trend-index))))
                                           "")
-                                 :guide "User guide"
                                  :index (simulation-status-header-text @loaded?)
                                  :scenarios "Scenarios"
                                  :scenario (scenario-header @scenario-name)
@@ -374,7 +386,6 @@
            [:div.row
             [k/switch-route (comp :name :data)
              :trend [trend/trend-outer]
-             :guide [guide/form]
              :module [module-listing]
              :index [index-page]
              :scenarios [scenario/overview]

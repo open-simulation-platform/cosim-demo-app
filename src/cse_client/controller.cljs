@@ -1,6 +1,9 @@
+;; This Source Code Form is subject to the terms of the Mozilla Public
+;; License, v. 2.0. If a copy of the MPL was not distributed with this
+;; file, You can obtain one at https://mozilla.org/MPL/2.0/.
+
 (ns cse-client.controller
-  (:require-macros
-    [cljs.core.async.macros :refer [go go-loop]])
+  (:require-macros [cljs.core.async.macros :refer [go go-loop]])
   (:require [kee-frame.core :as k]
             [kee-frame.websocket :as websocket]
             [cse-client.config :refer [socket-url]]
@@ -14,11 +17,10 @@
             [cse-client.msgpack-format]))
 
 ;; Prevent handler overwriting warnings during cljs reload.
-(re-frame-log/set-loggers!
-  {:warn (fn [& args]
-           (when-not (or (re-find #"^re-frame: overwriting" (first args))
-                         (re-find #"^Overwriting controller" (first args)))
-             (apply js/console.warn args)))})
+(re-frame-log/set-loggers! {:warn (fn [& args]
+                                    (when-not (or (re-find #"^re-frame: overwriting" (first args))
+                                                  (re-find #"^Overwriting controller" (first args)))
+                                      (apply js/console.warn args)))})
 
 (k/reg-controller :module
                   {:params (fn [route]
@@ -79,10 +81,9 @@
                   (when-let [module-data (:module-data message)]
                     (s/assert ::module-data module-data)
                     (rf/dispatch [::fetch-signals]))
-                  (merge
-                    {:db (update db :state merge message)}
-                    (when-let [feedback (:feedback message)]
-                      {:dispatch [::feedback-message feedback]}))))
+                  (merge {:db (update db :state merge message)}
+                         (when-let [feedback (:feedback message)]
+                           {:dispatch [::feedback-message feedback]}))))
 
 (k/reg-event-fx ::fetch-module-data
                 (fn [_ _]
@@ -118,10 +119,6 @@
     (assoc variable :editable? true)
     variable))
 
-(k/reg-event-db ::guide-navigate
-                (fn [db [header]]
-                  (assoc db :active-guide-tab header)))
-
 (defn encode-variables [variables]
   (->> variables
        (map (fn [{:keys [name causality type value-reference]}]
@@ -133,19 +130,19 @@
                   (let [{:keys [current-module active-causality page current-module-meta vars-per-page]} db
                         groups  (variable-groups current-module-meta active-causality vars-per-page)
                         viewing (filter-signals groups page)]
-                    (merge
-                      {:db (assoc db :viewing (map editable? viewing)
-                                     :page-count (count groups))}
-                      (socket-command (concat ["signals" current-module] (encode-variables viewing)))))))
+                    (merge {:db (assoc db
+                                       :viewing (map editable? viewing)
+                                       :page-count (count groups))}
+                           (socket-command (concat ["signals" current-module] (encode-variables viewing)))))))
 
 (k/reg-event-fx ::module-enter
                 (fn [{:keys [db]} [{:keys [module causality]}]]
-                  (merge
-                    {:db       (assoc db :current-module module
-                                         :current-module-meta (module-meta db module)
-                                         :active-causality causality
-                                         :page 1)
-                     :dispatch [::fetch-signals]})))
+                  (merge {:db       (assoc db
+                                           :current-module module
+                                           :current-module-meta (module-meta db module)
+                                           :active-causality causality
+                                           :page 1)
+                          :dispatch [::fetch-signals]})))
 
 (k/reg-event-fx ::module-leave
                 (fn [{:keys [db]} _]
@@ -157,15 +154,13 @@
 (k/reg-event-fx ::trend-enter
                 (fn [{:keys [db]} [{:keys [index]}]]
                   (let [trend-id (-> db :state :trends (get (int index)) :id)]
-                    (merge
-                      {:db (assoc db :active-trend-index index)}
-                      (socket-command ["active-trend" (str trend-id)])))))
+                    (merge {:db (assoc db :active-trend-index index)}
+                           (socket-command ["active-trend" (str trend-id)])))))
 
 (k/reg-event-fx ::trend-leave
                 (fn [{:keys [db]} _]
-                  (merge
-                    {:db (dissoc db :active-trend-index)}
-                    (socket-command ["active-trend" nil]))))
+                  (merge {:db (dissoc db :active-trend-index)}
+                         (socket-command ["active-trend" nil]))))
 
 (k/reg-event-db ::toggle-show-success-feedback-messages
                 (fn [db _]
@@ -186,9 +181,8 @@
                 (fn [{:keys [db]} [folder log-folder]]
                   (let [paths (distinct (conj (:prev-paths db) folder))]
                     (storage/set-item! "cse-paths" (pr-str paths))
-                    (merge
-                      {:db (assoc db :prev-paths paths)}
-                      (socket-command ["load" folder (or log-folder "")])))))
+                    (merge {:db (assoc db :prev-paths paths :plot-config-changed? false)}
+                           (socket-command ["load" folder (or log-folder "")])))))
 
 (k/reg-event-fx ::delete-prev
                 (fn [{:keys [db]} [path]]
@@ -214,17 +208,17 @@
 
 (k/reg-event-fx ::set-real-time-factor-target
                 (fn [{:keys [db]} [val]]
-                  (merge
-                    {:db (assoc db :enable-real-time-target true)}
-                    (socket-command ["set-custom-realtime-factor" val]))))
+                  (merge {:db (assoc db :enable-real-time-target true)}
+                         (socket-command ["set-custom-realtime-factor" val]))))
 
 (k/reg-event-fx ::disable-realtime
                 (fn [_ _]
                   (socket-command ["disable-realtime"])))
 
 (k/reg-event-fx ::untrend
-                (fn [_ [id]]
-                  (socket-command ["untrend" (str id)])))
+                (fn [{:keys [db]} [id]]
+                  (merge (socket-command ["untrend" (str id)])
+                         {:db (assoc db :plot-config-changed? true)})))
 
 (k/reg-event-fx ::untrend-single
                 (fn [_ [trend-id variable-id]]
@@ -236,21 +230,24 @@
                         route-param-index           (int (:index (:path-params (:kee-frame/route db))))
                         current-path-to-be-deleted  (and (= :trend route-name) (= route-param-index id))
                         smaller-index-to-be-deleted (and (= :trend route-name) (> route-param-index id))]
-                    (merge
-                      (when (or current-path-to-be-deleted smaller-index-to-be-deleted) {:navigate-to [:index]})
-                      (socket-command ["removetrend" (str id)])))))
+                    (merge (when (or current-path-to-be-deleted smaller-index-to-be-deleted) {:navigate-to [:index]})
+                           (socket-command ["removetrend" (str id)])
+                           {:db (assoc db :plot-config-changed? true)}))))
 
 (k/reg-event-fx ::new-trend
-                (fn [_ [type label]]
-                  (socket-command ["newtrend" type label])))
+                (fn [{:keys [db]} [type label]]
+                  (merge (socket-command ["newtrend" type label])
+                         {:db (assoc db :plot-config-changed? true)})))
 
 (k/reg-event-fx ::add-to-trend
-                (fn [_ [module signal plot-index]]
-                  (socket-command ["addtotrend" module signal (str plot-index)])))
+                (fn [{:keys [db]} [module signal plot-index]]
+                  (merge (socket-command ["addtotrend" module signal (str plot-index)])
+                         {:db (assoc db :plot-config-changed? true)})))
 
 (k/reg-event-fx ::set-label
                 (fn [{:keys [db]} [label]]
-                  (socket-command ["setlabel" (:active-trend-index db) label])))
+                  (merge (socket-command ["setlabel" (:active-trend-index db) label])
+                         {:db (assoc db :plot-config-changed? true)})))
 
 (k/reg-event-fx ::set-value
                 (fn [_ [index type value-reference value]]
@@ -281,8 +278,9 @@
 
 (k/reg-event-fx ::set-vars-per-page
                 (fn [{:keys [db]} [n]]
-                  {:db       (assoc db :vars-per-page (max 1 n)
-                                       :page 1)
+                  {:db       (assoc db
+                                    :vars-per-page (max 1 n)
+                                    :page 1)
                    :dispatch [::fetch-signals]}))
 
 (k/reg-event-fx ::load-scenario
@@ -313,8 +311,9 @@
                                                   :command "save-plot-config"}]}))
 
 (k/reg-event-fx ::save-trends-success
-                (fn [_ [response]]
-                  {:dispatch [::feedback-message {:success true
+                (fn [{:keys [db]} [response]]
+                  {:db       (assoc db :plot-config-changed? false)
+                   :dispatch [::feedback-message {:success true
                                                   :message response
                                                   :command "save-plot-config"}]}))
 
