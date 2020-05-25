@@ -9,7 +9,6 @@
             [reagent.core :as r]
             [client.controller :as controller]
             [client.config :refer [socket-url]]
-            [client.guide :as guide]
             [client.components :as c]
             [client.scenario :as scenario]
             [clojure.string :as str]
@@ -146,7 +145,8 @@
         trend-info           (rf/subscribe [:trend-info])
         active-trend-index   (rf/subscribe [:active-trend-index])
         scenarios            (rf/subscribe [:scenarios])
-        plot-config-changed? (rf/subscribe [:plot-config-changed?])]
+        plot-config-changed? (rf/subscribe [:plot-config-changed?])
+        scenario-percent     (rf/subscribe [:scenario-percent])]
     (fn []
       (let [module-routes (sort-by :name @module-routes)
             route-name    (-> @route :data :name)
@@ -206,7 +206,8 @@
                      [:a.item {:class (when (= (-> @route :path-params :id) id) "active")
                                :key   id
                                :href  (k/path-for [:scenario {:id id}])} (scenario/scenario-filename-to-name id)
-                      (when running? [:i.green.play.icon])])
+                      (when running? [:div {:style {:display 'inline-block :float 'right}} (str @scenario-percent "%")
+                                      [:i.green.play.icon]])])
                    @scenarios))]])
          [:div.ui.divider]
          [:div.item
@@ -359,9 +360,9 @@
          [:div.ui.simple.dropdown.item
           [:i.question.circle.icon]
           [:div.menu
-           [:a.item {:href "/guide"} [:i.file.alternate.icon] "User guide"]
-           [:a.item {:href "mailto:issue@opensimulationplatform.com?subject=Feedback to CSE Team"} [:i.mail.icon] "Provide feedback"]
-           [:a.item {:href "https://meet.dnvgl.com/sites/open-simulation-platform-jip" :target "_blank"} [:i.icon.linkify] "JIP site"]
+           [:a.item {:href "https://open-simulation-platform.github.io/cse-demo-app/cse-demo-app" :target "_blank"} [:i.file.alternate.icon] "User guide"]
+           [:a.item {:href "https://github.com/open-simulation-platform/cosim-demo-app/issues" :target "_blank"} [:i.icon.edit] "Report an issue"]
+           [:a.item {:href "http://open-simulation-platform.com" :target "_blank"} [:i.icon.linkify] "OSP site"]
            [:a.item {:on-click #(rf/dispatch [::controller/toggle-show-success-feedback-messages])}
             (if @(rf/subscribe [:show-success-feedback-messages]) [:i.toggle.on.icon.green] [:i.toggle.off.icon])
             "Show success command feedback"]]]]]
@@ -377,7 +378,6 @@
                                  :trend (if (and (number? (int @active-trend-index)) (not-empty @trends))
                                           (trend/plot-type-from-label (:label (nth @trends (int @active-trend-index))))
                                           "")
-                                 :guide "User guide"
                                  :index (simulation-status-header-text @loaded?)
                                  :scenarios "Scenarios"
                                  :scenario (scenario-header @scenario-name)
@@ -386,7 +386,6 @@
            [:div.row
             [k/switch-route (comp :name :data)
              :trend [trend/trend-outer]
-             :guide [guide/form]
              :module [module-listing]
              :index [index-page]
              :scenarios [scenario/overview]

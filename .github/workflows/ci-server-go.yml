@@ -76,14 +76,14 @@ jobs:
           CGO_LDFLAGS: '-Wl,-rpath,$ORIGIN/../lib'
       - name: Prepare Windows distribution
         run: |
-          cp ./cse-server-go.exe dist/bin
+          cp ./cosim-demo-app.exe dist/bin
           cp ./run-windows.cmd ./dist
           cp ./run-fmuproxy.cmd ./dist
         if: runner.os == 'Windows'
       - name: Prepare Linux distribution
         run: |
           mkdir -p dist/bin
-          cp ./cse-server-go dist/bin
+          cp ./cosim-demo-app dist/bin
           cp ./run-linux ./dist
           cp ./run-fmuproxy ./dist
           sh ./set-rpath ./dist/lib
@@ -93,5 +93,5 @@ jobs:
       - name: Upload artifact
         uses: actions/upload-artifact@v2
         with:
-          name: cse-server-go-${{ runner.os }}
+          name: cosim-demo-app-${{ runner.os }}
           path: dist

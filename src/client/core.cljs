@@ -21,7 +21,6 @@
   [["/" :index]
    ["/modules/:module/:causality" :module]
    ["/trend/:index" :trend]
-   ["/guide" :guide]
    ["/scenarios" :scenarios]
    ["/scenarios/:id" :scenario]])
 
@@ -53,6 +52,13 @@
 
 (defn simulation-time [db]
   (some-> db :state :time (.toFixed 3)))
+
+(defn scenario-percent [db]
+      (let [simulation-time     (simulation-time db)
+            scenario-start-time (:scenario-start-time db)
+            scenario-end-time   (:scenario-end-time db)]
+           (when (and scenario-start-time scenario-end-time)
+             (-> (/ (- simulation-time scenario-start-time) scenario-end-time) (* 100) (.toFixed 2) (min 100)))))
 
 (defn real-time-factor [db]
   (some-> db :state :realTimeFactor (.toFixed 3)))
@@ -99,6 +105,8 @@
 
 (rf/reg-sub :current-module-index #(-> % :current-module-meta :index))
 
+(rf/reg-sub :scenario-percent scenario-percent)
+
 (rf/reg-sub :pages
             (fn [db]
               (let [page-count (:page-count db)
@@ -130,8 +138,6 @@
                                              (assoc :index idx)
                                              (assoc :count (count trend-values))))
                                        (-> db :state :trends))))
-
-(rf/reg-sub :active-guide-tab :active-guide-tab)
 
 (rf/reg-sub :current-page #(:page %))
 (rf/reg-sub :vars-per-page #(:vars-per-page %))
@@ -188,6 +194,16 @@
               (-> db :state :running-scenario seq)))
 
 
+(rf/reg-sub :scenario-start-time
+            (fn [db]
+                (:scenario-start-time db)))
+
+(rf/reg-sub :scenario-current-time
+            (fn [db]
+                (let [scenario-start-time (:scenario-start-time db)
+                      simulation-time (-> db :state :time)]
+                     (- simulation-time scenario-start-time))))
+
 (rf/reg-sub :scenario (fn [db]
                         (->> db
                              :state
@@ -229,8 +245,7 @@
            :hash-routing?  true
            :debug?         (if debug {:blacklist #{::controller/socket-message-received}} false)
            :root-component [view/root-comp]
-           :initial-db     {:active-guide-tab               "About"
-                            :page                           1
+           :initial-db     {:page                           1
                             :vars-per-page                  20
                             :prev-paths                     (reader/read-string (storage/get-item "cosim-paths"))
                             :show-success-feedback-messages (reader/read-string (storage/get-item "show-success-feedback-message"))

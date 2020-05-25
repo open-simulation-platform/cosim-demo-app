@@ -119,10 +119,6 @@
     (assoc variable :editable? true)
     variable))
 
-(k/reg-event-db ::guide-navigate
-                (fn [db [header]]
-                  (assoc db :active-guide-tab header)))
-
 (defn encode-variables [variables]
   (->> variables
        (map (fn [{:keys [name causality type value-reference]}]
@@ -288,12 +284,17 @@
                    :dispatch [::fetch-signals]}))
 
 (k/reg-event-fx ::load-scenario
-                (fn [_ [file-name]]
-                  (socket-command ["load-scenario" file-name])))
+                (fn [{:keys [db]} [file-name]]
+                    (merge
+                      {:db (assoc db :scenario-start-time (-> db :state :time)
+                                  :scenario-end-time (some-> db :state :scenario :end))}
+                      (socket-command ["load-scenario" file-name]))))
 
 (k/reg-event-fx ::abort-scenario
-                (fn [_ [file-name]]
-                  (socket-command ["abort-scenario" file-name])))
+                (fn [{:keys [db]} [file-name]]
+                    (merge
+                      {:db (dissoc db :scenario-start-time :scenario-end-time)}
+                      (socket-command ["abort-scenario" file-name]))))
 
 (k/reg-event-db ::toggle-dismiss-error
                 (fn [db]
