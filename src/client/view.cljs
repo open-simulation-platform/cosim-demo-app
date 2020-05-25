@@ -340,7 +340,7 @@
     (fn []
       [:div
        [:div.ui.inverted.huge.borderless.fixed.menu
-        [:a.header.item {:href "/"} "Core Simulation Environment - demo application"]
+        [:a.header.item {:href "/"} "Cosim Demo App"]
         [:div.right.menu
          (when (= :disconnected (:state @socket-state))
            [:div.item
@@ -360,7 +360,7 @@
          [:div.ui.simple.dropdown.item
           [:i.question.circle.icon]
           [:div.menu
-           [:a.item {:href "https://open-simulation-platform.github.io/cse-demo-app/cse-demo-app" :target "_blank"} [:i.file.alternate.icon] "User guide"]
+           [:a.item {:href "https://open-simulation-platform.github.io/cosim-demo-app/user-guide" :target "_blank"} [:i.file.alternate.icon] "User guide"]
            [:a.item {:href "https://github.com/open-simulation-platform/cosim-demo-app/issues" :target "_blank"} [:i.icon.edit] "Report an issue"]
            [:a.item {:href "http://open-simulation-platform.com" :target "_blank"} [:i.icon.linkify] "OSP site"]
            [:a.item {:on-click #(rf/dispatch [::controller/toggle-show-success-feedback-messages])}
