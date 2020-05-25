@@ -2,14 +2,14 @@
 // License, v. 2.0. If a copy of the MPL was not distributed with this
 // file, You can obtain one at https://mozilla.org/MPL/2.0/.
 
-package cse
+package libcosim
 
 /*
 	#include <cosim.h>
 */
 import "C"
 import (
-	"cse-server-go/structs"
+	"cosim-demo-app/structs"
 	"encoding/json"
 	"fmt"
 	"io/ioutil"

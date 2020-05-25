@@ -6,7 +6,7 @@
 *.dylib
 
 # Linux binary
-cse-server-go
+cosim-demo-app
 
 # Test binary, build with `go test -c`
 *.test

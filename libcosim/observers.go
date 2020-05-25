@@ -2,7 +2,7 @@
 // License, v. 2.0. If a copy of the MPL was not distributed with this
 // file, You can obtain one at https://mozilla.org/MPL/2.0/.
 
-package cse
+package libcosim
 
 /*
 	#cgo CFLAGS: -I${SRCDIR}/../include
@@ -11,7 +11,7 @@ package cse
 */
 import "C"
 import (
-	"cse-server-go/structs"
+	"cosim-demo-app/structs"
 	"errors"
 )
 

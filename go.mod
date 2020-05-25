@@ -1,4 +1,4 @@
-module cse-server-go
+module cosim-demo-app
 
 go 1.14
 

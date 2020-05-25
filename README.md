@@ -1,10 +1,10 @@
-CSE demo application in Go
+Cosim Demo Application
 ==========================
 
- This repository contains demo application for CSE written in Go
+This repository contains a server-client demo application for libcosim. 
+The server is written in Go and the client in clojurescript
 
-
-How to build
+Server
 ------------
 
 ### Required tools
@@ -32,11 +32,59 @@ password to access it:
     conan remote add osp https://osp-conan.azurewebsites.net/artifactory/api/conan/conan-local
     conan user -p "Open Simulation Platform" -r osp osp
 
-### Step 2: Cse Client
-Providing graphical user interface for CSE.
+### Step 2: Build and run
+
+You can do this in two ways:
+
+#### Alternative 1: Using Conan
+
+From the cosim-demo-app source directory, get C/C++ dependencies using Conan:
+
+    conan install . -u -s build_type=Release -g virtualrunenv
+    go build
+
+To run the application on Windows:
+
+    activate_run.bat (activate_run.ps1 in PowerShell)
+    cosim-demo-app.exe
+    deactivate_run.bat when done (deactivate_run.ps1 in PowerShell)
+
+To run the application on Linux:
+
+    source activate_run.sh
+    ./cosim-demo-app
+    ./deactivate_run.sh when done
+
+Open a browser at http://localhost:8000/status to verify that it's running (you should see some JSON).
+
+#### Alternative 2: Manually handle libcosimc dependencies
+
+You will have to define CGO environment variables with arguments pointing to your libcosimc headers and libraries. An
+example for Windows can be:
+
+    set CGO_CFLAGS=-IC:\dev\libcosimc\include
+    set CGO_LDFLAGS=-LC:\dev\libcosimc\bin -lcosim -lcosimc
+    go build
+
+To run the application on Windows you need to also update the path to point to your libraries:
+
+    set PATH=C:\dev\libcosimc\bin;%PATH%
+    cosim-demo-app.exe
+
+To run the application on Linux you need to update the LD_LIBRARY_PATH:
+
+    LD_LIBRARY_PATH=~dev/libcosimc/lib:$LD_LIBRARY_PATH
+    export LD_LIBRARY_PATH
+    ./cosim-demo-app
+
+Open a browser at http://localhost:8000/status to verify that it's running (you should see some JSON).
+
+Client
+------
+Providing a web user interface.
 
 #### Development mode
-- Install a JDK https://www.oracle.com/technetwork/java/javase/downloads/jdk8-downloads-2133151.html
+- Install a [JDK](https://www.oracle.com/technetwork/java/javase/downloads/jdk8-downloads-2133151.html)
 - Install leiningen https://leiningen.org/
 - Run `lein figwheel`
 - View it in your browser at http://localhost:3449
@@ -47,52 +95,6 @@ You now have a framework running for live reloading of client code.
 - Run `lein cljsbuild once min`
 - The client application will be compiled to `/resources/js/compiled`
 
-### Step 3: Build and run
-
-You can do this in two ways:
-
-#### Alternative 1: Using Conan
-
-From the cse-server-go source directory, get C/C++ dependencies using Conan:
-
-    conan install . -u -s build_type=Release -g virtualrunenv
-    go build
-
-To run the application on Windows:
-
-    activate_run.bat (activate_run.ps1 in PowerShell)
-    cse-server-go.exe
-    deactivate_run.bat when done (deactivate_run.ps1 in PowerShell)
-
-To run the application on Linux:
-
-    source activate_run.sh
-    ./cse-server-go
-    ./deactivate_run.sh when done
-
-Open a browser at http://localhost:8000/status to verify that it's running (you should see some JSON).
-
-#### Alternative 2: Manually handle cse-core dependencies
-
-You will have to define CGO environment variables with arguments pointing to your cse-core headers and libraries. An
-example for Windows can be:
-
-    set CGO_CFLAGS=-IC:\dev\cse-core\include
-    set CGO_LDFLAGS=-LC:\dev\cse-core\bin -lcsecorec -lcsecorecpp
-    go build
-
-To run the application on Windows you need to also update the path to point to your libraries:
-
-    set PATH=C:\cse-core\bin;%PATH%
-    cse-server-go.exe
-
-To run the application on Linux you need to update the LD_LIBRARY_PATH:
-
-    LD_LIBRARY_PATH=~dev/cse-core/lib:$LD_LIBRARY_PATH
-    export LD_LIBRARY_PATH
-    ./cse-server-go
-
-Open a browser at http://localhost:8000/status to verify that it's running (you should see some JSON).
 
 ### Create distribution with built-in client
 
