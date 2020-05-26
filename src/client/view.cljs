@@ -2,15 +2,15 @@
 ;; License, v. 2.0. If a copy of the MPL was not distributed with this
 ;; file, You can obtain one at https://mozilla.org/MPL/2.0/.
 
-(ns cse-client.view
-  (:require [cse-client.trend :as trend]
+(ns client.view
+  (:require [client.trend :as trend]
             [kee-frame.core :as k]
             [re-frame.core :as rf]
             [reagent.core :as r]
-            [cse-client.controller :as controller]
-            [cse-client.config :refer [socket-url]]
-            [cse-client.components :as c]
-            [cse-client.scenario :as scenario]
+            [client.controller :as controller]
+            [client.config :refer [socket-url]]
+            [client.components :as c]
+            [client.scenario :as scenario]
             [clojure.string :as str]
             [fulcrologic.semantic-ui.factories :as semantic]
             [fulcrologic.semantic-ui.icons :as icons]))
@@ -340,7 +340,7 @@
     (fn []
       [:div
        [:div.ui.inverted.huge.borderless.fixed.menu
-        [:a.header.item {:href "/"} "Core Simulation Environment - demo application"]
+        [:a.header.item {:href "/"} "Cosim Demo App"]
         [:div.right.menu
          (when (= :disconnected (:state @socket-state))
            [:div.item
@@ -360,7 +360,7 @@
          [:div.ui.simple.dropdown.item
           [:i.question.circle.icon]
           [:div.menu
-           [:a.item {:href "https://open-simulation-platform.github.io/cse-demo-app/cse-demo-app" :target "_blank"} [:i.file.alternate.icon] "User guide"]
+           [:a.item {:href "https://open-simulation-platform.github.io/cosim-demo-app/user-guide" :target "_blank"} [:i.file.alternate.icon] "User guide"]
            [:a.item {:href "https://github.com/open-simulation-platform/cosim-demo-app/issues" :target "_blank"} [:i.icon.edit] "Report an issue"]
            [:a.item {:href "http://open-simulation-platform.com" :target "_blank"} [:i.icon.linkify] "OSP site"]
            [:a.item {:on-click #(rf/dispatch [::controller/toggle-show-success-feedback-messages])}

@@ -2,13 +2,13 @@
 ;; License, v. 2.0. If a copy of the MPL was not distributed with this
 ;; file, You can obtain one at https://mozilla.org/MPL/2.0/.
 
-(ns cse-client.trend
-  (:require [cse-client.controller :as controller]
+(ns client.trend
+  (:require [client.controller :as controller]
             [reagent.core :as r]
             [cljsjs.plotly]
             [re-frame.core :as rf]
             [cljs.spec.alpha :as s]
-            [cse-client.components :as c]
+            [client.components :as c]
             [clojure.string :as str]))
 
 (def id-store (atom nil))

@@ -1,4 +1,4 @@
-(defproject cse-client "1.0-SNAPSHOT"
+(defproject client "1.0-SNAPSHOT"
   :min-lein-version "2.0.0"
   :dependencies [[kee-frame "0.3.3"]
                  [jarohen/chord "0.8.1"]
@@ -24,15 +24,15 @@
   :cljsbuild {:builds [{:id           "app"
                         :source-paths ["src"]
                         :figwheel     true
-                        :compiler     {:main                 cse-client.core
+                        :compiler     {:main                 client.core
                                        :asset-path           "/static/js/compiled/out"
                                        :output-to            "resources/public/static/js/compiled/app.js"
                                        :output-dir           "resources/public/static/js/compiled/out"
                                        :source-map-timestamp true
                                        :parallel-build       true
-                                       :closure-defines      {cse-client.core/debug                 true
-                                                              cse-client.view/default-load-dir      ""
-                                                              cse-client.view/default-log-dir       ""
+                                       :closure-defines      {client.core/debug                 true
+                                                              client.view/default-load-dir      ""
+                                                              client.view/default-log-dir       ""
                                                               "re_frame.trace.trace_enabled_QMARK_" true}
                                        :preloads             [devtools.preload day8.re-frame-10x.preload]
                                        :external-config      {:devtools/config {:features-to-install [:formatters]}}
