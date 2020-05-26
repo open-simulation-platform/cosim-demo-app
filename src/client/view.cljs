@@ -360,7 +360,7 @@
          (when (and @loaded? (= @status "play"))
            [:a.item {:on-click #(rf/dispatch [::controller/pause])} "Pause"])
          (when @loaded?
-           [:a.item {:on-click #(rf/dispatch [::controller/load @load-dir @log-dir])} "Reset"])
+           [:a.item {:on-click #(rf/dispatch [::controller/reset @load-dir @log-dir])} "Reset"])
          [:div.ui.simple.dropdown.item
           [:i.question.circle.icon]
           [:div.menu
