@@ -1,5 +1,6 @@
 Cosim Demo Application
 ==========================
+![cosim-demo-app CI](https://github.com/open-simulation-platform/cosim-demo-app/workflows/cosim-demo-app%20CI/badge.svg)
 
 This repository contains a server-client demo application for libcosim. 
 The server is written in Go and the client in clojurescript

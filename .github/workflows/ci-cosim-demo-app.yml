@@ -1,4 +1,4 @@
-name: server-go CI
+name: cosim-demo-app CI
 
 # This workflow is triggered on pushes to the repository.
 on: [push]
