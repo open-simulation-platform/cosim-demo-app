@@ -981,3 +981,18 @@ func SetupLogging() {
 		log.Println("Console logging set up with severity: INFO")
 	}
 }
+
+type Versions struct {
+	LibVer  string `json:"libcosim"`
+	LibcVer string `json:"libcosimc"`
+}
+
+func Version() Versions {
+	libVer := C.cosim_libcosim_version()
+	libcVer := C.cosim_libcosimc_version()
+
+	return Versions{
+		LibVer:  fmt.Sprintf("%d.%d.%d", int(libVer.major), int(libVer.minor), int(libVer.patch)),
+		LibcVer: fmt.Sprintf("%d.%d.%d", int(libcVer.major), int(libcVer.minor), int(libcVer.patch)),
+	}
+}
