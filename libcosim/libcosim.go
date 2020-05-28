@@ -835,6 +835,8 @@ func GenerateJsonResponse(status *structs.SimulationStatus, sim *Simulation, fee
 		Loaded:  status.Loaded,
 		Status:  status.Status,
 	}
+	response.LibcosimVersion = Version().LibcVer
+
 	if status.Loaded {
 		execStatus := getExecutionStatus(sim.Execution)
 		response.ExecutionState = execStatus.state

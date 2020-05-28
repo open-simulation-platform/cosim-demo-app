@@ -241,7 +241,8 @@
 
 (rf/reg-sub :plot-config-changed? #(:plot-config-changed? %))
 
-(rf/reg-sub :libcosimc-version #(:libcosimc-version %))
+(rf/reg-sub :libcosimc-version (fn [db]
+                                 (-> db :state :libcosimVersion)))
 
 (k/start! {:routes         routes
            :hash-routing?  true

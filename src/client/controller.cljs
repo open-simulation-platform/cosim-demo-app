@@ -317,16 +317,6 @@
                                                   :message response
                                                   :command "save-plot-config"}]}))
 
-(k/reg-event-db ::get-libcosim-version-success
-                (fn [db [response]]
-                  (assoc db :libcosimc-version (:libcosimc response))))
-
-(k/reg-event-fx ::get-libcosim-version-failure
-                (fn [_ [error]]
-                  {:dispatch [::feedback-message {:success false
-                                                  :message error
-                                                  :command "libcosim get version"}]}))
-
 (k/reg-event-fx ::save-trends-configuration
                 (fn [_ _]
                   {:http-xhrio {:method          :post
@@ -334,13 +324,4 @@
                                 :format          (ajax/json-request-format)
                                 :on-failure      [::save-trends-failure]
                                 :on-success      [::save-trends-success]
-                                :response-format (ajax/json-response-format {:keywords? true})}}))
-
-(k/reg-event-fx ::get-libcosim-version
-                (fn [_ _]
-                  {:http-xhrio {:method          :post
-                                :uri             "http://localhost:8000/version"
-                                :format          (ajax/json-request-format)
-                                :on-failure      [::get-libcosim-version-failure]
-                                :on-success      [::get-libcosim-version-success]
                                 :response-format (ajax/json-response-format {:keywords? true})}}))

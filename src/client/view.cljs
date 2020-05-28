@@ -359,9 +359,7 @@
          (when (and @loaded? (= @status "play"))
            [:a.item {:on-click #(rf/dispatch [::controller/pause])} "Pause"])
          [:div.ui.simple.dropdown.item
-          [:i.question.circle.icon
-           {:on-mouse-enter #(when (nil? @libcosim-version)
-                               (rf/dispatch [::controller/get-libcosim-version]))}]
+          [:i.question.circle.icon]
           [:div.menu
            [:a.item {:href "https://open-simulation-platform.github.io/cosim-demo-app/user-guide" :target "_blank"} [:i.file.alternate.icon] "User guide"]
            [:a.item {:href "https://github.com/open-simulation-platform/cosim-demo-app/issues" :target "_blank"} [:i.icon.edit] "Report an issue"]
