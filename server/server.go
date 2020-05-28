@@ -24,6 +24,11 @@ func Server(command chan []string, state chan structs.JsonResponse, simulationSt
 		json.NewEncoder(w).Encode(libcosim.GenerateJsonResponse(simulationStatus, sim, structs.CommandFeedback{}, structs.ShortLivedData{}))
 	})
 
+	router.HandleFunc("/version", func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Content-Type", "application/json")
+		json.NewEncoder(w).Encode(libcosim.Version())
+	})
+
 	router.HandleFunc("/modules", func(w http.ResponseWriter, r *http.Request) {
 		w.Header().Set("Content-Type", "application/json")
 		json.NewEncoder(w).Encode(sim.MetaData)
