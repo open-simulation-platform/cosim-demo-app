@@ -12,6 +12,7 @@ import (
 	"os"
 	"path/filepath"
 	"strconv"
+	"strings"
 	"time"
 )
 
@@ -28,6 +29,11 @@ func generateNextTrendId(status *structs.SimulationStatus) int {
 
 func addNewTrend(status *structs.SimulationStatus, plotType string, label string) (bool, string) {
 	id := generateNextTrendId(status)
+
+	if strings.Contains(label, "#") {
+		var labelSplit = strings.Split(label, "#")
+		label = strCat(labelSplit[0], "[", strconv.Itoa(id), "]")
+	}
 
 	status.Trends = append(status.Trends, structs.Trend{
 		Id:           id,
