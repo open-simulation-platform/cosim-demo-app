@@ -831,11 +831,11 @@ func GetSignalValue(module string, cardinality string, signal string) int {
 
 func GenerateJsonResponse(status *structs.SimulationStatus, sim *Simulation, feedback structs.CommandFeedback, shorty structs.ShortLivedData) structs.JsonResponse {
 	var response = structs.JsonResponse{
-		Loading: status.Loading,
-		Loaded:  status.Loaded,
-		Status:  status.Status,
+		Loading:         status.Loading,
+		Loaded:          status.Loaded,
+		Status:          status.Status,
+		LibcosimVersion: status.LibcosimVersion,
 	}
-	response.LibcosimVersion = Version().LibcVer
 
 	if status.Loaded {
 		execStatus := getExecutionStatus(sim.Execution)
