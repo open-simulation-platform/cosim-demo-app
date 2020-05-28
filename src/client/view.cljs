@@ -336,7 +336,8 @@
         active-trend-index (rf/subscribe [:active-trend-index])
         scenario-name      (rf/subscribe [:scenario-id])
         error              (rf/subscribe [:error])
-        error-dismissed    (rf/subscribe [:error-dismissed])]
+        error-dismissed    (rf/subscribe [:error-dismissed])
+        libcosim-version   (rf/subscribe [:libcosimc-version])]
     (fn []
       [:div
        [:div.ui.inverted.huge.borderless.fixed.menu
@@ -358,14 +359,18 @@
          (when (and @loaded? (= @status "play"))
            [:a.item {:on-click #(rf/dispatch [::controller/pause])} "Pause"])
          [:div.ui.simple.dropdown.item
-          [:i.question.circle.icon]
+          [:i.question.circle.icon
+           {:on-mouse-enter #(when (nil? @libcosim-version)
+                               (rf/dispatch [::controller/get-libcosim-version]))}]
           [:div.menu
            [:a.item {:href "https://open-simulation-platform.github.io/cosim-demo-app/user-guide" :target "_blank"} [:i.file.alternate.icon] "User guide"]
            [:a.item {:href "https://github.com/open-simulation-platform/cosim-demo-app/issues" :target "_blank"} [:i.icon.edit] "Report an issue"]
            [:a.item {:href "http://open-simulation-platform.com" :target "_blank"} [:i.icon.linkify] "OSP site"]
            [:a.item {:on-click #(rf/dispatch [::controller/toggle-show-success-feedback-messages])}
             (if @(rf/subscribe [:show-success-feedback-messages]) [:i.toggle.on.icon.green] [:i.toggle.off.icon])
-            "Show success command feedback"]]]]]
+            "Show success command feedback"]
+           (when @libcosim-version
+             [:span.item [:i.icon.info.circle] (str "libcosim version: " @libcosim-version)])]]]]
        [:div.ui.grid
         [:div.row
          [:div#sidebar.column

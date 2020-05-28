@@ -241,6 +241,8 @@
 
 (rf/reg-sub :plot-config-changed? #(:plot-config-changed? %))
 
+(rf/reg-sub :libcosimc-version #(:libcosimc-version %))
+
 (k/start! {:routes         routes
            :hash-routing?  true
            :debug?         (if debug {:blacklist #{::controller/socket-message-received}} false)
