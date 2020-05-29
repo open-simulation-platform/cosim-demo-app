@@ -41,7 +41,7 @@
                        {:id           "min"
                         :source-paths ["src"]
                         :compiler     {:output-to      "resources/public/static/js/compiled/app.js"
-                                       :optimizations  :advanced
+                                       :optimizations  :simple
                                        :parallel-build true
                                        :foreign-libs   [{:file     "resources/public/static/js/plotly.min.js"
                                                          :provides ["cljsjs.plotly"]}]}}]}
