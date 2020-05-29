@@ -9,6 +9,7 @@ import (
 	"encoding/json"
 	"io/ioutil"
 	"log"
+	"math/rand"
 	"os"
 	"path/filepath"
 	"strconv"
@@ -83,7 +84,8 @@ func addToTrend(sim *Simulation, status *structs.SimulationStatus, module string
 
 func setTrendLabel(status *structs.SimulationStatus, trendIndex string, trendLabel string) (bool, string) {
 	idx, _ := strconv.Atoi(trendIndex)
-	status.Trends[idx].Label = trendLabel
+	var uuid = rand.Intn(9999)*rand.Intn(9999) + rand.Intn(9999)
+	status.Trends[idx].Label = strCat(trendLabel, " #", strconv.Itoa(uuid))
 	return true, "Modified trend label"
 }
 
