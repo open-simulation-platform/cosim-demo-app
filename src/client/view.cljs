@@ -193,7 +193,7 @@
                                                       "\nto " @(rf/subscribe [:config-dir]) ".\n"
                                                       "This will overwrite any existing PlotConfig.json file in this directory.")}
                [:i.download.icon] "Save plots config"]]]])
-         (when (and loaded?
+         (when (and @loaded?
                     (seq @scenarios))
            [:div.item
             [:a.header
@@ -210,14 +210,15 @@
                                       [:i.green.play.icon]])])
                    @scenarios))]])
          [:div.ui.divider]
-         [:div.item
-          [:div.header "Models"]
-          [:div.menu
-           (map (fn [{:keys [name causality]}]
-                  [:a.item {:class (when (= route-module name) "active")
-                            :key   name
-                            :href  (k/path-for [:module {:module name :causality causality}])} name])
-                module-routes)]]]))))
+         (when @loaded?
+           [:div.item
+            [:div.header "Models"]
+            [:div.menu
+             (map (fn [{:keys [name causality]}]
+                    [:a.item {:class (when (= route-module name) "active")
+                              :key   name
+                              :href  (k/path-for [:module {:module name :causality causality}])} name])
+                  module-routes)]])]))))
 
 (defn realtime-button []
   (if @(rf/subscribe [:realtime?])
