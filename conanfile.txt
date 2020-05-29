@@ -1,7 +1,7 @@
 [generators]
 
 [requires]
-libcosimc/0.7.0@osp/master
+libcosimc/0.7.0@osp/v0.7.0
 
 [options]
 libcosim:fmuproxy=True
