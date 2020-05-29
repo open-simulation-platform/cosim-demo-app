@@ -337,7 +337,7 @@
         scenario-name      (rf/subscribe [:scenario-id])
         error              (rf/subscribe [:error])
         error-dismissed    (rf/subscribe [:error-dismissed])
-        libcosim-version   (rf/subscribe [:libcosimc-version])]
+        lib-version         (rf/subscribe [:lib-version])]
     (fn []
       [:div
        [:div.ui.inverted.huge.borderless.fixed.menu
@@ -367,8 +367,10 @@
            [:a.item {:on-click #(rf/dispatch [::controller/toggle-show-success-feedback-messages])}
             (if @(rf/subscribe [:show-success-feedback-messages]) [:i.toggle.on.icon.green] [:i.toggle.off.icon])
             "Show success command feedback"]
-           (when @libcosim-version
-             [:span.item [:i.icon.info.circle] (str "libcosim version: " @libcosim-version)])]]]]
+           (when (:libcosim @lib-version)
+             [:span.item [:i.icon.info.circle] (str "LibCosim version: " (:libcosim @lib-version))])
+           (when (:libcosimc @lib-version)
+             [:span.item [:i.icon.info.circle] (str "LibCosimC version: " (:libcosimc @lib-version))])]]]]
        [:div.ui.grid
         [:div.row
          [:div#sidebar.column

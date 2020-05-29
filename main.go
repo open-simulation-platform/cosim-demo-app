@@ -19,10 +19,10 @@ func main() {
 	state := make(chan structs.JsonResponse, 10)
 
 	simulationStatus := structs.SimulationStatus{
-		Loaded:          false,
-		Status:          "stopped",
-		Trends:          []structs.Trend{},
-		LibcosimVersion: libcosim.Version().LibcVer,
+		Loaded:     false,
+		Status:     "stopped",
+		Trends:     []structs.Trend{},
+		LibVersion: libcosim.Version(),
 	}
 
 	// Passing the channel to the go routine
