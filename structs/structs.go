@@ -33,6 +33,7 @@ type JsonResponse struct {
 	RealTimeFactorTarget float64               `json:"realTimeFactorTarget"`
 	IsRealTimeSimulation bool                  `json:"isRealTime"`
 	ConfigDir            string                `json:"configDir,omitempty"`
+	LibVersion           Versions              `json:"libVersion,omitempty"`
 	Status               string                `json:"status,omitempty"`
 	Module               Module                `json:"module,omitempty"`
 	Trends               []Trend               `json:"trends"`
@@ -80,6 +81,7 @@ type SimulationStatus struct {
 	Loading             bool
 	Loaded              bool
 	ConfigDir           string
+	LibVersion          Versions
 	Module              string
 	SignalSubscriptions []Variable
 	Trends              []Trend
@@ -125,4 +127,9 @@ type Plot struct {
 
 type PlotConfig struct {
 	Plots []Plot `json:"plots"`
+}
+
+type Versions struct {
+	LibVer  string `json:"libcosim"`
+	LibcVer string `json:"libcosimc"`
 }

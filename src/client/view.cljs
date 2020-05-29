@@ -338,7 +338,8 @@
         active-trend-index (rf/subscribe [:active-trend-index])
         scenario-name      (rf/subscribe [:scenario-id])
         error              (rf/subscribe [:error])
-        error-dismissed    (rf/subscribe [:error-dismissed])]
+        error-dismissed    (rf/subscribe [:error-dismissed])
+        lib-version         (rf/subscribe [:lib-version])]
     (fn []
       [:div
        [:div.ui.inverted.huge.borderless.fixed.menu
@@ -369,7 +370,11 @@
            [:a.item {:href "http://open-simulation-platform.com" :target "_blank"} [:i.icon.linkify] "OSP site"]
            [:a.item {:on-click #(rf/dispatch [::controller/toggle-show-success-feedback-messages])}
             (if @(rf/subscribe [:show-success-feedback-messages]) [:i.toggle.on.icon.green] [:i.toggle.off.icon])
-            "Show success command feedback"]]]]]
+            "Show success command feedback"]
+           (when (:libcosim @lib-version)
+             [:span.item [:i.icon.info.circle] (str "LibCosim version: " (:libcosim @lib-version))])
+           (when (:libcosimc @lib-version)
+             [:span.item [:i.icon.info.circle] (str "LibCosimC version: " (:libcosimc @lib-version))])]]]]
        [:div.ui.grid
         [:div.row
          [:div#sidebar.column

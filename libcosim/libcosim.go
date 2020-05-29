@@ -868,10 +868,12 @@ func GetSignalValue(module string, cardinality string, signal string) int {
 
 func GenerateJsonResponse(status *structs.SimulationStatus, sim *Simulation, feedback structs.CommandFeedback, shorty structs.ShortLivedData) structs.JsonResponse {
 	var response = structs.JsonResponse{
-		Loading: status.Loading,
-		Loaded:  status.Loaded,
-		Status:  status.Status,
+		Loading:    status.Loading,
+		Loaded:     status.Loaded,
+		Status:     status.Status,
+		LibVersion: status.LibVersion,
 	}
+
 	if status.Loaded {
 		execStatus := getExecutionStatus(sim.Execution)
 		response.ExecutionState = execStatus.state
@@ -1019,16 +1021,11 @@ func SetupLogging() {
 	}
 }
 
-type Versions struct {
-	LibVer  string `json:"libcosim"`
-	LibcVer string `json:"libcosimc"`
-}
-
-func Version() Versions {
+func Version() structs.Versions {
 	libVer := C.cosim_libcosim_version()
 	libcVer := C.cosim_libcosimc_version()
 
-	return Versions{
+	return structs.Versions{
 		LibVer:  fmt.Sprintf("%d.%d.%d", int(libVer.major), int(libVer.minor), int(libVer.patch)),
 		LibcVer: fmt.Sprintf("%d.%d.%d", int(libcVer.major), int(libcVer.minor), int(libcVer.patch)),
 	}
