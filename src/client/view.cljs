@@ -31,22 +31,22 @@
   (#{"Real" "Integer"} type))
 
 (defn trend-item [current-module name type {:keys [id index count label plot-type]}]
-  (case plot-type
+  (let [label-text (str (inc index) ") " (trend/plot-type-from-label label))]
+    (case plot-type
 
-    "trend" (semantic/ui-dropdown-item
-             {:key     (str "trend-item-" id)
-              :text    (str "#" index ": " (trend/plot-type-from-label label))
-              :label   "Time series"
-              :onClick #(rf/dispatch [::controller/add-to-trend current-module name index])})
+      "trend" (semantic/ui-dropdown-item
+                {:key     (str "trend-item-" id)
+                 :text    label-text
+                 :label   "Time series"
+                 :onClick #(rf/dispatch [::controller/add-to-trend current-module name index])})
 
-    "scatter" (when (xy-plottable? type)
-                (let [label-text (trend/plot-type-from-label label)
-                      axis       (if (even? count) 'X 'Y)]
-                  (semantic/ui-dropdown-item
-                   {:key     (str "trend-item-" id)
-                    :text    (str "#" index ": " label-text)
-                    :label   (str "XY plot - " axis " axis")
-                    :onClick #(rf/dispatch [::controller/add-to-trend current-module name index])})))))
+      "scatter" (when (xy-plottable? type)
+                  (let [axis (if (even? count) 'X 'Y)]
+                    (semantic/ui-dropdown-item
+                      {:key     (str "trend-item-" id)
+                       :text    label-text
+                       :label   (str "XY plot - " axis " axis")
+                       :onClick #(rf/dispatch [::controller/add-to-trend current-module name index])}))))))
 
 (defn action-dropdown [current-module name type trend-info]
   (when (and (seq trend-info) (plottable? type))
@@ -165,7 +165,7 @@
                      [:div.item {:key label}
                       [:a.itemstyle {:class (when (and (= index (int @active-trend-index)) (= route-name :trend)) "active")
                                      :href  (k/path-for [:trend {:index index}])}
-                       (str "#" index ": " (trend/plot-type-from-label label))]
+                       (str (inc index) ") " (trend/plot-type-from-label label))]
                       (let [display-number (if (= plot-type "trend") count (int (/ count 2)))]
                         [:div.ui.teal.left.pointing.label display-number])
                       [:span {:style         {:float 'right :cursor 'pointer :z-index 1000}
