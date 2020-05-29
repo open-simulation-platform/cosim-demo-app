@@ -181,8 +181,13 @@
                 (fn [{:keys [db]} [folder log-folder]]
                   (let [paths (distinct (conj (:prev-paths db) folder))]
                     (storage/set-item! "cosim-paths" (pr-str paths))
-                    (merge {:db (assoc db :prev-paths paths :plot-config-changed? false)}
+                    (merge {:db (assoc db :prev-paths paths :plot-config-changed? false :log-dir (or log-folder ""))}
                            (socket-command ["load" folder (or log-folder "")])))))
+
+(k/reg-event-fx ::reset
+                (fn [{:keys [db]} [folder log-folder]]
+                  (merge {:navigate-to [:index]}
+                         (socket-command ["reset" folder (or log-folder "")]))))
 
 (k/reg-event-fx ::delete-prev
                 (fn [{:keys [db]} [path]]

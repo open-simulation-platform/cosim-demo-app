@@ -86,6 +86,11 @@
 (rf/reg-sub :time simulation-time)
 (rf/reg-sub :loading? (comp :loading :state))
 (rf/reg-sub :loaded? (comp :loaded :state))
+(rf/reg-sub :loaded-dir (fn [db]
+                          (-> db :state :configDir)))
+(rf/reg-sub :log-dir (fn [db]
+                       (:log-dir db)))
+(rf/reg-sub :overview status-data)
 (rf/reg-sub :prev-paths (fn [db]
                           (:prev-paths db)))
 (rf/reg-sub :status (comp :status :state))
