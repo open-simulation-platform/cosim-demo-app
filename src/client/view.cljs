@@ -35,7 +35,7 @@
 
     "trend" (semantic/ui-dropdown-item
              {:key     (str "trend-item-" id)
-              :text    (trend/plot-type-from-label label)
+              :text    (str "#" index ": " (trend/plot-type-from-label label))
               :label   "Time series"
               :onClick #(rf/dispatch [::controller/add-to-trend current-module name index])})
 
@@ -44,7 +44,7 @@
                       axis       (if (even? count) 'X 'Y)]
                   (semantic/ui-dropdown-item
                    {:key     (str "trend-item-" id)
-                    :text    label-text
+                    :text    (str "#" index ": " label-text)
                     :label   (str "XY plot - " axis " axis")
                     :onClick #(rf/dispatch [::controller/add-to-trend current-module name index])})))))
 
@@ -165,7 +165,7 @@
                      [:div.item {:key label}
                       [:a.itemstyle {:class (when (and (= index (int @active-trend-index)) (= route-name :trend)) "active")
                                      :href  (k/path-for [:trend {:index index}])}
-                       (trend/plot-type-from-label label)]
+                       (str "#" index ": " (trend/plot-type-from-label label))]
                       (let [display-number (if (= plot-type "trend") count (int (/ count 2)))]
                         [:div.ui.teal.left.pointing.label display-number])
                       [:span {:style         {:float 'right :cursor 'pointer :z-index 1000}
