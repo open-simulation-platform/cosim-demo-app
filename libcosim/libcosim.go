@@ -646,27 +646,27 @@ func initializeSimulation(sim *Simulation, status *structs.SimulationStatus, con
 }
 
 func resetSimulation(sim *Simulation, status *structs.SimulationStatus, configPath string, logDir string) (bool, string, string) {
-    var success = false
-    var message = ""
-    var configDir = ""
+	var success = false
+	var message = ""
+	var configDir = ""
 
-    success, message = executionStop(sim.Execution)
-    log.Println(message)
+	success, message = executionStop(sim.Execution)
+	log.Println(message)
 
-    if success{
-        status.Loaded = false
-        status.Status = "stopped"
-        status.ConfigDir = ""
-        status.Trends = []structs.Trend{}
-        status.Module = ""
-        success, message = simulationTeardown(sim)
-        log.Println(message)
-    }
+	if success {
+		status.Loaded = false
+		status.Status = "stopped"
+		status.ConfigDir = ""
+		status.Trends = []structs.Trend{}
+		status.Module = ""
+		success, message = simulationTeardown(sim)
+		log.Println(message)
+	}
 
-    success, message, configDir = initializeSimulation(sim, status, configPath, logDir)
-    log.Println(message)
+	success, message, configDir = initializeSimulation(sim, status, configPath, logDir)
+	log.Println(message)
 
-    return success, message, configDir
+	return success, message, configDir
 }
 
 func executeCommand(cmd []string, sim *Simulation, status *structs.SimulationStatus) (shorty structs.ShortLivedData, feedback structs.CommandFeedback) {
@@ -695,18 +695,18 @@ func executeCommand(cmd []string, sim *Simulation, status *structs.SimulationSta
 		success, message = simulationTeardown(sim)
 		shorty.ModuleData = sim.MetaData
 	case "reset":
-        status.Loading = true
-        var configDir string
-        success, message, configDir = resetSimulation(sim, status, cmd[1], cmd[2])
-        if success {
-            status.Loaded = true
-        	status.ConfigDir = configDir
-        	status.Status = "pause"
-        	shorty.ModuleData = sim.MetaData
-        	scenarios := findScenarios(status)
-        	shorty.Scenarios = &scenarios
-        }
-        status.Loading = false
+		status.Loading = true
+		var configDir string
+		success, message, configDir = resetSimulation(sim, status, cmd[1], cmd[2])
+		if success {
+			status.Loaded = true
+			status.ConfigDir = configDir
+			status.Status = "pause"
+			shorty.ModuleData = sim.MetaData
+			scenarios := findScenarios(status)
+			shorty.Scenarios = &scenarios
+		}
+		status.Loading = false
 	case "pause":
 		success, message = executionStop(sim.Execution)
 		status.Status = "pause"
@@ -728,7 +728,7 @@ func executeCommand(cmd []string, sim *Simulation, status *structs.SimulationSta
 	case "removetrend":
 		success, message = removeTrend(status, cmd[1])
 	case "active-trend":
-		success, message = activeTrend(status, cmd[1])
+		success, message = activeTrend(sim, status, cmd[1])
 	case "setlabel":
 		success, message = setTrendLabel(status, cmd[1], cmd[2])
 	case "trend-zoom":
