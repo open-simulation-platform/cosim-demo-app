@@ -128,6 +128,12 @@ func activeTrend(status *structs.SimulationStatus, trendIndex string) (bool, str
 	} else {
 		status.ActiveTrend = -1
 	}
+	for _, trend := range status.Trends {
+		for i, _ := range trend.TrendSignals {
+			trend.TrendSignals[i].TrendXValues = nil
+			trend.TrendSignals[i].TrendYValues = nil
+		}
+	}
 	return true, "Changed active trend index"
 }
 
