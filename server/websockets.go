@@ -65,6 +65,7 @@ func stateLoop(state chan structs.JsonResponse, conn *websocket.Conn) {
 		if err != nil {
 			log.Println("write error:", err)
 			log.Println("latestState:", latestState)
+			state <- latestState
 			break
 		}
 	}
