@@ -13,7 +13,6 @@ import (
 	"os"
 	"path/filepath"
 	"strconv"
-	"time"
 )
 
 func generateNextTrendId(status *structs.SimulationStatus) int {
@@ -118,20 +117,13 @@ func removeTrend(status *structs.SimulationStatus, trendIndex string) (bool, str
 	return true, "Removed trend"
 }
 
-func activeTrend(sim *Simulation, status *structs.SimulationStatus, trendIndex string) (bool, string) {
-	for _, trend := range status.Trends {
-		for i, _ := range trend.TrendSignals {
-			trend.TrendSignals[i].TrendXValues = nil
-			trend.TrendSignals[i].TrendYValues = nil
-		}
-	}
+func activeTrend(status *structs.SimulationStatus, trendIndex string) (bool, string) {
 	if len(trendIndex) > 0 {
 		idx, err := strconv.Atoi(trendIndex)
 		if err != nil {
 			return false, strCat("Could not parse trend index: ", trendIndex, " ", err.Error())
 		}
 		status.ActiveTrend = idx
-		generatePlotData(sim, status)
 	} else {
 		status.ActiveTrend = -1
 	}
@@ -141,6 +133,10 @@ func activeTrend(sim *Simulation, status *structs.SimulationStatus, trendIndex s
 func generatePlotData(sim *Simulation, status *structs.SimulationStatus) {
 	for _, trend := range status.Trends {
 		if status.ActiveTrend != trend.Id {
+			for i, _ := range trend.TrendSignals {
+				trend.TrendSignals[i].TrendXValues = nil
+				trend.TrendSignals[i].TrendYValues = nil
+			}
 			continue
 		}
 		switch trend.PlotType {
@@ -168,13 +164,6 @@ func generatePlotData(sim *Simulation, status *structs.SimulationStatus) {
 			}
 			break
 		}
-	}
-}
-
-func TrendLoop(sim *Simulation, status *structs.SimulationStatus) {
-	for {
-		generatePlotData(sim, status)
-		time.Sleep(1000 * time.Millisecond)
 	}
 }
 

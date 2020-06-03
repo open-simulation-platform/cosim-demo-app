@@ -728,7 +728,7 @@ func executeCommand(cmd []string, sim *Simulation, status *structs.SimulationSta
 	case "removetrend":
 		success, message = removeTrend(status, cmd[1])
 	case "active-trend":
-		success, message = activeTrend(sim, status, cmd[1])
+		success, message = activeTrend(status, cmd[1])
 	case "setlabel":
 		success, message = setTrendLabel(status, cmd[1], cmd[2])
 	case "trend-zoom":
@@ -885,6 +885,7 @@ func GenerateJsonResponse(status *structs.SimulationStatus, sim *Simulation, fee
 		response.IsRealTimeSimulation = execStatus.isRealTimeSimulation
 		response.Module = findModuleData(status, sim.MetaData, sim.Observer)
 		response.ConfigDir = status.ConfigDir
+		generatePlotData(sim, status)
 		response.Trends = status.Trends
 		response.ManipulatedVariables = fetchManipulatedVariables(sim.Execution)
 		if sim.ScenarioManager != nil && isScenarioRunning(sim.ScenarioManager) {
