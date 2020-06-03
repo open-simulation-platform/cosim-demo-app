@@ -28,7 +28,6 @@ func main() {
 	// Passing the channel to the go routine
 	go libcosim.StateUpdateLoop(state, &simulationStatus, &sim)
 	go libcosim.CommandLoop(state, &sim, cmd, &simulationStatus)
-	go libcosim.TrendLoop(&sim, &simulationStatus)
 
 	//Passing the channel to the server
 	server.Server(cmd, state, &simulationStatus, &sim)

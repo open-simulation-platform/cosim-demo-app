@@ -13,7 +13,6 @@ import (
 	"os"
 	"path/filepath"
 	"strconv"
-	"time"
 )
 
 func generateNextTrendId(status *structs.SimulationStatus) int {
@@ -131,39 +130,40 @@ func activeTrend(status *structs.SimulationStatus, trendIndex string) (bool, str
 	return true, "Changed active trend index"
 }
 
-func TrendLoop(sim *Simulation, status *structs.SimulationStatus) {
-	for {
-		for _, trend := range status.Trends {
-			if status.ActiveTrend != trend.Id {
-				continue
+func generatePlotData(sim *Simulation, status *structs.SimulationStatus) {
+	for _, trend := range status.Trends {
+		if status.ActiveTrend != trend.Id {
+			for i, _ := range trend.TrendSignals {
+				trend.TrendSignals[i].TrendXValues = nil
+				trend.TrendSignals[i].TrendYValues = nil
 			}
-			switch trend.PlotType {
-			case "trend":
-				if len(trend.TrendSignals) > 0 {
-					for i, _ := range trend.TrendSignals {
-						var signal = &trend.TrendSignals[i]
-						switch signal.Type {
-						case "Real":
-							observerGetRealSamples(sim.TrendObserver, signal, trend.Spec)
-						}
-					}
-				}
-				break
-			case "scatter":
-				signalCount := len(trend.TrendSignals)
-				if signalCount > 0 {
-					for j := 0; (j + 1) < signalCount; j += 2 {
-						var signal1 = &trend.TrendSignals[j]
-						var signal2 = &trend.TrendSignals[j+1]
-						if signal1.Type == "Real" && signal2.Type == "Real" {
-							observerGetRealSynchronizedSamples(sim.TrendObserver, signal1, signal2, trend.Spec)
-						}
-					}
-				}
-				break
-			}
+			continue
 		}
-		time.Sleep(1000 * time.Millisecond)
+		switch trend.PlotType {
+		case "trend":
+			if len(trend.TrendSignals) > 0 {
+				for i, _ := range trend.TrendSignals {
+					var signal = &trend.TrendSignals[i]
+					switch signal.Type {
+					case "Real":
+						observerGetRealSamples(sim.TrendObserver, signal, trend.Spec)
+					}
+				}
+			}
+			break
+		case "scatter":
+			signalCount := len(trend.TrendSignals)
+			if signalCount > 0 {
+				for j := 0; (j + 1) < signalCount; j += 2 {
+					var signal1 = &trend.TrendSignals[j]
+					var signal2 = &trend.TrendSignals[j+1]
+					if signal1.Type == "Real" && signal2.Type == "Real" {
+						observerGetRealSynchronizedSamples(sim.TrendObserver, signal1, signal2, trend.Spec)
+					}
+				}
+			}
+			break
+		}
 	}
 }
 

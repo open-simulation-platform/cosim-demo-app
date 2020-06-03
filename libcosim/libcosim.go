@@ -646,27 +646,27 @@ func initializeSimulation(sim *Simulation, status *structs.SimulationStatus, con
 }
 
 func resetSimulation(sim *Simulation, status *structs.SimulationStatus, configPath string, logDir string) (bool, string, string) {
-    var success = false
-    var message = ""
-    var configDir = ""
+	var success = false
+	var message = ""
+	var configDir = ""
 
-    success, message = executionStop(sim.Execution)
-    log.Println(message)
+	success, message = executionStop(sim.Execution)
+	log.Println(message)
 
-    if success{
-        status.Loaded = false
-        status.Status = "stopped"
-        status.ConfigDir = ""
-        status.Trends = []structs.Trend{}
-        status.Module = ""
-        success, message = simulationTeardown(sim)
-        log.Println(message)
-    }
+	if success {
+		status.Loaded = false
+		status.Status = "stopped"
+		status.ConfigDir = ""
+		status.Trends = []structs.Trend{}
+		status.Module = ""
+		success, message = simulationTeardown(sim)
+		log.Println(message)
+	}
 
-    success, message, configDir = initializeSimulation(sim, status, configPath, logDir)
-    log.Println(message)
+	success, message, configDir = initializeSimulation(sim, status, configPath, logDir)
+	log.Println(message)
 
-    return success, message, configDir
+	return success, message, configDir
 }
 
 func executeCommand(cmd []string, sim *Simulation, status *structs.SimulationStatus) (shorty structs.ShortLivedData, feedback structs.CommandFeedback) {
@@ -695,18 +695,18 @@ func executeCommand(cmd []string, sim *Simulation, status *structs.SimulationSta
 		success, message = simulationTeardown(sim)
 		shorty.ModuleData = sim.MetaData
 	case "reset":
-        status.Loading = true
-        var configDir string
-        success, message, configDir = resetSimulation(sim, status, cmd[1], cmd[2])
-        if success {
-            status.Loaded = true
-        	status.ConfigDir = configDir
-        	status.Status = "pause"
-        	shorty.ModuleData = sim.MetaData
-        	scenarios := findScenarios(status)
-        	shorty.Scenarios = &scenarios
-        }
-        status.Loading = false
+		status.Loading = true
+		var configDir string
+		success, message, configDir = resetSimulation(sim, status, cmd[1], cmd[2])
+		if success {
+			status.Loaded = true
+			status.ConfigDir = configDir
+			status.Status = "pause"
+			shorty.ModuleData = sim.MetaData
+			scenarios := findScenarios(status)
+			shorty.Scenarios = &scenarios
+		}
+		status.Loading = false
 	case "pause":
 		success, message = executionStop(sim.Execution)
 		status.Status = "pause"
@@ -885,6 +885,7 @@ func GenerateJsonResponse(status *structs.SimulationStatus, sim *Simulation, fee
 		response.IsRealTimeSimulation = execStatus.isRealTimeSimulation
 		response.Module = findModuleData(status, sim.MetaData, sim.Observer)
 		response.ConfigDir = status.ConfigDir
+		generatePlotData(sim, status)
 		response.Trends = status.Trends
 		response.ManipulatedVariables = fetchManipulatedVariables(sim.Execution)
 		if sim.ScenarioManager != nil && isScenarioRunning(sim.ScenarioManager) {
