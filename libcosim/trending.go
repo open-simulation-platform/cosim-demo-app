@@ -131,8 +131,8 @@ func activeTrend(status *structs.SimulationStatus, trendIndex string) (bool, str
 }
 
 func generatePlotData(sim *Simulation, status *structs.SimulationStatus) {
-	for _, trend := range status.Trends {
-		if status.ActiveTrend != trend.Id {
+	for idx, trend := range status.Trends {
+		if status.ActiveTrend != idx {
 			for i, _ := range trend.TrendSignals {
 				trend.TrendSignals[i].TrendXValues = nil
 				trend.TrendSignals[i].TrendYValues = nil
