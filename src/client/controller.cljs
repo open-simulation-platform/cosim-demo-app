@@ -153,9 +153,8 @@
 
 (k/reg-event-fx ::trend-enter
                 (fn [{:keys [db]} [{:keys [index]}]]
-                  (let [trend-id (-> db :state :trends (get (int index)) :id)]
-                    (merge {:db (assoc db :active-trend-index index)}
-                           (socket-command ["active-trend" (str trend-id)])))))
+                  (merge {:db (assoc db :active-trend-index index)}
+                         (socket-command ["active-trend" (str index)]))))
 
 (k/reg-event-fx ::trend-leave
                 (fn [{:keys [db]} _]
