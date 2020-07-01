@@ -56,13 +56,15 @@ func createSsdExecution(ssdDir string) (execution *C.cosim_execution) {
 }
 
 type executionStatus struct {
-	time                 float64
-	realTimeFactor       float64
-	realTimeFactorTarget float64
-	isRealTimeSimulation bool
-	state                string
-	lastErrorMessage     string
-	lastErrorCode        string
+	time                         float64
+	totalAverageRealTimeFactor   float64
+	rollingAverageRealTimeFactor float64
+	realTimeFactorTarget         float64
+	stepsToMonitor               int
+	isRealTimeSimulation         bool
+	state                        string
+	lastErrorMessage             string
+	lastErrorCode                string
 }
 
 func translateState(state C.cosim_execution_state) string {
@@ -114,9 +116,11 @@ func getExecutionStatus(execution *C.cosim_execution) (execStatus executionStatu
 	success := int(C.cosim_execution_get_status(execution, &status))
 	nanoTime := int64(status.current_time)
 	execStatus.time = float64(nanoTime) * 1e-9
-	execStatus.realTimeFactor = float64(status.real_time_factor)
+	execStatus.totalAverageRealTimeFactor = float64(status.total_average_real_time_factor)
+	execStatus.rollingAverageRealTimeFactor = float64(status.rolling_average_real_time_factor)
 	execStatus.realTimeFactorTarget = float64(status.real_time_factor_target)
 	execStatus.isRealTimeSimulation = int(status.is_real_time_simulation) > 0
+	execStatus.stepsToMonitor = int(status.steps_to_monitor)
 	execStatus.state = translateState(status.state)
 	if success < 0 || status.state == C.COSIM_EXECUTION_ERROR {
 		execStatus.lastErrorMessage = lastErrorMessage()
@@ -195,7 +199,7 @@ func executionDisableRealTime(execution *C.cosim_execution) (bool, string) {
 	}
 }
 
-func executionSetCustomRealTimeFactor(execution *C.cosim_execution, status *structs.SimulationStatus, realTimeFactor string) (bool, string) {
+func executionSetCustomRealTimeFactor(execution *C.cosim_execution, realTimeFactor string) (bool, string) {
 	val, err := strconv.ParseFloat(realTimeFactor, 64)
 
 	if err != nil {
@@ -208,6 +212,19 @@ func executionSetCustomRealTimeFactor(execution *C.cosim_execution, status *stru
 	}
 
 	C.cosim_execution_set_real_time_factor_target(execution, C.double(val))
+
+	return true, "Custom real time factor successfully set"
+}
+
+func executionSetStepsToMonitor(execution *C.cosim_execution, numSteps string) (bool, string) {
+	val, err := strconv.Atoi(numSteps)
+
+	if err != nil {
+		log.Println(err)
+		return false, err.Error()
+	}
+
+	C.cosim_execution_set_steps_to_monitor(execution, C.int(val))
 
 	return true, "Custom real time factor successfully set"
 }
@@ -718,7 +735,9 @@ func executeCommand(cmd []string, sim *Simulation, status *structs.SimulationSta
 	case "disable-realtime":
 		success, message = executionDisableRealTime(sim.Execution)
 	case "set-custom-realtime-factor":
-		success, message = executionSetCustomRealTimeFactor(sim.Execution, status, cmd[1])
+		success, message = executionSetCustomRealTimeFactor(sim.Execution, cmd[1])
+	case "set-steps-to-monitor":
+		success, message = executionSetStepsToMonitor(sim.Execution, cmd[1])
 	case "newtrend":
 		success, message = addNewTrend(status, cmd[1], cmd[2])
 	case "addtotrend":
@@ -880,9 +899,11 @@ func GenerateJsonResponse(status *structs.SimulationStatus, sim *Simulation, fee
 		response.LastErrorCode = execStatus.lastErrorCode
 		response.LastErrorMessage = execStatus.lastErrorMessage
 		response.SimulationTime = execStatus.time
-		response.RealTimeFactor = execStatus.realTimeFactor
+		response.TotalAverageRealTimeFactor = execStatus.totalAverageRealTimeFactor
+		response.RollingAverageRealTimeFactor = execStatus.rollingAverageRealTimeFactor
 		response.RealTimeFactorTarget = execStatus.realTimeFactorTarget
 		response.IsRealTimeSimulation = execStatus.isRealTimeSimulation
+		response.StepsToMonitor = execStatus.stepsToMonitor
 		response.Module = findModuleData(status, sim.MetaData, sim.Observer)
 		response.ConfigDir = status.ConfigDir
 		generatePlotData(sim, status)

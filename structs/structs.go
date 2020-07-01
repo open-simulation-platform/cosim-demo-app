@@ -23,26 +23,28 @@ type ManipulatedVariable struct {
 }
 
 type JsonResponse struct {
-	Loading              bool                  `json:"loading"`
-	Loaded               bool                  `json:"loaded"`
-	ExecutionState       string                `json:"executionState"`
-	LastErrorCode        string                `json:"lastErrorCode"`
-	LastErrorMessage     string                `json:"lastErrorMessage"`
-	SimulationTime       float64               `json:"time"`
-	RealTimeFactor       float64               `json:"realTimeFactor"`
-	RealTimeFactorTarget float64               `json:"realTimeFactorTarget"`
-	IsRealTimeSimulation bool                  `json:"isRealTime"`
-	ConfigDir            string                `json:"configDir,omitempty"`
-	LibVersion           Versions              `json:"libVersion,omitempty"`
-	Status               string                `json:"status,omitempty"`
-	Module               Module                `json:"module,omitempty"`
-	Trends               []Trend               `json:"trends"`
-	ModuleData           *MetaData             `json:"module-data,omitempty"`
-	Feedback             *CommandFeedback      `json:"feedback,omitempy"`
-	Scenarios            *[]string             `json:"scenarios,omitempty"`
-	Scenario             *interface{}          `json:"scenario,omitempty"`
-	RunningScenario      string                `json:"running-scenario"`
-	ManipulatedVariables []ManipulatedVariable `json:"manipulatedVariables"`
+	Loading                      bool                  `json:"loading"`
+	Loaded                       bool                  `json:"loaded"`
+	ExecutionState               string                `json:"executionState"`
+	LastErrorCode                string                `json:"lastErrorCode"`
+	LastErrorMessage             string                `json:"lastErrorMessage"`
+	SimulationTime               float64               `json:"time"`
+	TotalAverageRealTimeFactor   float64               `json:"totalAverageRealTimeFactor"`
+	RollingAverageRealTimeFactor float64               `json:"rollingAverageRealTimeFactor"`
+	RealTimeFactorTarget         float64               `json:"realTimeFactorTarget"`
+	IsRealTimeSimulation         bool                  `json:"isRealTime"`
+	StepsToMonitor               int                   `json:"stepsToMonitor"`
+	ConfigDir                    string                `json:"configDir,omitempty"`
+	LibVersion                   Versions              `json:"libVersion,omitempty"`
+	Status                       string                `json:"status,omitempty"`
+	Module                       Module                `json:"module,omitempty"`
+	Trends                       []Trend               `json:"trends"`
+	ModuleData                   *MetaData             `json:"module-data,omitempty"`
+	Feedback                     *CommandFeedback      `json:"feedback,omitempy"`
+	Scenarios                    *[]string             `json:"scenarios,omitempty"`
+	Scenario                     *interface{}          `json:"scenario,omitempty"`
+	RunningScenario              string                `json:"running-scenario"`
+	ManipulatedVariables         []ManipulatedVariable `json:"manipulatedVariables"`
 }
 
 type TrendSignal struct {

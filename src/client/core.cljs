@@ -54,14 +54,17 @@
   (some-> db :state :time (.toFixed 3)))
 
 (defn scenario-percent [db]
-      (let [simulation-time     (simulation-time db)
-            scenario-start-time (:scenario-start-time db)
-            scenario-end-time   (:scenario-end-time db)]
-           (when (and scenario-start-time scenario-end-time)
-             (-> (/ (- simulation-time scenario-start-time) scenario-end-time) (* 100) (.toFixed 2) (min 100)))))
+  (let [simulation-time     (simulation-time db)
+        scenario-start-time (:scenario-start-time db)
+        scenario-end-time   (:scenario-end-time db)]
+    (when (and scenario-start-time scenario-end-time)
+      (-> (/ (- simulation-time scenario-start-time) scenario-end-time) (* 100) (.toFixed 2) (min 100)))))
 
 (defn real-time-factor [db]
-  (some-> db :state :realTimeFactor (.toFixed 3)))
+  (str
+    (some-> db :state :rollingAverageRealTimeFactor (.toFixed 2))
+    "/"
+    (some-> db :state :totalAverageRealTimeFactor (.toFixed 2))))
 
 (defn real-time-factor-target [db]
   (some-> db :state :realTimeFactorTarget (.toFixed 3)))
@@ -74,13 +77,15 @@
     "false"))
 
 (defn status-data [db]
-  {"Algorithm type"               "Fixed step"
-   "Simulation time"              (simulation-time db)
-   "Real time factor"             (real-time-factor db)
-   "Real time factor target"      (real-time-factor-target db)
-   "Real time target"             (real-time? db)
-   "Connection status"            (get-in db [:kee-frame.websocket/sockets socket-url :state])
-   "Path to loaded config folder" (-> db :state :configDir)})
+  (array-map "Algorithm type" "Fixed step"
+             "Simulation time" (simulation-time db)
+             "Real time factor (total average)" (some-> db :state :totalAverageRealTimeFactor (.toFixed 3))
+             "Real time factor (rolling average)" (some-> db :state :rollingAverageRealTimeFactor (.toFixed 3))
+             "Number of steps for rolling average" (some-> db :state :stepsToMonitor)
+             "Real time factor target" (real-time-factor-target db)
+             "Real time target" (real-time? db)
+             "Connection status" (get-in db [:kee-frame.websocket/sockets socket-url :state])
+             "Path to loaded config folder" (-> db :state :configDir)))
 
 (rf/reg-sub :overview status-data)
 (rf/reg-sub :time simulation-time)
@@ -90,7 +95,6 @@
                           (-> db :state :configDir)))
 (rf/reg-sub :log-dir (fn [db]
                        (:log-dir db)))
-(rf/reg-sub :overview status-data)
 (rf/reg-sub :prev-paths (fn [db]
                           (:prev-paths db)))
 (rf/reg-sub :status (comp :status :state))
@@ -165,7 +169,7 @@
     (-> event
         (assoc :model-valid? model-valid? :variable-valid? variable-valid? :valid? (and model-valid? variable-valid?))
         (assoc :validation-message (cond
-                                     (not model-valid?)    "Can't find a model with this name"
+                                     (not model-valid?) "Can't find a model with this name"
                                      (not variable-valid?) "Can't find a variable with this name")))))
 
 (defn merge-defaults [db scenario]
@@ -201,13 +205,13 @@
 
 (rf/reg-sub :scenario-start-time
             (fn [db]
-                (:scenario-start-time db)))
+              (:scenario-start-time db)))
 
 (rf/reg-sub :scenario-current-time
             (fn [db]
-                (let [scenario-start-time (:scenario-start-time db)
-                      simulation-time (-> db :state :time)]
-                     (- simulation-time scenario-start-time))))
+              (let [scenario-start-time (:scenario-start-time db)
+                    simulation-time     (-> db :state :time)]
+                (- simulation-time scenario-start-time))))
 
 (rf/reg-sub :scenario (fn [db]
                         (->> db
@@ -247,7 +251,7 @@
 (rf/reg-sub :plot-config-changed? #(:plot-config-changed? %))
 
 (rf/reg-sub :lib-version (fn [db]
-                                 (-> db :state :libVersion)))
+                           (-> db :state :libVersion)))
 
 (k/start! {:routes         routes
            :hash-routing?  true

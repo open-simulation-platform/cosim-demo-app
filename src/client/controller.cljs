@@ -211,9 +211,12 @@
                   (socket-command ["enable-realtime"])))
 
 (k/reg-event-fx ::set-real-time-factor-target
-                (fn [{:keys [db]} [val]]
-                  (merge {:db (assoc db :enable-real-time-target true)}
-                         (socket-command ["set-custom-realtime-factor" val]))))
+                (fn [_ [val]]
+                  (socket-command ["set-custom-realtime-factor" val])))
+
+(k/reg-event-fx ::set-steps-to-monitor
+                (fn [_ [val]]
+                  (socket-command ["set-steps-to-monitor" val])))
 
 (k/reg-event-fx ::disable-realtime
                 (fn [_ _]

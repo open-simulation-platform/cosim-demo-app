@@ -51,10 +51,10 @@
 (defn action-dropdown [current-module name type trend-info]
   (when (and (seq trend-info) (plottable? type))
     (semantic/ui-dropdown
-     {:button false :text "Add to plot"}
-     (semantic/ui-dropdown-menu
-      {:direction 'left}
-      (map (partial trend-item current-module name type) trend-info)))))
+      {:button false :text "Add to plot"}
+      (semantic/ui-dropdown-menu
+        {:direction 'left}
+        (map (partial trend-item current-module name type) trend-info)))))
 
 (defn pages-menu []
   (let [current-page  @(rf/subscribe [:current-page])
@@ -161,28 +161,28 @@
             [:div.header "Plots"]
             [:div.menu
              (doall
-              (map (fn [{:keys [index label count plot-type]}]
-                     [:div.item {:key label}
-                      [:a.itemstyle {:class (when (and (= index (int @active-trend-index)) (= route-name :trend)) "active")
-                                     :href  (k/path-for [:trend {:index index}])}
-                       (str (inc index) ") " (trend/plot-type-from-label label))]
-                      (let [display-number (if (= plot-type "trend") count (int (/ count 2)))]
-                        [:div.ui.teal.left.pointing.label display-number])
-                      [:span {:style         {:float 'right :cursor 'pointer :z-index 1000}
-                              :data-tooltip  "Remove plot"
-                              :data-position "top center"}
-                       [:i.trash.gray.icon {:on-click #(rf/dispatch [::controller/removetrend index])}]]
-                      (if (< 0 count)
-                        [:span {:style         {:float 'right :cursor 'pointer :z-index 1000}
-                                :data-tooltip  "Remove all variables from plot"
-                                :data-position "top center"}
-                         [:i.eye.slash.gray.icon {:on-click #(rf/dispatch [::controller/untrend index])}]])])
-                   @trend-info))
+               (map (fn [{:keys [index label count plot-type]}]
+                      [:div.item {:key label}
+                       [:a.itemstyle {:class (when (and (= index (int @active-trend-index)) (= route-name :trend)) "active")
+                                      :href  (k/path-for [:trend {:index index}])}
+                        (str (inc index) ") " (trend/plot-type-from-label label))]
+                       (let [display-number (if (= plot-type "trend") count (int (/ count 2)))]
+                         [:div.ui.teal.left.pointing.label display-number])
+                       [:span {:style         {:float 'right :cursor 'pointer :z-index 1000}
+                               :data-tooltip  "Remove plot"
+                               :data-position "top center"}
+                        [:i.trash.gray.icon {:on-click #(rf/dispatch [::controller/removetrend index])}]]
+                       (if (< 0 count)
+                         [:span {:style         {:float 'right :cursor 'pointer :z-index 1000}
+                                 :data-tooltip  "Remove all variables from plot"
+                                 :data-position "top center"}
+                          [:i.eye.slash.gray.icon {:on-click #(rf/dispatch [::controller/untrend index])}]])])
+                    @trend-info))
              [:div.item
-              [:button.ui.icon.button {:style {:margin-top 5}
+              [:button.ui.icon.button {:style    {:margin-top 5}
                                        :on-click #(rf/dispatch [::controller/new-trend "scatter" (str "XY plot #" (random-uuid))])}
                [:i.plus.icon] "XY plot"]
-              [:button.ui.icon.button {:style {:margin-top 5}
+              [:button.ui.icon.button {:style    {:margin-top 5}
                                        :on-click #(rf/dispatch [::controller/new-trend "trend" (str "Time series #" (random-uuid))])}
                [:i.plus.icon] "Time series"]
               [:button.ui.icon.button {:style    {:margin-top 5}
@@ -202,13 +202,13 @@
              "Scenarios"]
             [:div.menu
              (doall
-              (map (fn [{:keys [id running?]}]
-                     [:a.item {:class (when (= (-> @route :path-params :id) id) "active")
-                               :key   id
-                               :href  (k/path-for [:scenario {:id id}])} (scenario/scenario-filename-to-name id)
-                      (when running? [:div {:style {:display 'inline-block :float 'right}} (str @scenario-percent "%")
-                                      [:i.green.play.icon]])])
-                   @scenarios))]])
+               (map (fn [{:keys [id running?]}]
+                      [:a.item {:class (when (= (-> @route :path-params :id) id) "active")
+                                :key   id
+                                :href  (k/path-for [:scenario {:id id}])} (scenario/scenario-filename-to-name id)
+                       (when running? [:div {:style {:display 'inline-block :float 'right}} (str @scenario-percent "%")
+                                       [:i.green.play.icon]])])
+                    @scenarios))]])
          [:div.ui.divider]
          (when @loaded?
            [:div.item
@@ -236,6 +236,13 @@
    @(rf/subscribe [:get-state-key :realTimeFactorTarget])
    [::controller/set-real-time-factor-target]
    "Edit real time target"])
+
+(defn steps-to-monitor-field []
+  [c/text-editor
+   @(rf/subscribe [:get-state-key :stepsToMonitor])
+   [::controller/set-steps-to-monitor]
+   "Set number of steps to use in rolling average real time factor calculation.
+   Increase this value to reduce fluctuations."])
 
 (defn teardown-button []
   [:button.ui.button {:on-click     #(rf/dispatch [::controller/teardown])
@@ -272,6 +279,7 @@
     [:tbody
      [:tr [:td "Real time target"] [:td [realtime-button]]]
      [:tr [:td "Real time factor target value"] [:td [realtime-factor-field]]]
+     [:tr [:td "Number of steps for rolling average"] [:td [steps-to-monitor-field]]]
      [:tr [:td "Simulation execution"] [:td [teardown-button]]]]]])
 
 (defn index-page []
@@ -340,7 +348,7 @@
         scenario-name      (rf/subscribe [:scenario-id])
         error              (rf/subscribe [:error])
         error-dismissed    (rf/subscribe [:error-dismissed])
-        lib-version         (rf/subscribe [:lib-version])]
+        lib-version        (rf/subscribe [:lib-version])]
     (fn []
       [:div
        [:div.ui.inverted.huge.borderless.fixed.menu
@@ -353,7 +361,9 @@
            [:a.item {:on-click #(rf/dispatch [::controller/toggle-dismiss-error])} "Error!"])
          (when @loaded?
            [:div.item
-            [:div "RTF: " @(rf/subscribe [:real-time-factor])]])
+            [:div {:data-tooltip  "Rolling average / total average"
+                   :data-position "bottom center"}
+             "RTF: " @(rf/subscribe [:real-time-factor])]])
          (when @loaded?
            [:div.item
             [:div "Time: " @(rf/subscribe [:time])]])
