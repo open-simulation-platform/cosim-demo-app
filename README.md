@@ -31,8 +31,7 @@ First, add the OSP Conan repository as a remote and configure the username and
 password to access it:
 
     conan remote add osp https://osp.jfrog.io/artifactory/api/conan/conan-public
-    conan user -p "Open Simulation Platform" -r osp osp
-
+    
 ### Step 2: Build and run
 
 You can do this in two ways:
