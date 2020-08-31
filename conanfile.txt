@@ -1,7 +1,7 @@
 [generators]
 
 [requires]
-libcosimc/0.7.0@osp/master
+libcosimc/0.8.0@osp/testing
 
 [options]
 libcosim:fmuproxy=True
@@ -18,6 +18,9 @@ lib, boost_log*.dll             -> ./dist\bin
 lib, boost_system*.dll          -> ./dist\bin
 lib, boost_thread*.dll          -> ./dist\bin
 bin, cosim*.dll                 -> ./dist\bin
+bin, fmilib_shared.dll          -> ./dist\bin
+bin, xerces-c*.dll              -> ./dist\bin
+bin, yaml-cpp.dll               -> ./dist\bin
 bin, zip.dll                    -> ./dist\bin
 
 lib, libboost_chrono.so.*       -> ./dist/lib
@@ -29,6 +32,9 @@ lib, libboost_log.so.*          -> ./dist/lib
 lib, libboost_system.so.*       -> ./dist/lib
 lib, libboost_thread.so*        -> ./dist/lib
 lib, libcosim*.so               -> ./dist/lib
+lib, libfmilib_shared.so        -> ./dist/lib
+lib, libxerces-c*.so            -> ./dist/lib
+lib, libyaml-cpp.so.*           -> ./dist/lib
 lib, libzip.so*                 -> ./dist/lib
 
 ., license*     -> ./dist/doc/licenses @ folder=True, ignore_case=True, keep_path=False
