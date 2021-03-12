@@ -30,7 +30,7 @@ your MinGW-w64 has been installed to e.g., C:\mingw\mingw64\bin).
 First, add the OSP Conan repository as a remote and configure the username and
 password to access it:
 
-    conan remote add osp https://osp.jfrog.io/artifactory/api/conan/conan-public
+    conan remote add osp https://osp.jfrog.io/artifactory/api/conan/conan-local
     
 ### Step 2: Build and run
 
