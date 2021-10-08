@@ -21,7 +21,7 @@ func createObserver() (observer *C.cosim_observer) {
 }
 
 func createTrendObserver() (observer *C.cosim_observer) {
-	observer = C.cosim_time_series_observer_create()
+	observer = C.cosim_buffered_time_series_observer_create(100000)
 	return
 }
 
