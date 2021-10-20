@@ -1,27 +1,28 @@
 [generators]
 
 [requires]
-libcosimc/0.8.0@osp/testing
+libcosimc/0.8.2@osp/testing
 
 [options]
-libcosim:fmuproxy=True
+libcosim:proxyfmu=True
 
 [imports]
 include, cosim.h                -> ./include
 
-bin, boost_chrono*.dll          -> ./dist\bin
-bin, boost_context*.dll         -> ./dist\bin
-bin, boost_date_time*.dll       -> ./dist\bin
-bin, boost_fiber*.dll           -> ./dist\bin
-bin, boost_filesystem*.dll      -> ./dist\bin
-bin, boost_log*.dll             -> ./dist\bin
-bin, boost_system*.dll          -> ./dist\bin
-bin, boost_thread*.dll          -> ./dist\bin
-bin, cosim*.dll                 -> ./dist\bin
-bin, fmilib_shared.dll          -> ./dist\bin
-bin, xerces-c*.dll              -> ./dist\bin
-bin, yaml-cpp.dll               -> ./dist\bin
-bin, zip.dll                    -> ./dist\bin
+bin, boost_chrono*.dll          -> ./dist/bin
+bin, boost_context*.dll         -> ./dist/bin
+bin, boost_date_time*.dll       -> ./dist/bin
+bin, boost_fiber*.dll           -> ./dist/bin
+bin, boost_filesystem*.dll      -> ./dist/bin
+bin, boost_log*.dll             -> ./dist/bin
+bin, boost_system*.dll          -> ./dist/bin
+bin, boost_thread*.dll          -> ./dist/bin
+bin, cosim*.dll                 -> ./dist/bin
+bin, fmilib_shared.dll          -> ./dist/bin
+bin, xerces-c*.dll              -> ./dist/bin
+bin, yaml-cpp.dll               -> ./dist/bin
+bin, zip.dll                    -> ./dist/bin
+bin, proxyfmu*                  -> ./dist/bin
 
 lib, libboost_chrono.so.*       -> ./dist/lib
 lib, libboost_context.so.*      -> ./dist/lib

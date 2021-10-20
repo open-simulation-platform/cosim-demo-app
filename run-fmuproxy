@@ -1,2 +1,0 @@
-#!/bin/bash
-java -jar ./bin/fmu-proxy.jar -thrift/tcp 9090
