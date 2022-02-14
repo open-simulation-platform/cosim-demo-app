@@ -221,7 +221,17 @@
                     :data-position "top center"}
              [:i.eye.slash.gray.icon {:on-click #(rf/dispatch [::controller/untrend-single trend-idx (str module "." signal)])}]])]])))
 
-(defn variables-table [trend-idx trend-values]
+(defn last-value [xvals yvals plot-type]
+  (let [last-x (last xvals)
+        last-y (last yvals)]
+    (if (= plot-type "scatter")
+      (if (nil? last-x)
+        last-y
+        last-x)
+      last-y)
+    ) )
+
+(defn variables-table [trend-idx trend-values plot-type]
   [:table.ui.single.line.striped.table
    [:thead
     [:tr
@@ -232,8 +242,8 @@
      #_[:th {:style {:text-align 'right}} "Remove"]]]
    [:tbody
     (doall
-     (for [{:keys [module signal causality yvals]} trend-values] ^{:key (str module signal (rand-int 9999))}
-       [variable-row trend-idx module signal causality (last yvals)]))]])
+     (for [{:keys [module signal causality xvals yvals]} trend-values] ^{:key (str module signal (rand-int 9999))}
+       [variable-row trend-idx module signal causality (last-value xvals yvals plot-type)]))]])
 
 (defn trend-outer []
   (let [trend-range        (rf/subscribe [::trend-range])
@@ -268,8 +278,7 @@
                         :trend-id     id}]]
 
          (when (not @plot-expanded?)
-
-           [variables-table active-trend-index trend-values])]))))
+           [variables-table active-trend-index trend-values plot-type])]))))
 
 (rf/reg-sub ::active-trend #(get-in % [:state :trends (-> % :active-trend-index int)]))
 
