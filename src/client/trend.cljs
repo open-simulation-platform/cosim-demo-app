@@ -225,7 +225,7 @@
   (let [last-x (last xvals)
         last-y (last yvals)]
     (if (= plot-type "scatter")
-      (if (nil? last-x) last-y last-x)
+      (or last-x last-y)
       last-y)))
 
 (defn variables-table [trend-values plot-type]
