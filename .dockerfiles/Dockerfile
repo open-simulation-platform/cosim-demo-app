@@ -1,6 +1,6 @@
-FROM ubuntu:18.04
+FROM ubuntu:20.04
 
-COPY sources-18.04-azure.list /etc/apt/sources.list
+COPY sources-20.04-azure.list /etc/apt/sources.list
 
 RUN apt-get update && \
     apt-get install -y --no-install-recommends \
