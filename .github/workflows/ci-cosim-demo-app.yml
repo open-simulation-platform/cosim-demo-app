@@ -36,7 +36,8 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        os: [ubuntu-18.04, windows-2019]
+        os: [ubuntu-20.04, windows-2019]
+        compiler_version: [9]
 
     env:
       CONAN_LOGIN_USERNAME_OSP: ${{ secrets.osp_artifactory_usr }}
