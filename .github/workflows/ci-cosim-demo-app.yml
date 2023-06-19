@@ -51,7 +51,7 @@ jobs:
         with:
           python-version: '3.x'
       - name: Install prerequisites
-        run: pip install conan
+        run: pip install conan==1.59
       - name: Configure libcxx for Linux
         run: |
           conan profile new default --detect
@@ -74,7 +74,6 @@ jobs:
       - name: packr build
         run: packr build -v
         env:
-          CGO_LDFLAGS: '-Wl,-rpath,$ORIGIN/../lib'
       - name: Prepare Windows distribution
         run: |
           cp ./cosim-demo-app.exe dist/bin

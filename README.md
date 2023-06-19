@@ -10,7 +10,7 @@ Server
 
 ### Required tools
   * Go dev tools: [Golang](https://golang.org/dl/) >= 1.11
-  * Compiler: [MinGW-w64](https://sourceforge.net/projects/mingw-w64/?source=typ_redirect) (Windows), GCC >= 7 (Linux)
+  * Compiler: [MinGW-w64](https://sourceforge.net/projects/mingw-w64/?source=typ_redirect) (Windows), GCC >= 9 (Linux)
   * Package managers: [Conan](https://conan.io/) and [Go Modules](https://github.com/golang/go/wiki/Modules)
 
 Throughout this guide, we will use Conan to manage C++ dependencies. However, you can also install the C++ dependencies manually.
