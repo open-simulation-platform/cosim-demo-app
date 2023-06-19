@@ -46,9 +46,11 @@ You can do this in two ways:
 #### Alternative 1: Using Conan
 
 From the cosim-demo-app source directory, get C/C++ dependencies using Conan:
-
-    conan install . -u -s build_type=Release -g virtualrunenv
-    go build
+```bash
+conan install . -u -s build_type=Release -g virtualrunenv
+source activate_run.sh # or run activate_run.bat in windows
+go build
+```
 
 To run the application on Windows:
 
