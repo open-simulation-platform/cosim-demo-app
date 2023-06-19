@@ -1,7 +1,7 @@
 [generators]
 
 [requires]
-libcosimc/0.10.1@osp/stable
+libcosimc/0.11.0@osp/testing-scm_fix
 
 [options]
 libcosim:proxyfmu=True
