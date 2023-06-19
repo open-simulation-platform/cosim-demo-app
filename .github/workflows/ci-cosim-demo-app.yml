@@ -74,6 +74,7 @@ jobs:
       - name: packr build
         run: packr build -v
         env:
+          CGO_LDFLAGS: '-Wl,-rpath,$ORIGIN/../lib'
       - name: Prepare Windows distribution
         run: |
           cp ./cosim-demo-app.exe dist/bin
