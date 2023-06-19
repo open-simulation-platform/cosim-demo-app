@@ -9,6 +9,7 @@ Server
 ------------
 
 ### Required tools
+  * Conan v1.59 (currently v2 is not supported)
   * Go dev tools: [Golang](https://golang.org/dl/) >= 1.11
   * Compiler: [MinGW-w64](https://sourceforge.net/projects/mingw-w64/?source=typ_redirect) (Windows), GCC >= 9 (Linux)
   * Package managers: [Conan](https://conan.io/) and [Go Modules](https://github.com/golang/go/wiki/Modules)
@@ -24,6 +25,12 @@ Install a current version and specify win32 as thread when requested. Additional
 
 After installing it, you need to add it to the PATH environment variable (add the path where
 your MinGW-w64 has been installed to e.g., C:\mingw\mingw64\bin). 
+
+Alternatively, MinGW can also be installed via [chocolatey](https://chocolatey.org/install).
+Once chocolatey is installed, simply run the following command (as admin) to install MinGW:
+```ps
+choco install mingw
+```
 
 ### Step 1: Configure Conan
 
