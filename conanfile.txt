@@ -1,7 +1,7 @@
 [generators]
 
 [requires]
-libcosimc/0.10.1@osp/stable
+libcosimc/0.10.2@osp/stable
 
 [options]
 libcosim:proxyfmu=True
@@ -20,9 +20,10 @@ bin, boost_thread*.dll          -> ./dist/bin
 bin, cosim*.dll                 -> ./dist/bin
 bin, fmilib_shared.dll          -> ./dist/bin
 bin, xerces-c*.dll              -> ./dist/bin
-bin, yaml-cpp.dll               -> ./dist/bin
+bin, yaml-cpp*.dll              -> ./dist/bin
 bin, zip.dll                    -> ./dist/bin
 bin, proxyfmu*                  -> ./dist/bin
+bin, fmilibwrapper*.dll         -> ./dist/bin
 
 lib, libboost_chrono.so.*       -> ./dist/lib
 lib, libboost_context.so.*      -> ./dist/lib
@@ -35,8 +36,10 @@ lib, libboost_thread.so*        -> ./dist/lib
 lib, libcosim*.so               -> ./dist/lib
 lib, libfmilib_shared.so        -> ./dist/lib
 lib, libxerces-c*.so            -> ./dist/lib
-lib, libyaml-cpp.so.*           -> ./dist/lib
+lib, libyaml-cpp*.so.*          -> ./dist/lib
 lib, libzip.so*                 -> ./dist/lib
+lib, libfmilibwrapper*.so       -> ./dist/lib
+lib, libproxyfmu-client*.so     -> ./dist/lib
 
 ., license*     -> ./dist/doc/licenses @ folder=True, ignore_case=True, keep_path=False
 ., */license*   -> ./dist/doc/licenses @ folder=True, ignore_case=True, keep_path=False

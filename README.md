@@ -9,8 +9,9 @@ Server
 ------------
 
 ### Required tools
+  * Conan v1.59 (currently v2 is not supported)
   * Go dev tools: [Golang](https://golang.org/dl/) >= 1.11
-  * Compiler: [MinGW-w64](https://sourceforge.net/projects/mingw-w64/?source=typ_redirect) (Windows), GCC >= 7 (Linux)
+  * Compiler: [MinGW-w64](https://sourceforge.net/projects/mingw-w64/?source=typ_redirect) (Windows), GCC >= 9 (Linux)
   * Package managers: [Conan](https://conan.io/) and [Go Modules](https://github.com/golang/go/wiki/Modules)
 
 Throughout this guide, we will use Conan to manage C++ dependencies. However, you can also install the C++ dependencies manually.
@@ -24,6 +25,12 @@ Install a current version and specify win32 as thread when requested. Additional
 
 After installing it, you need to add it to the PATH environment variable (add the path where
 your MinGW-w64 has been installed to e.g., C:\mingw\mingw64\bin). 
+
+Alternatively, MinGW can also be installed via [chocolatey](https://chocolatey.org/install).
+Once chocolatey is installed, simply run the following command (as admin) to install MinGW:
+```ps
+choco install mingw
+```
 
 ### Step 1: Configure Conan
 
@@ -39,9 +46,11 @@ You can do this in two ways:
 #### Alternative 1: Using Conan
 
 From the cosim-demo-app source directory, get C/C++ dependencies using Conan:
-
-    conan install . -u -s build_type=Release -g virtualrunenv
-    go build
+```bash
+conan install . -u -s build_type=Release -g virtualrunenv
+source activate_run.sh # or run activate_run.bat in windows
+go build
+```
 
 To run the application on Windows:
 
