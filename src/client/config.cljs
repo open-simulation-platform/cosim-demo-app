@@ -4,4 +4,4 @@
 
 (ns client.config)
 
-(def socket-url "/ws/")
+(def socket-url "/ws")
