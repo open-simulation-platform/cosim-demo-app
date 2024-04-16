@@ -327,7 +327,7 @@
 (k/reg-event-fx ::save-trends-configuration
                 (fn [_ _]
                   {:http-xhrio {:method          :post
-                                :uri             "http://localhost:8000/plot-config"
+                                :uri             "/plot-config"
                                 :format          (ajax/json-request-format)
                                 :on-failure      [::save-trends-failure]
                                 :on-success      [::save-trends-success]
