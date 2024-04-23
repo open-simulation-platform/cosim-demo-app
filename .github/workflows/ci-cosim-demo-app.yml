@@ -52,14 +52,14 @@ jobs:
           python-version: '3.x'
       - name: Install prerequisites
         run: pip install conan~=2.2.0
-      - name: Configure libcxx for Linux
+      - name: Configure conan profile for Linux
         run: |
           conan profile detect --name default --force
         if: runner.os == 'Linux'
       - name: Add Conan remote
         run: conan remote add osp https://osp.jfrog.io/artifactory/api/conan/conan-local --force
       - name: Install Conan deps
-        run: conan install .
+        run: conan install . --build missing
       - name: Download client
         uses: actions/download-artifact@v2
         with:
