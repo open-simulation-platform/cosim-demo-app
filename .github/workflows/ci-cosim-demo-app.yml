@@ -54,7 +54,7 @@ jobs:
         run: pip install conan~=2.2.0
       - name: Configure libcxx for Linux
         run: |
-          conan profile new default --detect
+          conan profile detect --name default --force
           conan profile update settings.compiler.libcxx=libstdc++11 default
         if: runner.os == 'Linux'
       - name: Add Conan remote
