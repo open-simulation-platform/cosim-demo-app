@@ -62,7 +62,7 @@ jobs:
       - name: Install Conan deps
         run: conan install -s build_type=Release .
       - name: Download client
-        uses: actions/download-artifact@v2
+        uses: actions/download-artifact@v4.1.7
         with:
           name: client
           path: resources/public/static/js/compiled/
