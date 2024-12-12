@@ -24,10 +24,11 @@ jobs:
             ${{ runner.os }}-m2-
       - run: lein cljsbuild once min
       - run: lein cljsbuild test
-      - uses: actions/upload-artifact@v2
+      - uses: actions/upload-artifact@v4
         with:
           name: client
           path: resources/public/static/js/compiled/app.js
+          overwrite: true
 
   server:
     name: Build Go Application with packr
@@ -88,7 +89,8 @@ jobs:
           sh ./set-rpath ./dist/lib
         if: runner.os == 'Linux'
       - name: Upload artifact
-        uses: actions/upload-artifact@v2
+        uses: actions/upload-artifact@v4
         with:
           name: cosim-demo-app-${{ runner.os }}
           path: dist
+          overwrite: true
