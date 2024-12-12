@@ -1,0 +1,1 @@
+["^ ","~:members",["^ ","NON_HALTING_ERROR_MSG",["~#set",[["^ ","~:flags",["^2",["~:public","~:static","~:field","~:final"]]]]],"<init>",["^2",[["^ ","^3",["^2",["~:method","^4"]]]]],"newTraversal",["^2",[["^ ","^3",["^2",["^9","^4","^5"]]]]],"computeFixedPoint",["^2",[["^ ","^3",["^2",["^9","^4"]]]]]]]

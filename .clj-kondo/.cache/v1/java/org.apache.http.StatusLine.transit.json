@@ -1,0 +1,1 @@
+["^ ","~:members",["^ ","getProtocolVersion",["~#set",[["^ ","~:flags",["^2",["~:method","~:public"]]]]],"getStatusCode",["^2",[["^ ","^3",["^2",["^4","^5"]]]]],"getReasonPhrase",["^2",[["^ ","^3",["^2",["^4","^5"]]]]]]]
